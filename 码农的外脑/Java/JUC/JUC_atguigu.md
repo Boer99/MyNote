@@ -1525,20 +1525,15 @@ private native boolean isInterrupted(boolean ClearInterrupted);
 
 class LockSupport
 
-创建锁和其他同步类的基本**线程阻塞原语**
+创建锁和其他同步类的==基本线程阻塞原语==
 
-LockSupport中的
-- park()：阻塞线程
-- unpark()：解除阻塞线程
+LockSupport中的，`park()`阻塞线程， `unpark()`：解除阻塞线程
 
 ### 三种让线程等待和唤醒的方式
 
-1. Object 中的`wait()`方法让线程等待，使用 Object 中的`notify()`方法唤醒线程
-2. JUC 包中 Condition 的`await()`方法让线程等待，使用`signal()`方法唤醒线程
-3. **LockSupport 类**
+1）Object 中的`wait()`方法让线程等待，使用 Object 中的`notify()`方法唤醒线程
 
-方式一：
-
+正常情况：
 ```java
 public class Demo {  
     public static void main(String[] args) throws InterruptedException {  
@@ -1549,20 +1544,44 @@ public class Demo {
                 try {  
                     lock.wait();  
                 } catch (InterruptedException e) {  
-                    throw new RuntimeException(e);  
+                    e.printStackTrace();  
                 }  
             }  
             System.out.println(Thread.currentThread().getName() + "\t" + "被唤醒");  
         }, "t1").start();  
   
-        Thread.sleep(3000);  
+        Thread.sleep(1000);  
   
         new Thread(() -> {  
             synchronized (lock) {  
                 lock.notify();  
+                System.out.println(Thread.currentThread().getName() + "\t" + "发出通知");  
             }  
         }, "t2").start();  
     }  
 }
 ```
+
+**异常1：**`wait()`和`notify()`都去掉代码块。
+
+两个方法都会抛出`IllegalMonitorStateException`异常
+
+`wait()`会释放锁，前提是持有锁。
+
+**异常2：** `notify()`先于`wait()`执行。无法唤醒。
+
+总结：
+- `wait()`和`notify()`必须要在同步块或者方法里，且成对出现
+- 先`wait()`后`notify()`                                                                       
+
+--- 
+2）JUC 包中 Condition 的`await()`让线程等待，`signal()`唤醒线程
+
+
+
+--- 
+3）**LockSupport 类**
+
+
+
 
