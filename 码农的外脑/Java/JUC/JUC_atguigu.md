@@ -1521,19 +1521,10 @@ private native boolean isInterrupted(boolean ClearInterrupted);
 
 ## 线程等待唤醒机制
 
-### LockSupport是什么？
-
-class LockSupport
-
-创建锁和其他同步类的==基本线程阻塞原语==
-
-LockSupport中的，`park()`阻塞线程， `unpark()`：解除阻塞线程
-
 ### 三种让线程等待和唤醒的方式
 
 1）Object 中的`wait()`方法让线程等待，使用 Object 中的`notify()`方法唤醒线程
 
-正常情况：
 ```java
 public class Demo {  
     public static void main(String[] args) throws InterruptedException {  
@@ -1562,25 +1553,149 @@ public class Demo {
 }
 ```
 
-**异常1：**`wait()`和`notify()`都去掉代码块。
-
-两个方法都会抛出`IllegalMonitorStateException`异常
-
-`wait()`会释放锁，前提是持有锁。
-
-**异常2：** `notify()`先于`wait()`执行。无法唤醒。
-
-总结：
+注意：
 - `wait()`和`notify()`必须要在同步块或者方法里，且成对出现
-- 先`wait()`后`notify()`                                                                       
+	- 否则会抛出`IllegalMonitorStateException`异常
+- 先`wait()`后`notify()`              
 
 --- 
 2）JUC 包中 Condition 的`await()`让线程等待，`signal()`唤醒线程
 
+```java
+public class Demo2 {
+    public static void main(String[] args) throws InterruptedException {
+        Lock lock = new ReentrantLock();
+        Condition condition = lock.newCondition();
 
+        new Thread(() -> {
+            lock.lock();
+            try {
+                System.out.println(Thread.currentThread().getName() + "\t" + "come in");
+                // ----- 等待
+                condition.await();
+                System.out.println(Thread.currentThread().getName() + "\t" + "被唤醒");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } finally {
+                lock.unlock();
+            }
+        }, "t1").start();
+
+        Thread.sleep(1000);
+
+        new Thread(() -> {
+            lock.lock();
+            try {
+                // ----- 唤醒
+                condition.signal();
+                System.out.println(Thread.currentThread().getName() + "\t" + "发出通知");
+            }finally {
+                lock.unlock();
+            }
+        }, "t2").start();
+    }
+}
+
+```
+
+注意：
+- `await()`和`signal()`要在`lock()`和`unlock()`对里
+	- 否则会抛出 `IllegalMonitorStateException` 异常
+- 先 `await()` 后 `signal()`             
 
 --- 
-3）**LockSupport 类**
+3）LockSupport 类
+
+弥补了上两种方法的痛点。
+
+### LockSupport
+
+> java.util.concurrent.locks.LockSupport。用于**创建**锁和其他同步类的**基本线程阻塞原语**
+> 
+> LockSuppot是一个线程阻寒工具类，所有的方法都是**静态方法**，可以让线程在任意位置阻塞，阻寒之后也有对应的唤醒方法。归根结底，==LockSupport调用的Unsafe中的native代码==。
+> 
+> LockSupport使用了一种名为Permit（凭证）的概念来做到阻塞和唤醒线程的功能
+> - 每个线程都有一个permit
+> - 但与Semaphore不同的是，Permit最多只有一个
+
+主要方法：
+- `public static void park()` 阻塞当前线程
+	- 如果有permit，则会直接消耗掉这个凭证然后正常退出
+	- 如果没有permit，就必须阻塞等待凭证可用
+		- 默认是没有的，所以第一次调用`park()`后当前线程就会阻塞，直到别的线程发放permit，才会被唤醒
+- `public static void park(Object blocker)` 阻塞传入的具体线程
+- `public static void unpark(Thread thread)` 唤醒线程
+	- 增加一个permit，最多一个，累加无效
+
+```java
+public class Demo3 {
+    public static void main(String[] args) throws InterruptedException {
+        Thread t1 = new Thread(() -> {
+	        // 先唤醒后等待也可以
+            // try {
+            //     Thread.sleep(2000);
+            // } catch (InterruptedException e) {
+            //     e.printStackTrace();
+            // }
+            System.out.println(Thread.currentThread().getName() + "\t" + "come in");
+            // ----- 等待
+            LockSupport.park();
+            System.out.println(Thread.currentThread().getName() + "\t" + "被唤醒");
+        }, "t1");
+        t1.start();
+
+        Thread.sleep(1000);
+
+        new Thread(() -> {
+            // ----- 唤醒
+            LockSupport.unpark(t1);
+            System.out.println(Thread.currentThread().getName() + "\t" + "发出通知");
+        }, "t2").start();
+    }
+}
+```
+
+特点：
+- 无锁块要求
+- 之前错误的先唤醒后等待，也支持
+- `park()` 和 `unpark()` 要成双成对
+
+> 面试题一：为什么可以突破`wait/notify`原有调用顺序
+
+因为unpark获得了一个凭证，之后调用park()会消费凭证。
+
+> 面试题二：为什么唤醒两次后阻塞两次，但最终结果还会阻塞线程？
+
+因为凭证最多一个，两次unpark()只会增加一个凭证，而调用两次park()需要消费两个凭证。
+
+# Java内存模型之JMM
+
+计算机硬件存储体系
+![](assets/Pasted%20image%2020240106181702.png)
+
+CPU的运行并不是直接操作内存，而是先把内存里边的数据读到缓存。内存的读和写操作的时候就会造成不一致的问题。
+![|500](assets/Pasted%20image%2020240106181855.png)
+
+> JMM是什么？
+
+JVM规范中试图定义一种Java内存模型（Java Memory Model，简称JMM）
+
+本身是一种抽象的概念并不真实存在它仅仅述的是一组约定或规范，通过这组规范定义了程序中(尤其是多线程)各个变量的读写访问方式并决定一个线程对共享变量的写入何时以及如何变成对另一个线程可见。
+
+原则：JMM的关键技术点都是围绕多线程的原子性、可见性和有序性展开的
+
+> 为什么需要JMM？/ JMM能干嘛？
+
+- 实现线程和主内存之间的抽象关系。
+- 来屏蔽掉各种硬件和操作系统的内存访问差异，实现让Java在各种平台下都能达到一致的内存访问效果。
+
+## JMM规范下，三大特性
+
+可见性、原子性和有序性
+
+> 可见性
+
+是指当一个线程修改了某一个共享变量的值，其他线程是否能够立即知道该变更。JMM规定了所有的变量都存储在主内存中。
 
 
 
