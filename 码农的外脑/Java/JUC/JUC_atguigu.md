@@ -1218,7 +1218,6 @@ public class ReEntryLockDemo {
 }
 ```
 
-
 ## 死锁及排查
 
 死锁是指两个或两个以上的线程在执行过程中，因争夺资源而造成的一种==互相等待==的现象,若无外力干涉那它们都将无法推进下去，如果系统资源充足，进程的资源请求都能够得到满足，死锁出现的可能性就很低，否则就会因争夺有限的资源而陷入死锁。
@@ -1303,6 +1302,10 @@ public class ThreadLockDemo {
 2）图形化界面
 
 jconsole
+
+## 自旋锁 SpinLock
+
+见[CAS与自旋锁，借鉴CAS思想](#CAS与自旋锁，借鉴CAS思想)
 
 # LockSupport与线程中断
 ## 线程中断机制
@@ -1877,12 +1880,12 @@ public synchronized int setValue(){
 1. 可见性
 2. 有序性：有排序要求，有时需要==禁重排==
 
-内存语义：
+内存语义（保证可见性）：
 - 当**写**一个volatile变量时，JMM会把该线程对应的本地内存中的==共享变量值立即刷新回主内存中==
-- 当**读**一个volatile变量时，JMM会把该线程对应的==本地内存设置为无效==，重新==回到主内存中读取==最新共享变量的值
+- 当**读**一个volatile变量时，JMM会把该线程对应的==本地内存设置为无效==，重新==回到主内存中==读取**最新共享变量**的值
 - 所以volatile的写内存语义是直接刷新到主内存中，读的内存语义是直接从主内存中读取
 
-volatile凭什么可以保证可见性和有序性？**内存屏障Memory Barrier**
+volatile凭什么可以保证可见性和**有序性**？内存屏障Memory Barrier
 
 ## 内存屏障（面试重点）
 
@@ -2140,5 +2143,538 @@ public synchronized int setValue(){
 }
 ```
 
-> DCL (doube-checked-locking 双重检查锁定) 双端锁的发布
+> DCL (doube-checked-locking 双重检查锁定) 双端锁
+
+[双检锁/双重校验锁（DCL，即 double-checked locking）详细解析-CSDN博客](https://blog.csdn.net/weixin_44214900/article/details/116068342)
+
+多线程下“双重校验”的单例模式：
+```java
+public class SafeDoubleCheckSingleTon {  
+    private static SafeDoubleCheckSingleTon singleTon;  
+  
+    // 构造方法私有化  
+    private SafeDoubleCheckSingleTon() {  
+    }  
+    // 双重校验  
+    public static SafeDoubleCheckSingleTon getInstance() {  
+        if (singleTon == null) {  
+            synchronized (SafeDoubleCheckSingleTon.class) {  
+                if (singleTon == null) {  
+                    // 隐患：多线程环境下由于重排序，该对象可能还未完成初始化就被其他线程读取  
+                    singleTon = new SafeDoubleCheckSingleTon();  
+                }  
+            }  
+  
+        }  
+        return singleTon;  
+    }  
+}
+```
+
+单线程环境下(或者说正常情况下)，在“问题代码处”，会执行如下操作，保证能获取到已完成初始化的实例
+```java
+memory = allocate(); // 1）分配对象的内存空间
+ctorInstance(memory); // 2）初始化对象
+instance = memory; // 3）设置 instance 指向刚分配的内存地址
+```
+
+隐患，多线程环境下，在“问题代码处”，由于重排序导致 2 和 3 乱序，后果就是其他线程得到的是未完成初始化的对象。这种场景在著名的 DCL 中会出现。
+- 3执行完以后，此时变量已不为null，但是变量却并没有初始化完成
+- 其他线程的外层 `if (singleTon == null)` 判断为false，从而直接访问到未初始化的singleTon
+```java
+memory = allocate(); // 1）分配对象的内存空间
+instance = memory; // 3）设置 instance 指向刚分配的内存地址
+ctorInstance(memory); // 2）初始化对象
+```
+
+解决隐患：利用volatile（利用内存屏障）禁止 2 和 3 的重排序
+```java
+private volatile static SafeDoubleCheckSingleTon singleTon;  
+```
+
+## 字节码层面理解 volatile
+
+凭什么我们Java写了一个volatile关键字，系统底层加入内存屏障？两者的关系如何勾搭？
+
+![](assets/Pasted%20image%2020240109140623.png)
+
+# CAS
+
+## CAS 引入
+
+> 原子类
+
+Java.util.concurrent.atomic
+
+> 没有CAS之前
+
+多线程环境中不使用原子类保证线程安全i++（基本数据类型）
+```java
+class Test {
+	private volatile int count = 0;
+	
+	// 若要线程安全执行执行count++，需要加锁
+	public synchronized void increment() {
+		 count++;
+	}
+
+	public int getCount() {
+		 return count;
+	}
+}
+```
+
+> 使用CAS之后
+
+多线程环境中使用原子类保证线程安全i++（基本数据类型）--->类似于乐观锁
+```java
+class Test2 {
+	private AtomicInteger count = new AtomicInteger();
+
+	public void increment() {
+		 count.incrementAndGet();
+	}
+	
+    // 使用AtomicInteger之后，不需要加锁，也可以实现线程安全。
+	public int getCount() {
+		 return count.get();
+	}
+}
+```
+
+## CAS 是什么？
+
+> 概念说明
+
+CAS (compare and swap)，比较并交换，实现并发算法时常用到的一种技术，用于保证**共享变量的原子性更新**。
+
+它包含三个操作数：内存位置、预期原值与更新值。
+
+执行CAS操作的时候，将**内存位置的值**与**预期原值**进行比较：
+- 如果相匹配，那么处理器会自动将该位置更新为新值
+- 如果不匹配，处理器不做任何操作或重来，这种重来重试的行为称为**自旋**
+
+多个线程同时执行CAS操作==只有一个会成功==。
+
+> 案例演示
+
+```java
+public class CASDemo {
+    public static void main(String[] args) {
+        AtomicInteger atomicInteger = new AtomicInteger(5);
+        /**
+         * true     2022
+         * false	2022
+         */
+        System.out.println(atomicInteger.compareAndSet(5, 2022) + "\t" + atomicInteger.get());
+        System.out.println(atomicInteger.compareAndSet(5, 2023) + "\t" + atomicInteger.get());
+    }
+}
+```
+
+> 源码查看
+
+AtomicInteger
+```java
+public final boolean compareAndSet(int expect, int update) {  
+    return unsafe.compareAndSwapInt(this, valueOffset, expect, update);  
+}
+```
+
+Unsafe
+```java
+public final native boolean compareAndSwapObject(Object var1, long var2, Object var4, Object var5);
+
+public final native boolean compareAndSwapInt(Object var1, long var2, int var4, int var5);
+
+public final native boolean compareAndSwapLong(Object var1, long var2, long var4, long var6);
+```
+
+上面三个方法都是类似的，主要对4个参数做一下说明。
+1. var1: 表示要操作的对象
+2. var2: 表示要操作对象中属性地址的偏移量
+3. var4: 表示需要修改数据的期望的值
+4. var5/var6: 表示需要修改为的新值
+
+> 硬件级别保证
+
+CAS是JDK提供的**非阻塞原子性操作**，它通过硬件保证了比较-更新的原子性。
+
+它是非阻塞的且自身具有原子性，也就是说这玩意效率更高且通过硬件保证，说明这玩意更可靠。
+
+CAS是一条CPU的原子指令 (**cmpxchg指令**)，不会造成所谓的数据不一致问题，**Unsafe** 提供的CAS方法 (如compareAndSwapXXX) 底层实现即为CPU指令cmpxchg。
+
+执行cmpxchg指令的时候，会判断当前系统是否为多核系统，如果是就给总线加锁，只有一个线程会对总线加锁成功，加锁成功之后会执行cas操作，也就是说==CAS的原子性实际上是CPU实现独占的，比起用synchronized重量级锁， 这里的排他时间要短很多， 所以在多线程情况下性能会比较好。==
+
+## CAS底层原理？谈谈你对Unsafe的理解
+
+### Unsafe
+
+> 概念说明
+
+Unsafe 类是 **CAS 的核心类**
+
+由于Java方法无法直接访问底层系统，需要通过本地（native）方法来访问，Unsafe 类中的==所有方法都是native修饰的==，都能直接调用操作系统底层资源执行相应任务。
+
+Unsafe 类存在于 sun.misc 包中，其内部方法操作可以像C的指针一样直接操作内存，因此==Java 中 CAS 操作的执行依赖于 Unsafe 类的方法==。
+
+> AtomicInteger
+
+```java
+public class AtomicInteger extends Number implements java.io.Serializable {
+    private static final long serialVersionUID = 6214790243416807050L;
+
+    // setup to use Unsafe.compareAndSwapInt for updates
+    private static final Unsafe unsafe = Unsafe.getUnsafe();
+    private static final long valueOffset;
+
+    static {
+        try {
+            valueOffset = unsafe.objectFieldOffset
+                (AtomicInteger.class.getDeclaredField("value"));
+        } catch (Exception ex) { throw new Error(ex); }
+    }
+
+    private volatile int value;
+
+	......
+}
+```
+
+`valueOffset`：表示该变量值在内存中的偏移地址，因为Unsafe就是根据内存偏移地址获取数据的
+
+`volatile`：变量value用volatile修饰，保证了多线程之间的内存可见性。
+
+> 我们知道 i++ 是线程不安全的，那  `atomiclnteger.getAndIncrement()`？
+
+AtomicInteger类主要利用==CAS+volatile和native方法==来保证原子操作，从而避免synchronized的高开销，执行效率大为提升
+
+Atomiclnteger类
+```java
+public final int getAndIncrement() {  
+    return unsafe.getAndAddInt(this, valueOffset, 1);  
+}
+```
+
+Unsafe类
+```java
+public final int getAndAddInt(Object var1, long var2, int var4) {  
+	// var4=1
+    int var5;  
+    do {  
+		// 获得当前的最新值，期望值
+        var5 = this.getIntVolatile(var1, var2);  
+        // 自旋：期望值和当前内存值不一致就一直重试
+    } while(!this.compareAndSwapInt(var1, var2, var5, var5 + var4));  
+
+    return var5;
+}
+```
+
+**CAS并发原语**==体现在Java语言中==就是Unsafe类中的各个方法。调用Unsafe类中的CAS方法，==JVM会帮我们实现出CAS汇编指令==。这是一种完全依赖于硬件的功能，通过它实现了原子操作。
+
+再次强调，由于CAS是一种**系统原语**，原语属于操作系统用语范畴，是由若干条指令组成的，用于完成某个功能的一个过程，并且==原语的执行必须是连续的，在执行过程中不允许被中断，也就是说CAS是一条CPU的原子指令，不会造成所谓的数据不一致问题。==
+
+个人理解：`compareAndSwapInt()` 这个方法就是原语级别的执行，保证了自旋的原子性
+
+> 源码分析
+
+假设线程A和线程B两个线程同时执行`getAndAddint()`操作(分别跑在不同CPU上) :
+1. Atomiclnteger里面的value原始值为3，即主内存中Atomicinteger的value为3，根据JMM模型，线程A和线程B各自持有份值为3的value的副本分别到各自的工作内存。
+2. 线程A通过`getlntVolatile(var1,var2)`拿到value值3，这时线程A被挂起
+3. 线程B也通过`getlntVolatile(var1, var2)`方法获取到value值3，此时刚好线程B没有被挂起并执行`compareAndSwapInt()`比较内存值也为3，成功修改内存值为4，线程B打完收工，一切OK。
+4. 这时线程A恢复，执行`compareAndSwaplnt()`比较，发现自己手里的值数字3和主内存的值数字4不一致，说明该值已经被其它线程抢先一步修改过了，那A线程本次修改失败，只能重新读取重新来一遍了。
+5. 线程A重新获取value值，因为变量value被volatile修饰，所以其它线程对它的修改，线程A总是能够看到，线程A继续执行`compareAndSwaplnt()`进行比较替换，直到成功。
+
+### 底层汇编
+
+[74_CAS之Unsafe类底层汇编源码分析_哔哩哔哩_bilibili](https://www.bilibili.com/video/BV1ar4y1x727/?p=74&spm_id_from=pageDriver&vd_source=2c36db3ac89c0a3fdac39c4e8a1068fa)
+
+你只需要记住：CAS是靠硬件实现的从而在硬件层面提升效率，最底层还是交给硬件来保证原子性和可见性
+
+实现方式是基于硬件平台的汇编指令，在intel的CPU中(X86机器上)，使用的是**汇编指令cmpxchg指令**。
+
+核心思想就是：比较要更新变量的值V和预期值E (compare)，相等才会将V的值设为新值N  (swap) 如果不相等自旋再来.
+
+## 原子引用
+
+Atomiclnteger 原子整型，可否有其他原子类型？例如：AtomicUser、AtomicOrder
+
+java.util.concurrent.atomic.AtomicReference
+
+> AtomicReference案例
+
+```java
+public class AtomicReferenceDemo {
+    public static void main(String[] args) {
+        AtomicReference<User> userAtomicReference = new AtomicReference<>();
+        User user1 = new User("user1", 22);
+        User user2 = new User("user2", 33);
+        User user3 = new User("user3", 33);
+
+        userAtomicReference.set(user1);
+
+        /**
+         * true	    User(username=user2, age=33)
+         * false	User(username=user2, age=33)
+         */
+        System.out.println(userAtomicReference.compareAndSet(user1, user2) + "\t" +
+                userAtomicReference.get().toString());
+        System.out.println(userAtomicReference.compareAndSet(user1, user3) + "\t" +
+                userAtomicReference.get().toString());
+    }
+}
+```
+
+## CAS与自旋锁，借鉴CAS思想
+
+> 概念说明
+
+CAS是实现自旋锁的基础，CAS利用CPU指令保证了操作的原子性，以达到锁的效果
+
+自旋锁，字面意思自己旋转。是指尝试获取锁的线程==不会立即阻塞==，而是采用==循环的方式去尝试获取锁==，当线程发现锁被占用时，会不断循环判断锁的状态，直到获取。
+
+这样的**好处**是减少线程上下文切换的消耗，**缺点**是循环会消耗CPU
+
+> 实现自旋锁
+
+```java
+public class SpinLockDemo {
+    AtomicReference<Thread> atomicReference = new AtomicReference<>();
+
+    public void lock() {
+        Thread thread = Thread.currentThread();
+        System.out.println(Thread.currentThread().getName() + "\t" + "--- come in ");
+        while (!atomicReference.compareAndSet(null, thread)) ;
+        System.out.println(Thread.currentThread().getName() + "\t" + "--- lock ");
+    }
+
+    public void unlock() {
+        Thread thread = Thread.currentThread();
+        atomicReference.compareAndSet(thread, null);
+        System.out.println(Thread.currentThread().getName() + "\t" + "--- unlock ");
+    }
+
+    public static void main(String[] args) {
+        SpinLockDemo spinLockDemo = new SpinLockDemo();
+
+        new Thread(() -> {
+            spinLockDemo.lock();
+            try {
+                Thread.sleep(3000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            spinLockDemo.unlock();
+        }, "A").start();
+
+        new Thread(() -> {
+            spinLockDemo.lock();
+            spinLockDemo.unlock();
+        }, "B").start();
+
+        /**
+         * A	--- come in
+         * B	--- come in
+         * A	--- lock
+         * A	--- unlock
+         * B	--- lock
+         * B	--- unlock
+         */
+    }
+}
+```
+
+## CAS 缺点
+
+> 循环时间长开销很大
+
+`getAndAddInt()`方法执行时有个 do while，如果CAS失败会一直进行尝试。
+
+如果CAS长时间一直不成功，就会给CPU带来很大的开销！
+
+> 会导致 “ABA问题”
+
+CAS算法实现一个重要前提需要取出内存中某时刻的数据并在当下时刻比较并替换，那么在这个时间差类会导致数据的变化。
+
+比如说
+- 一个线程1从内存位置V中取出A，
+- 这时候另一个线程2也从内存中取出A，
+- 并且线程2进行了一些操作将值变成了B
+- 然后线程2又将V位置的数据变成A，
+- 这时候线程1进行CAS操作发现内存中仍然是A，预期OK，然后线程1操作成功。
+
+尽管线程1的CAS操作成功，但是==不代表这个过程就是没有问题的。==
+
+## 版本号时间戳原子引用
+
+java.util.concurrent.atomic.AtomicStampedReference
+
+用于解决ABA问题
+
+```java
+public boolean compareAndSet(V   expectedReference,
+                                 V   newReference,
+                                 int expectedStamp,
+                                 int newStamp) {
+        Pair<V> current = pair;
+        return
+            expectedReference == current.reference &&
+            expectedStamp == current.stamp &&
+            ((newReference == current.reference &&
+              newStamp == current.stamp) ||
+             casPair(current, Pair.of(newReference, newStamp)));
+    }
+```
+
+> 单线程——AtomicStampedReference带戳记流水的简单演示
+
+```java
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+class Book {
+    private int id;
+    private String bookName;
+}
+
+public class AtomicStampedReferenceDemo {
+    public static void main(String[] args) {
+        Book javaBook = new Book(1, "javaBook");
+        AtomicStampedReference<Book> atomicStampedReference = new AtomicStampedReference<>(javaBook, 1);
+        System.out.println(atomicStampedReference.getReference() + "\t" + atomicStampedReference.getStamp());
+
+        Book mysqlBook = new Book(2, "mysqlBook");
+        boolean b;
+        b = atomicStampedReference.compareAndSet(javaBook, mysqlBook, atomicStampedReference.getStamp(), atomicStampedReference.getStamp() + 1);
+        System.out.println(b + "\t" + atomicStampedReference.getReference() + "\t" + atomicStampedReference.getStamp());
+
+        b = atomicStampedReference.compareAndSet(mysqlBook, javaBook, atomicStampedReference.getStamp(), atomicStampedReference.getStamp() + 1);
+        System.out.println(b + "\t" + atomicStampedReference.getReference() + "\t" + atomicStampedReference.getStamp());
+        /**
+         * Book(id=1, bookName=javaBook)	1
+         * true	Book(id=2, bookName=mysqlBook)	2
+         * true	Book(id=1, bookName=javaBook)	3
+         */
+    }
+}
+```
+
+> 多线程情况下演示AtomicStampedReference解决ABA问题
+
+By Boer. 先拿到版本号再做事
+```java
+public class ABADemo {
+    static AtomicInteger atomicInteger = new AtomicInteger(100);
+    static AtomicStampedReference<Integer> atomicStampedReference = new AtomicStampedReference<>(100, 1);
+
+    public static void main(String[] args) {
+//        abaHappen();//true	2023
+        /**
+         * t3	首次版本号: 1
+         * t4	首次版本号: 1
+         * t3	2次版本号: 2
+         * t3	3次版本号: 3
+         * false	100	3
+         */
+        abaNoHappen();
+    }
+
+    private static void abaNoHappen() {
+        new Thread(() -> {
+            int stamp = atomicStampedReference.getStamp();
+            System.out.println(Thread.currentThread().getName() + "\t" + "首次版本号: " + stamp);
+
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            atomicStampedReference.compareAndSet(100, 101,
+                    atomicStampedReference.getStamp(), atomicStampedReference.getStamp() + 1);
+            System.out.println(Thread.currentThread().getName() + "\t" + "2次版本号: " + atomicStampedReference.getStamp());
+
+            atomicStampedReference.compareAndSet(101, 100,
+                    atomicStampedReference.getStamp(), atomicStampedReference.getStamp() + 1);
+            System.out.println(Thread.currentThread().getName() + "\t" + "3次版本号: " + atomicStampedReference.getStamp());
+        }, "t3").start();
+
+        new Thread(() -> {
+            int stamp = atomicStampedReference.getStamp();
+            System.out.println(Thread.currentThread().getName() + "\t" + "首次版本号: " + stamp);
+
+            try {
+                TimeUnit.SECONDS.sleep(1);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            boolean b = atomicStampedReference.compareAndSet(100, 200, stamp, stamp + 1);
+            System.out.println(b + "\t" + atomicStampedReference.getReference() + "\t" + atomicStampedReference.getStamp());
+        }, "t4").start();
+    }
+
+    private static void abaHappen() {
+        new Thread(() -> {
+            atomicInteger.compareAndSet(100, 101);
+            try {
+                TimeUnit.MILLISECONDS.sleep(10);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            atomicInteger.compareAndSet(101, 100);
+        }, "t1").start();
+
+
+        new Thread(() -> {
+            try {
+                TimeUnit.MILLISECONDS.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(atomicInteger.compareAndSet(100, 2023) + "\t" + atomicInteger.get());//true	2023
+        }, "t2").start();
+    }
+}
+```
+
+# 原子操作类
+
+> java.util.concurrent.atomic
+
+上半场
+1. AtomicBoolean
+2. AtomicInteger
+3. AtomicIntegerArray
+4. AtomicIntegerFieldUpdater
+5. AtomicLong
+6. AtomicLongArray
+7. AtomicLongFieldUpdater
+8. AtomicMarkableReference
+9. AtomicReference
+10. AtomicReferenceArray
+11. AtomicReferenceFieldUpdater
+12. AtomicStampedReference
+
+下半场
+1. DoubleAccumulator
+2. DoubleAdder 
+3. LongAccumulator
+4. LongAdder
+
+> 参考阿里巴巴开发手册，编程规约——并发处理
+
+【参考】**volatile** 解决多线程内存不可见问题对于==一写多读==，是可以解决变量同步问题，==但是如果多写，同样无法解决线程安全问题==
+
+说明：如果是 count++操作，使用如下类实现：
+```java
+AtomicInteger count = new Atomiclnteger();
+count.addAndGet(1):
+```
+
+如果是JDK8，推荐使用 LongAdder 对象，比 AtomicLong 性能更好 (减少乐观锁的重试次数)
+
+## 基本类型原子类
+
 
