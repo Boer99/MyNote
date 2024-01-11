@@ -2298,6 +2298,8 @@ public final native boolean compareAndSwapLong(Object var1, long var2, long var4
 
 > 硬件级别保证
 
+**非阻塞！**
+
 CAS是JDK提供的**非阻塞原子性操作**，它通过硬件保证了比较-更新的原子性。
 
 它是非阻塞的且自身具有原子性，也就是说这玩意效率更高且通过硬件保证，说明这玩意更可靠。
@@ -2435,6 +2437,8 @@ CAS是实现自旋锁的基础，CAS利用CPU指令保证了操作的原子性�
 自旋锁，字面意思自己旋转。是指尝试获取锁的线程==不会立即阻塞==，而是采用==循环的方式去尝试获取锁==，当线程发现锁被占用时，会不断循环判断锁的状态，直到获取。
 
 这样的**好处**是减少线程上下文切换的消耗，**缺点**是循环会消耗CPU
+
+**By Boer：非阻塞式，减少线程上下文切换的消耗**
 
 > 实现自旋锁
 
@@ -2665,7 +2669,7 @@ public class ABADemo {
 
 > 参考阿里巴巴开发手册，编程规约——并发处理
 
-【参考】**volatile** 解决多线程内存不可见问题对于==一写多读==，是可以解决变量同步问题，==但是如果多写，同样无法解决线程安全问题==
+【参考】**volatile** 解决多线程内存不可见问题对于==一写多读==，是可以解决变量同步问题，==但是如果多写，同样无法解决线程安全问题== （By Boer. 原子类来解决）
 
 说明：如果是 count++操作，使用如下类实现：
 ```java
@@ -2673,8 +2677,646 @@ AtomicInteger count = new Atomiclnteger();
 count.addAndGet(1):
 ```
 
-如果是JDK8，推荐使用 LongAdder 对象，比 AtomicLong 性能更好 (减少乐观锁的重试次数)
+如果是JDK8，==推荐使用 LongAdder 对象，比 AtomicLong 性能更好== (减少乐观锁的重试次数)
 
 ## 基本类型原子类
 
+- Atomiclnteger
+- AtomicBoolean
+- AtomicLong
+
+> 常用 API
+
+```java
+public final int get() //获取当前的值
+public final int getAndSet(int newValue) //获取当前的值，并设置新的值
+public final int getAndIncrement() // 获取当前的值，并自增
+public final int getAndDecrement() // 获取当前的值，并自减
+public final int getAndAdd(int delta) // 获取当前的值，并加上预期的值
+boolean compareAndSet(int expect, int update) // 如果输入的数值等于预期值，则以原子方式将该值设置为输入值（update）
+public final void lazySet(int newValue) // 最终设置为newValue,使用 lazySet 设置之后可能导致其他线程在之后的一小段时间内还是可以读到旧的值。
+```
+
+> 入门案例
+
+```java
+class MyNumber {  
+    AtomicInteger atomicInteger = new AtomicInteger();  
+  
+    public void addPlusPlus() {  
+        atomicInteger.getAndIncrement();  
+    }  
+}
+
+public class atomicIntegerDemo {
+    public static final int SIZE = 50;
+
+    public static void main(String[] args) throws InterruptedException {
+        MyNumber myNumber = new MyNumber();
+
+        for (int i = 0; i < SIZE; i++) {
+            new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    myNumber.addPlusPlus();
+                }
+            }).start();
+        }
+        // 线程等待的时间往往不确定，实际工作中不推荐
+        Thread.sleep(2000);
+        System.out.println(myNumber.atomicInteger.get());
+    }
+}
+```
+
+> CountDownLatch 代替 Sleep
+
+```java
+public class atomicIntegerDemo {
+    public static final int SIZE = 50;
+
+    public static void main(String[] args) throws InterruptedException {
+        MyNumber myNumber = new MyNumber();
+        CountDownLatch countDownLatch = new CountDownLatch(SIZE);
+
+        for (int i = 0; i < SIZE; i++) {
+            new Thread(() -> {
+                try {
+                    for (int j = 0; j < 1000; j++) {
+                        myNumber.addPlusPlus();
+                    }
+                } finally {
+                    countDownLatch.countDown();
+                }
+            }).start();
+        }
+
+        // 等待上面50个线程都完成后再去获取最终值
+        countDownLatch.await();
+        System.out.println(myNumber.atomicInteger.get());
+    }
+}
+```
+
+## 数组类型原子类
+
+- `AtomicIntegerArray`：整型数组原子类
+- `AtomicLongrArray`：长整型数组原子类
+- `AtomicReferenceArray`：引用类型数组原子类
+
+> 常用 API
+
+```java
+public final int get(int i) //获取 index=i 位置元素的值
+public final int getAndSet(int i, int newValue) //返回 index=i 位置的当前的值，并将其设置为新值：newValue
+public final int getAndIncrement(int i) //获取 index=i 位置元素的值，并让该位置的元素自增
+public final int getAndDecrement(int i) //获取 index=i 位置元素的值，并让该位置的元素自减
+public final int getAndAdd(int i, int delta) //获取 index=i 位置元素的值，并加上预期的值
+boolean compareAndSet(int i, int expect, int update) //如果输入的数值等于预期值，则以原子方式将 index=i 位置的元素值设置为输入值（update）
+public final void lazySet(int i, int newValue) //最终 将index=i 位置的元素设置为newValue,使用 lazySet 设置之后可能导致其他线程在之后的一小段时间内还是可以读到旧的值。
+```
+
+> 案例
+
+```java
+public class AtomicIntegerArrayDemo {
+    public static void main(String[] args) {
+//        AtomicIntegerArray atomicIntegerArray = new AtomicIntegerArray(new int[]{1, 2, 3, 4, 5});
+        AtomicIntegerArray atomicIntegerArray = new AtomicIntegerArray(new int[5]);
+        for (int i = 0; i < atomicIntegerArray.length(); i++) {
+            System.out.println(atomicIntegerArray.get(i));
+        }
+        System.out.println();
+
+        int tempInt = 0;
+        // 更新 位置 i 的值并返回旧值
+        tempInt = atomicIntegerArray.getAndSet(0, 1122);
+        System.out.println(tempInt + "\t" + atomicIntegerArray.get(0)); // 0	1122
+        // 位置 i 的值自增 并返回旧值
+        tempInt = atomicIntegerArray.getAndIncrement(0);
+        System.out.println(tempInt + "\t" + atomicIntegerArray.get(0)); // 1122	1123
+    }
+}
+```
+
+## 引用类型原子类
+
+- `AtomicReference`：引用类型原子类。[原子引用](#原子引用)
+- `AtomicStampedReference`：原子更新带有版本号的引用类型。该类将整数值与引用关联起来，可用于解决原子的更新数据和数据的版本号。[版本号时间戳原子引用](#版本号时间戳原子引用)
+	- 可以解决使用 CAS 进行原子更新时可能出现的 ABA 问题。
+	- 解决修改过几次
+- `AtomicMarkableReference`：原子更新带有标记的引用类型。
+	- 解决是否修改过
+		- 它的定义就是==将标记戳简化为 true/false==
+		- 类似于一次性筷子
+
+## 对象的属性修改原子类
+
+- `AtomicIntegerFieldUpdater`：原子更新对象中int类型字段的值
+- `AtomicLongFieldUpdater`：原子更新对象中Long类型字段的值
+- `AtomicReferenceFieldUpdater`：原子更新对象中引用类型字段的值
+
+> 使用目的
+
+以一种线程安全的方式操作非线程安全对象内的某些字段
+
+> 使用要求
+
+- 更新的对象属性==必须使用public volatile修饰符==
+- 因为对象的属性修改类型原子类都是**抽象类**，所以每次使用都必须使用静态方法`newUpdater()`==创建一个更新器，并且需要设置想要更新的类和属性==
+
+> AtomicIntegerFieldUpdater 案例
+
+```java
+class BankAccount {
+    public volatile int money = 0;
+
+    AtomicIntegerFieldUpdater<BankAccount> atomicIntegerFieldUpdater = AtomicIntegerFieldUpdater.newUpdater(BankAccount.class, "money");
+
+    public void transferMoney(BankAccount bankAccount) {
+        atomicIntegerFieldUpdater.getAndIncrement(bankAccount);
+    }
+}
+
+/**
+ * @author Boer
+ */
+public class AtomicIntegerUpdaterDemo {
+    static int SIZE = 10;
+
+    public static void main(String[] args) throws InterruptedException {
+        BankAccount bankAccount = new BankAccount();
+        CountDownLatch countDownLatch = new CountDownLatch(SIZE);
+        for (int i = 0; i < SIZE; i++) {
+            new Thread(() -> {
+                try {
+                    for (int j = 0; j < 1000; j++) {
+                        bankAccount.transferMoney(bankAccount);
+                    }
+                } finally {
+                    countDownLatch.countDown();
+                }
+            }).start();
+        }
+        countDownLatch.await();
+        System.out.println(Thread.currentThread().getName() + '\t' + bankAccount.money);
+    }
+}
+```
+
+> AtomicReferenceFieldUpdater 案例
+
+需求：多线程并发调用一个类的初始化方法，如果未被初始化过，将执行初始化工作。要求只能被初始化一次，只有一个线程操作成功
+```java
+class MyVar { // 资源类
+    public volatile Boolean isInit = Boolean.FALSE;
+    AtomicReferenceFieldUpdater<MyVar, Boolean> referenceFieldUpdater =
+            AtomicReferenceFieldUpdater.newUpdater(MyVar.class, Boolean.class, "isInit");
+
+    public void init(MyVar myVar) {
+        if (referenceFieldUpdater.compareAndSet(myVar, Boolean.FALSE, Boolean.TRUE)) {
+            System.out.println(Thread.currentThread().getName() + "\t" + "--------------start init ,need 2 seconds");
+            try {
+                TimeUnit.SECONDS.sleep(2);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            System.out.println(Thread.currentThread().getName() + "\t" + "--------------over init");
+        } else {
+            System.out.println(Thread.currentThread().getName() + "\t" + "--------------已经有线程进行初始化工作了。。。。。");
+        }
+    }
+}
+
+/**
+ * @author Boer
+ */
+public class AtomicReferenceFieldUpdaterDemo {
+    public static void main(String[] args) {
+        MyVar myVar = new MyVar();
+        for (int i = 1; i <= 5; i++) {
+            new Thread(() -> {
+                myVar.init(myVar);
+            }, "Thread" + i).start();
+        }
+    }
+}
+/**
+ * Thread1	--------------start init ,need 2 seconds
+ * Thread5	--------------已经有线程进行初始化工作了。。。。。
+ * Thread2	--------------已经有线程进行初始化工作了。。。。。
+ * Thread4	--------------已经有线程进行初始化工作了。。。。。
+ * Thread3	--------------已经有线程进行初始化工作了。。。。。
+ * Thread1	--------------over init
+ */
+```
+
+## 原子操作增强类原理深度解析
+
+- `DoubleAccumulator`：一个或多个变量，它们一起保持运行double使用所提供的功能更新值
+- `DoubleAdder`：一个或多个变量一起保持初始为零double总和
+- `LongAccumulator`：一个或多个变量，一起保持使用提供的功能更新运行的值long ，提供了自定义的函数操作
+- `LongAdder`：一个或多个变量一起维持初始为零long总和（重点），只能用来计算加法，且从0开始计算
+
+> 阿里面试题
+
+1. 热点商品点赞计算器，点赞数加加统计，不要求实时精确
+2. 一个很大的list，里面都是int类型，如何实现加加，思路？
+
+### LongAdder 和 LongAccumulator
+
+- LongAdder只能用来计算加法，且从零开始计算
+- LongAccumulator提供了自定义的函数操作
+
+> 入门 API 调用案例
+
+```java
+public class LongAdderAPIDemo {
+    public static void main(String[] args) {
+        LongAdder longAdder = new LongAdder();
+
+        longAdder.increment();
+        longAdder.increment();
+        System.out.println(longAdder.sum()); //2
+        longAdder.add(2L);
+        System.out.println(longAdder.sum()); //4
+
+        LongAccumulator longAccumulator = new LongAccumulator((x, y) -> x * y, 5);
+        longAccumulator.accumulate(2);
+        System.out.println(longAccumulator.get()); //10
+        longAccumulator.accumulate(3);
+        System.out.println(longAccumulator.get()); //30
+    }
+}
+
+```
+
+> 性能优势——点赞计数器案例
+
+【阿里巴巴Java开发手册】如果是JDK8，==推荐使用 LongAdder 对象，比 AtomicLong 性能更好== (减少乐观锁的重试次数)
+
+【需求】50个线程，每个线程100w点赞，总点赞数出来  
+```java
+/**  
+ * 需求：50个线程，每个线程100w点赞，总点赞数出来  
+ */  
+class ClickNumber {  
+    int number = 0;  
+  
+    public synchronized void clickBySynchronized() {  
+        number++;  
+    }  
+  
+    AtomicLong atomicLong = new AtomicLong(0);  
+  
+    public void clickByAtomicLong() {  
+        atomicLong.getAndIncrement();  
+    }  
+  
+    LongAdder longAdder = new LongAdder();  
+  
+    public void clickByLongAdder() {  
+        longAdder.increment();  
+    }  
+  
+    LongAccumulator longAccumulator = new LongAccumulator((x, y) -> x + y, 0);  
+  
+    public void clickByLongAccumulator() {  
+        longAccumulator.accumulate(1);  
+    }  
+}  
+  
+/**  
+ * @author Boer  
+ */public class AccumulatorCompareDemo {  
+    public static final int NUMBER_OF_LIKES = 1000000; // 每个线程点赞次数  
+    public static final int THREAD_NUMBER = 50;  
+  
+    public static void costTime(ClickNumber clickNumber, Runnable runnable, String clickByName) throws InterruptedException {  
+        Long startTime = System.currentTimeMillis();  
+        CountDownLatch countDownLatch = new CountDownLatch(THREAD_NUMBER);  
+        for (int i = 1; i <= THREAD_NUMBER; i++) {  
+            new Thread(() -> {  
+                try {  
+                    for (int j = 1; j <= NUMBER_OF_LIKES; j++) {  
+                        runnable.run();  
+                    }  
+                } finally {  
+                    countDownLatch.countDown();  
+                }  
+            }, String.valueOf(i)).start();  
+        }  
+        countDownLatch.await();  
+        Long endTime = System.currentTimeMillis();  
+        System.out.println("------costTime: " + (endTime - startTime) + " 毫秒\t" + clickByName + ": " + clickNumber.number);  
+    }  
+  
+    public static void main(String[] args) throws InterruptedException {  
+        ClickNumber clickNumber = new ClickNumber();  
+  
+        costTime(clickNumber, clickNumber::clickBySynchronized, "clickBySynchronized");  
+        costTime(clickNumber, clickNumber::clickByAtomicLong, "clickByAtomicLong");  
+        costTime(clickNumber, clickNumber::clickByLongAdder, "clickByLongAdder");  
+        costTime(clickNumber, clickNumber::clickByLongAccumulator, "clickByLongAccumulator");  
+    }  
+}  
+/**  
+ * ------costTime: 3249 毫秒  clickBySynchronized: 50000000  
+ * ------costTime: 826 毫秒   clickByAtomicLong: 50000000  
+ * ------costTime: 55 毫秒    clickByLongAdder: 50000000  
+ * ------costTime: 36 毫秒    clickByLongAccumulator: 50000000  
+ */
+```
+
+### longAdder 源码分析
+
+跳过
+
+
+# ThreadLocal
+
+## ThreadLocal 简介
+
+> 面试题 
+
+- ThreadLocal中ThreadLocalMap的数据结构和关系？
+- ThreadLocal的key是弱引用，这是为什么？
+- ThreadLocal内存泄漏问题你知道吗？
+- ThreadLocal中最后为什么要加remove方法？
+
+> 是什么？
+
+ThreadLocal提供**线程局部变量**。
+
+这些变量与正常的变量不同，因为每一个线程在访问ThreadLocal实例的时候（通过其get或set方法）==都有自己的、独立初始化的变量副本==。
+
+ThreadLocal实例通常是类中的私有静态字段，使用它的目的是希望==将状态（例如，用户ID或事物ID）与线程关联起来==。
+
+> 能干嘛？
+
+主要解决了让每个线程绑定自己的值，通过使用get()和set()方法，获取默认值 或 将其改为当前线程所存的副本的值，从而==避免了线程安全问题==。
+
+比如8锁案例中，资源类是使用同一部手机，多个线程抢夺同一部手机，假如人手一份不是天下太平？
+
+## ThreadLocal 的使用
+
+> API
+
+![](assets/Pasted%20image%2020240111160943.png)
+
+> 阿里Java开发手册
+
+【强制】SimpleDateFormat 是**线程不安全**的类，==一般不要定义为 static 变量==，如果定义为 static，必须加锁，或者使用 DateUtils 工具类。
+
+正例：注意线程安全，使用 DateUtils。亦推荐如下处理：
+```java
+private static final ThreadLocal<DateFormat> dateStyle = new ThreadLocal<DateFormat>() {
+	@Override
+	protected DateFormat initialValue() {
+		return new SimpleDateFormat("yyyy-MM-dd");
+	}
+};
+```
+
+说明：如果是 JDK8 的应用，可以使用 Instant 代替 Date，LocalDateTime 代替 Calendar，DateTimeFormatter 代替 SimpleDateFormat，官方给出的解释：simple beautiful strong immutable **thread-safe**。
+
+>initialValue()
+
+返回此线程局部变量的当前线程的“**初始值**”。此方法将在线程第一次使用 get() 方法访问变量时调用，除非该线程先前调用了set(T)方法，在这种情况下，该线程将不会调用initialValue方法。通常，每个线程最多调用此方法一次，但如果随后调用remove() 和 get()，则可能会再次调用该方法。
+
+此实现仅返回null；==如果程序员希望线程局部变量具有null以外的初始值，则必须子类化ThreadLocal，并覆盖此方法==。通常，将使用**匿名内部类**。
+
+```java
+protected T initialValue() {  
+    return null;  
+}
+```
+
+>withInitial()
+
+创建线程局部变量。 变量的初始值是通过调用Supplier的 get 方法来确定的。
+
+`withInitial()` 是 Since 1.8，推荐用于初始化线程局部变量
+```java
+public static <S> ThreadLocal<S> withInitial(Supplier<? extends S> supplier) {  
+    return new SuppliedThreadLocal<>(supplier);  
+}
+```
+
+> 卖房案例
+
+卖房子——房产中介销售都有自己的销售额指标
+```java
+class House {
+    int saleCount = 0;
+
+    public synchronized void saleHouse() {
+        saleCount++;
+    }
+
+    // 匿名内部类实现initialValue()--->初始化线程局部变量
+//    ThreadLocal<Integer> saleVolume = new ThreadLocal<Integer>() {
+//        @Override
+//        protected Integer initialValue() {
+//            return 0;
+//        }
+//    };
+
+    // 静态方法 withInitial()--->初始化线程局部变量
+    ThreadLocal<Integer> saleVolume = ThreadLocal.withInitial(() -> 0);
+
+    public void saleVolumeByThreadLocal() {
+        saleVolume.set(1 + saleVolume.get());
+    }
+}
+
+/**
+ * @author Boer
+ */
+public class ThreadLocalDemo {
+    final static int SALESMAN_NUM = 5;
+
+    public static void main(String[] args) throws InterruptedException {
+        House house = new House();
+        for (int i = 1; i <= SALESMAN_NUM; i++) {
+            new Thread(() -> {
+                int size = new Random().nextInt(5) + 1;
+                try {
+                    for (int j = 1; j <= size; j++) {
+                        house.saleHouse();
+                        house.saleVolumeByThreadLocal();
+                    }
+                    System.out.println(Thread.currentThread().getName() + " 号销售卖出：" + house.saleVolume.get());
+                } 
+                finally {
+                    house.saleVolume.remove();
+                }
+            }, String.valueOf(i)).start();
+        }
+        TimeUnit.MILLISECONDS.sleep(300);
+        System.out.println(Thread.currentThread().getName() + "\t" + "共计卖出多少套： " + house.saleCount);
+    }
+}
+/**
+ * 1 号销售卖出：1
+ * 3 号销售卖出：1
+ * 5 号销售卖出：2
+ * 2 号销售卖出：2
+ * 4 号销售卖出：3
+ * main	共计卖出多少套： 9
+ */
+```
+
+>remove() 阿里Java开发手册
+
+【强制】必须回收自定义的 ThreadLocal 变量记录的当前线程的值，尤其在线程池场景下，线程经常会被复用，如果不清理自定义的 ThreadLocal 变量，可能会影响后续业务逻辑和造成内存泄露等问题。
+
+尽量在代码中使用 **try-finally** 块进行回收。
+
+正例：
+```java
+objectThreadLocal.set(userInfo);
+
+try {
+	// ...
+} finally {
+	objectThreadLocal.remove();
+}
+```
+
+---
+remove() 线程池案例
+```java
+class MyData {
+    ThreadLocal<Integer> threadLocal = ThreadLocal.withInitial(() -> 0);
+
+    public void add() {
+        threadLocal.set(threadLocal.get() + 1);
+    }
+}
+
+public class ThreadLocalRemoveDemo {
+    public static void main(String[] args) {
+        MyData myData = new MyData();
+
+        ExecutorService threadPool = Executors.newFixedThreadPool(3);
+
+        try {
+            for (int i = 0; i < 10; i++) {
+                threadPool.submit(() -> {
+                    try {
+                        Integer boforeInt = myData.threadLocal.get();
+                        myData.add();
+                        Integer afterInt = myData.threadLocal.get();
+                        System.out.println(String.format("线程%s ---> beforeInt: %s, afterInt: %s",
+                                Thread.currentThread().getName(), boforeInt, afterInt));
+                    } finally {
+                        myData.threadLocal.remove();
+                    }
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            threadPool.shutdown();
+        }
+    }
+}
+/**
+ * 无 remove()：
+ *      线程pool-1-thread-3 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-2 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-1 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-2 ---> beforeInt: 1, afterInt: 2
+ *      线程pool-1-thread-1 ---> beforeInt: 1, afterInt: 2
+ *      线程pool-1-thread-3 ---> beforeInt: 1, afterInt: 2
+ *      线程pool-1-thread-2 ---> beforeInt: 2, afterInt: 3
+ *      线程pool-1-thread-3 ---> beforeInt: 2, afterInt: 3
+ *      线程pool-1-thread-2 ---> beforeInt: 3, afterInt: 4
+ *      线程pool-1-thread-1 ---> beforeInt: 2, afterInt: 3
+ *
+ * 有 remove()：
+ *      线程pool-1-thread-3 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-2 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-1 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-3 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-1 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-2 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-3 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-1 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-2 ---> beforeInt: 0, afterInt: 1
+ *      线程pool-1-thread-3 ---> beforeInt: 0, afterInt: 1
+ */
+```
+
+## ThreadLocal 源码解读
+
+> Thread、ThreadLocal、ThreadLocalMap关系
+
+[Thread.java]
+```java 
+ThreadLocal.ThreadLocalMap threadLocals = null;
+```
+
+ThreadLocalMap实际上就是一个以threadLocal实例为**key**，任意对象为**value**的Entry对象。
+
+当我们为ThreadLocal变量赋值，实际上就是以当前ThreadLocal实例为key，值为value的Entry往这个threadLocalMap中存放
+
+[ThreadLocal.java]
+```java
+// 静态内部类
+static class ThreadLocalMap {  
+	static class Entry extends WeakReference<ThreadLocal<?>> {
+        /** The value associated with this ThreadLocal. */
+        Object value;
+
+        Entry(ThreadLocal<?> k, Object v) {
+            super(k);
+            value = v;
+	    }
+	}
+
+	ThreadLocalMap(ThreadLocal<?> firstKey, Object firstValue) {  
+	    table = new Entry[INITIAL_CAPACITY];  
+	    int i = firstKey.threadLocalHashCode & (INITIAL_CAPACITY - 1);  
+	    table[i] = new Entry(firstKey, firstValue);  
+	    size = 1;  
+	    setThreshold(INITIAL_CAPACITY);  
+	}
+
+	private void set(ThreadLocal<?> key, Object value){
+		...
+	}
+}
+
+public T get() {  
+    Thread t = Thread.currentThread();  
+    ThreadLocalMap map = getMap(t);  
+    if (map != null) {  
+        ThreadLocalMap.Entry e = map.getEntry(this);  
+        if (e != null) {  
+            @SuppressWarnings("unchecked")  
+            T result = (T)e.value;  
+            return result;  
+        }  
+    }  
+    return setInitialValue();  
+}
+
+ThreadLocalMap getMap(Thread t) {  
+    return t.threadLocals;  
+}
+
+public void set(T value) {  
+    Thread t = Thread.currentThread();  
+    ThreadLocalMap map = getMap(t);  
+    if (map != null)  
+        map.set(this, value);  
+    else  
+        createMap(t, value);  
+}
+
+void createMap(Thread t, T firstValue) {  
+    t.threadLocals = new ThreadLocalMap(this, firstValue);  
+}
+```
 
