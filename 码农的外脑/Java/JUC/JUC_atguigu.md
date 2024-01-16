@@ -1981,9 +1981,7 @@ public class VolatileSeeDemo {
     public static void main(String[] args) {
         new Thread(() -> {
             System.out.println(Thread.currentThread().getName() + "\t-------come in");
-            while (flag) {
-
-            }
+            while (flag) {}
             System.out.println(Thread.currentThread().getName() + "\t-------flag被设置为false，程序停止");
         }, "t1").start();
 
@@ -3252,17 +3250,21 @@ public class ThreadLocalRemoveDemo {
 
 > Thread、ThreadLocal、ThreadLocalMap关系
 
-[Thread.java]
+ThreadLocal本身并不存储值(ThreadLocal是一个壳子)，它只是自己作为一个key来让线程从ThreadLocalMap获取value.正因为这个原理，所以ThreadLocal能够实现“数据隔离”，获取当前线程的局部变量值，不受其他线程影响~
+
+![](assets/Pasted%20image%2020240115132318.png)
+
+每个Thread线程内部都有一个ThreadLocalMap
 ```java 
+//Thread.java
 ThreadLocal.ThreadLocalMap threadLocals = null;
 ```
 
-ThreadLocalMap实际上就是一个以threadLocal实例为**key**，任意对象为**value**的Entry对象。
+ThreadLocalMap实际上就是一个以ThreadLocal实例为**key**，任意对象为**value**的Entry对象。当我们为ThreadLocal变量赋值，实际上就是以当前【ThreadLocal实例为key，值为value】的 Entry 往这个ThreadLocalMap中存放
 
-当我们为ThreadLocal变量赋值，实际上就是以当前ThreadLocal实例为key，值为value的Entry往这个threadLocalMap中存放
-
-[ThreadLocal.java]
 ```java
+// ThreadLocal.java
+
 // 静态内部类
 static class ThreadLocalMap {  
 	static class Entry extends WeakReference<ThreadLocal<?>> {
@@ -3288,22 +3290,21 @@ static class ThreadLocalMap {
 	}
 }
 
-public T get() {  
+public T get() {
     Thread t = Thread.currentThread();  
-    ThreadLocalMap map = getMap(t);  
+    // 获取当前线程的 threadLocalMaps
+    ThreadLocalMap map = getMap(t);
     if (map != null) {  
+		// 根据当前ThreadLocal对象取出value
         ThreadLocalMap.Entry e = map.getEntry(this);  
         if (e != null) {  
             @SuppressWarnings("unchecked")  
             T result = (T)e.value;  
-            return result;  
-        }  
-    }  
+            return result;
+        }
+    }
+    // 设置初始值
     return setInitialValue();  
-}
-
-ThreadLocalMap getMap(Thread t) {  
-    return t.threadLocals;  
 }
 
 public void set(T value) {  
@@ -3315,8 +3316,243 @@ public void set(T value) {
         createMap(t, value);  
 }
 
-void createMap(Thread t, T firstValue) {  
-    t.threadLocals = new ThreadLocalMap(this, firstValue);  
+ThreadLocalMap getMap(Thread t) {  
+    return t.threadLocals;  
 }
 ```
+
+## ThreadLocal 内存泄露问题
+
+###  强软弱虚引用
+
+![](assets/Pasted%20image%2020240115144221.png)
+
+Java 技术允许使用 `finalize() `方法在垃圾收集器将对象从内存中清除出去之前做必要的清理工作。
+
+> 强引用
+
+对于强引用的对象，==就算是出现了OOM也不会对该对象进行回收，死都不收==。
+
+强引用是我们==最常见的普通对象引用==，只要还有强引用指向一个对象，就能表明对象还“活着”，垃圾收集器不会碰这种对象。在Java 中最常见的就是强引用，把一个对象赋给一个引用变量，这个引用变量就是一个强引用。
+
+当一个对象被强引用变量引用时，它处于可达状态，它是不可能被垃圾回收机制回收的，即使该对象以后永远都不会被用到，JVM也不会回收。因此强引用是造成Java内存泄漏的主要原因之一。
+
+对于一个普通的对象，如果没有其他的引用关系，只要超过了引用的作用域或者==显式地将相应（强）引用赋值为 null==，一般认为就是可以被垃圾收集的了 (当然具体回收时机还是要看垃圾收集策略)。
+
+案例：
+```java
+class MyObject {
+    @Override
+    protected void finalize() throws Throwable {
+        System.out.println("----- invoke finalize method!");
+    }
+}
+
+public class ReferenceDemo {
+    public static void main(String[] args) throws InterruptedException {
+        MyObject myObject = new MyObject();
+        System.out.println("gc before: " + myObject);
+        myObject = null;
+        System.gc();
+        Thread.sleep(1000);
+        System.out.println("gc after: " + myObject);
+        /**
+         * gc before: com.boer.tl.MyObject@2503dbd3
+         * ----- invoke finalize method!
+         * gc after: null
+         */
+    }
+}
+
+```
+
+> 软引用
+
+软引用是一种相对强引用弱化了一些的引用，需要用 `java.lang.ref.SoftReference` 类来实现，可以让对象豁免一些垃圾收集。
+
+对于只有软引用的对象来说，
+- 当系统内存充足时它不会被回收，
+- 当系统内存不足时它会被回收。
+
+软引用通常用在对内存敏感的程序中，比如高速缓存就有用到软引用，==内存够用的时候就保留，不够用就回收！==
+
+案例：配置虚拟机参数 `-Xms10m -Xmx10m` 模拟内存不够的情况
+```java
+class MyObject {
+    @Override
+    protected void finalize() throws Throwable {
+        System.out.println("----- invoke finalize method!");
+    }
+}
+
+public class ReferenceDemo {
+    public static void main(String[] args) throws InterruptedException {
+        SoftReference<MyObject> softReference = new SoftReference<MyObject>(new MyObject());
+        System.out.println("gc before: " + softReference);
+
+        System.gc();
+        Thread.sleep(1000);
+        System.out.println("gc after 内存够用: " + softReference.get());
+
+        try {
+            byte[] bytes = new byte[20 * 1024 * 1024]; // 20MB对象，让内存溢出
+        } catch (Exception e) {
+            e.printStackTrace();
+        } finally {
+            System.out.println("gc after 内存不够: " + softReference.get());
+        }
+        /**
+         * gc before: java.lang.ref.SoftReference@2503dbd3
+         * gc after 内存够用: com.boer.tl.MyObject@4b67cf4d
+         * gc after 内存不够: null
+         * ----- invoke finalize method!
+         * Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+         * 	at com.boer.tl.ReferenceDemo.main(ReferenceDemo.java:28)
+         */
+    }
+}
+```
+
+> 弱引用
+
+弱引用需要用`java.lang.ref.WeakReference`类来实现，它比软引用的生存期更短，
+
+对于只有弱引用的对象来说，只要垃圾回收机制一运行，==不管JVM的内存空间是否足够，都会回收该对象占用的内存==。
+
+案例：
+```java
+class MyObject {
+    @Override
+    protected void finalize() throws Throwable {
+        System.out.println("----- invoke finalize method!");
+    }
+}
+
+public class ReferenceDemo {
+    public static void main(String[] args) throws InterruptedException {
+        WeakReference<MyObject> weakReference = new WeakReference<>(new MyObject());
+        System.out.println("gc before 内存够用: " + weakReference.get());
+
+        System.gc();
+        Thread.sleep(1000);
+        System.out.println("gc after 内存够用: " + weakReference.get());
+    }
+}
+```
+
+> 软引用和弱引用的使用场景
+
+假如有一个应用需要读取大量的本地图片: 
+- 如果每次读取图片都从硬盘读取则会严重影响性
+- 如果一次性全部加载到内存中又可能造成内存溢出。
+
+使用软引用可以解决这个问题。
+
+设计思路是：用一个HashMap来保存图片的路径和相应图片对象关联的软引用之间的映射关系，在内存不足时，JVM会自动回收这些缓存图片对象所占用的空间，从而有效地避免了OOM的问题。
+
+```java
+Map<String, SoftReference<Bitmap>> imageCache = new HashMap<String, SoftReference<Bitmap>>();
+```
+
+> 虚引用
+
+虚引用需要`java.lang.ref.PhantomReference`类来实现，顾名思义，就是形同虚设，与其他几种引用都不同，虚引用并不会决定对象的生命周期。
+
+如果一个对象仅持有虚引用，那么它就和没有任何引用一样，==在任何时候都可能被垃圾回收器回收。
+
+==它不能单独使用也不能通过它访问对象，虚引用必须和引用队列(ReferenceQueue)联合使用。==
+
+PhantomReference 的 get 方法总是返回 null，因此无法访问对应的引用对象。
+
+虚引用的主要作用是==跟踪对象被垃圾回收的状态==。 仅仅是提供了一种确保对象被 finalize以后，做某些事情的**通知机制**。
+
+换句话说，设置虚引用关联对象的**唯一目的**，就是在这个对象被收集器回收的时候收到一个系统通知或者后续添加进一步的处理，用来实现比finalize机制更灵活的回收操作
+
+案例：
+```java
+public class ReferenceDemo {
+    public static void main(String[] args) {
+        ReferenceQueue<MyObject> referenceQueue = new ReferenceQueue<>();
+        PhantomReference<MyObject> phantomReference = new PhantomReference<>(new MyObject(), referenceQueue);
+//        System.out.println("phantomReference.get(): " + phantomReference.get());
+
+        List<byte[]> list = new ArrayList<>();
+
+        // 设置10MB内存
+        new Thread(() -> {
+            while (true) {
+                list.add(new byte[1024 * 1024]); //1MB
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                System.out.println("phantomReference.get(): " + phantomReference.get() + "\t list add ok!");
+            }
+        }, "t1").start();
+
+        new Thread(() -> {
+            while (true) {
+                Reference<? extends MyObject> reference = referenceQueue.poll();
+                if (reference != null) {
+                    System.out.println("----- 有虚对象回收加入了队列");
+                    break;
+                }
+            }
+        }, "t2").start();
+    }
+```
+
+
+### 内存泄露的原因
+
+> 内存泄漏
+
+不再会被使用的对象或者变量占用的==内存不能被回收==，就是内存泄漏
+
+> 原因？
+
+ThreadLocalMap使用 `WeakReference<ThreadLocal<?>>` 将ThreadLocal对象变成一个**弱引用**的对象
+
+![](assets/Pasted%20image%2020240115171701.png)
+
+ThreadLocal本身并不存储值(ThreadLocal是一个壳子)，它只是自己作为一个key来让线程从ThreadLocalMap获取value.正因为这个原理，所以ThreadLocal能够实现“数据隔离”，获取当前线程的局部变量值，不受其他线程影响~
+
+> 为什么要用弱引用？不用如何？
+
+![](assets/Pasted%20image%2020240115173225.png)
+
+当方法执行完毕后，栈帧销毁，强引用t1也就没有了，但此时线程的ThreadLocalMap里某个entry的Key引用还指向这个对象，若这个Key是强引用，就会导致Key指向的ThreadLocal对象即V指向的对象不能被gc回收，造成内存泄露
+
+若这个引用时弱引用就大概率会减少内存泄漏的问题（当然，还得考虑key为null这个坑），使用弱引用就可以使ThreadLocal对象在方法执行完毕后顺利被回收且entry的key引用指向为null
+
+【来自弹幕】thread 和 threadlocalmap 绑定，threadlocal 只是个工具，不能和 threadlocalmap 绑定，所以是弱引用
+
+> 弱引用就万事大吉了吗？
+
+ThreadLocalMap使用ThreadLocal的弱引用作为Key，如果一个ThreadLocal没有被外部强引用，那么系统gc时势必会被回收他，这样一来，ThreadLocalMap中就会出现==Key为null的Entry==。
+
+如果当前线程迟迟不结束的话（好比正在使用线程池），这些 key 为 null 的 Entry 的 value 就会一直存在一条强引用链（当然，如果当前 thread 运行结束，threadLocal，threadLocalMap.Entry 没有引用链可达，在垃圾回收的时候都会被系统进行回收）。
+
+我们调用 get, set 或 remove 方法时，会尝试==删除 key 为 null 的 entry==，可以释放 value 对象所占用的内存。
+- 通过 expungeStaleEntry，cleanSomeSlots，replaceStaleEntry 这三个方法清理掉 key 为 null 的脏 entry。
+
+弱引用不能 100% 保证内存不泄露。==我们要在不使用某个 ThreadLocal 对象后，手动调用 remove 方法来删除它==，尤其是在线程池中。
+- 不仅仅是内存泄露的问题，
+- 因为线程池中的线程是重复使用的，意味着这个线程的 ThreadLocalMap 对象也是重复使用的，如果我们不手动调用 remove 方法，那么后面的线程就有可能获取到上个线程遗留下来的 value 值，造成 bug。
+
+## 最佳实践
+
+- ThreadLocal一定要初始化 `ThreadLocal.withInitial()` ，避免空指针异常。
+	- 没有初始值直接 get ()，默认 value 是 null
+- 建议把 ThreadLocal 修饰为 static
+- 用完记得手动 remove
+
+> 阿里Java开发手册
+
+【参考】==ThreadLocal 对象使用 static 修饰==，ThreadLocal 无法解决共享对象的更新问题。
+
+说明：这个变量是针对一个线程内所有操作共享的，所以设置为静态变量，所有此类实例共享此静态变量，也就是说在类第一次被使用时装载，只分配一块存储空间，所有此类的对象（只要是这个线程内定义的）都可以操控这个变量。
+
+# Java 对象内存布局和对象头
 
