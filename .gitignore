@@ -2,3 +2,6 @@
 
 **/assets/
 *.pdf
+*.java
+*.xml
+*.gitignore

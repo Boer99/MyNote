@@ -1,9 +1,70 @@
 # 多线程基础
-## 进程、线程区别(2+)
+## 进程、线程区别 (2+)
 
-xx
+> 进程
 
-## 多线程的概念和os里的线程进程的区别是什么？(2)
+进程是==程序的一次执行过程==，是==系统运行程序的基本单位==，因此进程是动态的。系统运行一个程序即是一个进程从创建，运行到消亡的过程。
+
+在 Java 中，当我们==启动 main 函数时其实就是启动了一个 JVM 的进程==，而 main 函数所在的线程就是这个进程中的一个线程，也称主线程。
+
+> 线程
+
+线程与进程相似，但==线程是一个比进程更小的执行单位==。一个进程在其执行的过程中可以产生多个线程。
+
+与进程不同的是，同类的多个线程共享进程的**堆**和**方法区**资源，但每个线程有自己的**程序计数器**、**虚拟机栈**和**本地方法栈**，所以系统在产生一个线程，或是在各个线程之间作切换工作时，负担要比进程小得多，也正因为如此，线程也被称为**轻量级进程**。
+
+> Java 程序天生就是多线程程序
+
+我们可以通过 JMX 来看看一个普通的 Java 程序有哪些线程，代码如下。
+
+```java
+public class MultiThread {
+	public static void main(String[] args) {
+		// 获取 Java 线程管理 MXBean
+	ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
+		// 不需要获取同步的 monitor 和 synchronizer 信息，仅获取线程和线程堆栈信息
+		ThreadInfo[] threadInfos = threadMXBean.dumpAllThreads(false, false);
+		// 遍历线程信息，仅打印线程 ID 和线程名称信息
+		for (ThreadInfo threadInfo : threadInfos) {
+			System.out.println("[" + threadInfo.getThreadId() + "] " + threadInfo.getThreadName());
+		}
+	}
+}
+```
+
+上述程序输出如下（输出内容可能不同，不用太纠结下面每个线程的作用，只用知道 main 线程执行 main 方法即可）：
+
+```
+[5] Attach Listener //添加事件
+[4] Signal Dispatcher // 分发处理给 JVM 信号的线程
+[3] Finalizer //调用对象 finalize 方法的线程
+[2] Reference Handler //清除 reference 线程
+[1] main //main 线程,程序入口
+```
+
+从上面的输出内容可以看出：一个 Java 程序的运行是 main 线程和多个其他线程同时运行
+
+## Java 线程和 os 里的线程的区别是什么？(2)
+
+[Java并发常见面试题总结（上） | JavaGuide](https://javaguide.cn/java/concurrent/java-concurrent-questions-01.html#java-%E7%BA%BF%E7%A8%8B%E5%92%8C%E6%93%8D%E4%BD%9C%E7%B3%BB%E7%BB%9F%E7%9A%84%E7%BA%BF%E7%A8%8B%E6%9C%89%E5%95%A5%E5%8C%BA%E5%88%AB)
+
+JDK 1.2 之前，Java 线程是基于绿色线程（Green Threads）实现的，这是一种用户级线程（用户线程），也就是说 JVM 自己模拟了多线程的运行，而不依赖于操作系统。
+
+> 【提示】
+> 
+> 绿色线程和原生线程比起来在使用时有一些限制（比如绿色线程不能直接使用操作系统提供的功能如异步 I/O、只能在一个内核线程上运行无法利用多核）
+> 
+> 用户线程创建和切换成本低，但不可以利用多核。内核态线程，创建和切换成本高，可以利用多核。
+
+==在 JDK 1.2 及以后，Java 线程改为基于原生线程（Native Threads）实现==，也就是说 JVM 直接使用操作系统原生的内核级线程（内核线程）来实现 Java 线程，由操作系统内核进行线程的调度和管理。
+
+一句话概括 Java 线程和操作系统线程的关系：==现在的 Java 线程的本质其实就是操作系统的线程。==
+
+>【提示】
+
+在 **Windows** 和 **Linux** 等主流操作系统中，Java 线程采用的是**一对一**的线程模型，也就是一个 Java 线程对应一个系统内核线程。**Solaris** 系统是一个特例（Solaris 系统本身就支持多对多的线程模型），HotSpot VM 在 Solaris 上支持**多对多**和**一对一**。具体可以参考 R 大的回答: [JVM 中的线程模型是用户级的么？open in new window](https://www.zhihu.com/question/23096638/answer/29617153)。
+
+虚拟线程在 **JDK 21** 顺利转正，关于虚拟线程、平台线程（也就是我们上面提到的 Java 线程）和内核线程三者的关系可以参考：[Java 20 新特性概览](/java/new-features/java20.html)。
 
 ## 真正使用时，Java里的线程和进程是如何调度？()
 

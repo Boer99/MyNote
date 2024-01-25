@@ -107,7 +107,7 @@ Java 字节码文件中，将文件头称为 magic 魔数。固定为 0XCAFEBABE
 
 版本号的作用：主要是判断当前字节码的版本和运行时的 JDK 是否兼容
 
---- 
+---
 【需求】解决以下由于主版本号不兼容导致的错误
 
 【问题】类文件具有错误的版本 52.0 (JDK 1.8)，应为 50.0 (JDK 1.6) 。请删除该文件或确保该文件位于正确的类路径子目录中
@@ -133,7 +133,7 @@ Java 字节码文件中，将文件头称为 magic 魔数。固定为 0XCAFEBABE
 > 原理
 
  常量池中的数据都有一个编号，编号从 1 开始。在字段或者字节码指令中通过编号可以快速的找到对应的数据。
- 
+
 字节码指令中通过编号引用到常量池的过程称之为**符号引用**。
 
 ```java
@@ -312,7 +312,7 @@ Arthas 是一款线上监控诊断产品，通过全局视角实时查看应用 
 - 在 Arthas Console 上，反编译出来的源码是带语法高亮的，阅读更方便
 - 当然，反编译出来的 java 代码可能会存在语法错误，但不影响你进行阅读理解
 
---- 
+---
 【案例】使用阿里 arthas 定位线上出现的字节码问题
 
 【背景】
@@ -534,7 +534,7 @@ public class Demo {
 2. 有静态变量的声明，但是没有赋值语句。
 3. 静态变量的定义使用 final 关键字，这类变量会在准备阶段直接进行初始化。
 
---- 
+---
 - 直接访问父类的静态变量，不会触发子类的初始化。
 - 子类的初始化 clinit 调用之前，会**先调用**父类的 clinit 初始化方法
 
@@ -564,7 +564,7 @@ class B extends A {
 
 结果：输出 2。如果把 `new B();` 去掉，输出 1。
 
---- 
+---
 数组的创建**不会导致**数组中元素的类进行初始化
 
 ```java
@@ -976,7 +976,7 @@ JDBC 案例中真的打破了双亲委派机制吗？
 
 **热部署**指的是在服务不停止的情况下，动态地更新字节码文件到内存中。
 
---- 
+---
 【热部署案例】使用 arthas 不停机解决线上问题
 
 【背景】小李的团队将代码上线之后，发现存在一个小 bug，但是用户急着使用，如果重新打包再发布需要一个多小时的时间，所以希望能使用 arthas 尽快的将这个问题修复。
@@ -1192,7 +1192,9 @@ public class NativeDemo {
 - 栈上的局部变量表中，可以存放堆上**对象的引用**。静态变量也可以存放堆对象的引用，通过**静态变量**就可以实现对象在**线程之间共享**。
 - 堆内存大小是有上限的，一直向堆中放入对象达到上限之后，就会抛出 **OutOfMemoryError**
 
- > 类的生命周期---加载阶段
+ > 1）最容易内存溢出的位置
+ > 
+ > 2）【提示】类的生命周期---加载阶段
  > 
  > 同时，Java 虚拟机还会在**堆**中生成一份与方法区中数据类似的 **`java.Lang.Class` 对象**。作用是在 Java 代码中去获取**类的信息** 以及存储**静态字段**的数据 (JDK 8 及之后)
 
@@ -1220,15 +1222,940 @@ public class OutOfMemoryError {
 2. `total`：java 虚拟机已经分配的可用堆内存
 3. `max`：java 虚拟机可以分配的最大堆内存
 
+【Arthas】 `memory` 命令监控下面程序的内存情况
 
+```java
+public class OutOfMemoryError {
+    public static int count;
 
+    public static void main(String[] args) throws IOException {
+        List<Object> list = new ArrayList<>();
+        while (true) {
+            System.in.read();
+            System.out.println("添加一次"); // 回车即可
+            list.add(new byte[1024 * 1024 * 100]); // 100MB
+        }
+    }
+}
+```
+
+![](assets/Pasted%20image%2020240121145335.png)
+
+随着堆中对象的增多，当 total 可以使用的内存即将不足时，java 虚拟机会继续分配内存给堆。
+
+如果堆内存不足，java 虚拟机就会不断地分配内存，**total 会变大**，total 最多只能和 max 相等。
+
+> 当 used=max=total 的时候，堆内存就溢出了吗？
+> 
+> 不是，堆内存溢出的判断条件比较复杂，在下一章《垃圾回收器》中会详细介绍。
+
+#### 堆大小设置
+
+VM 参数 `-Xmx` （max）和 `-Xms` （total）
+
+- 单位：字节（默认，必须是 1024 的倍数）、k 或者 K (KB)、m 或者 M (MB)、g 或者 G (GB)
+- 限制：Xmx 必须大于 2 MB，Xms 必须大于 1MB
+
+> 例： `-Xmx4g -Xms4g`
+> 
+> ![](assets/Pasted%20image%2020240121151655.png)
+> 
+> 为什么 Arthas 中显示的 heap 大小和我们设置的值不一样呢？
+> 
+> Arthas 中的 heap 堆内存使用了 JMX 技术中内存获取方式，这种方式与垃圾回收器有关，计算的是**可以分配对象的内存**，而不是整个内存
+
+注意：
+- Java 服务端开发时，建议将 **max 和 total 设置为相同**，
+	- 无需向 java 虚拟机再次申请，减少了**申请并分配内存**时间上的开销，
+	- 同时也不会出现内存过剩后**堆收缩**的情况
+- Max 具体设置的值与实际的应用程序运行环境有关，在后续《实战篇》会给出设置方案
 
 ## 方法区
 
+【是啥】方法区就是存放**基础信息**的位置，**线程共享**，主要包含三部分的内容。
+
+- 类的元信息
+- 运行时常量池
+- 字符串常量池
+
+> 字符串常量池在某些 JVM 中和运行时常量池是一起的
+
+方法区是《JVM 规范》中设计的**虚拟概念**，每款 JVM 在实现上都各不相同。**Hotspot** 设计如下：
+- Jdk 7 及之前的版本，将方法区放在**堆**中的**永久代**空间，堆的大小由 JVM 参数来控制。
+- Jdk 8 及之后的版本，将方法区放在**元空间**中，元空间位于操作系统的**直接内存**中，默认情况下只要不超过操作系统承受的上限，可以一直分配。
+	- VM 参数  `-XX:MaxMetaspaceSize=值` 对元空间大小进行限制
+
+> 【案例】模拟方法区的溢出
+> 
+> Todo。就是通过产生大量类来填满方法区
+
+---
+1）元信息，一般称之为 **InstanceKlass** 对象，在类的**加载**阶段完成。
+
+![](assets/Pasted%20image%2020240121153519.png)
+
+2）运行时常量池存放的是字节码中的常量池内容。
+- 字节码文件中，通过**编号查表**的方式找到常量，这种常量池称为**静态常量池**
+- 当常量池加载到内存中之后，通过内存地址快速地定位到常量池中的内容，这种常量池称为**运行时常量池**
+
+3）字符串常量池 (StringTable)  存储代码中定义的**常量字符串内容**。
+
+![](assets/Pasted%20image%2020240122131434.png)
+
+字符串常量池和运行时常量池有什么关系？
+- 早期设计时，字符串常量池是属于运行时常量池的一部分，他们存储的位置也是一致的。
+	- JDK 7 之前：运行时常量池逻辑包含字符串常量池，Hotspot 虚拟机对方法区的实现为**永久代**
+- 后续做出了调整，对他们做了拆分。
+	- JDK 7：字符串常量池被从方法区拿到了堆，运行时常量池剩下的东西还在永久代。
+	- JDK 8 及之后：hotspot 移除了永久代用**元空间**取而代之，**字符串常量池还在堆**。
+
+静态变量存储在哪里？
+- JDK 6 之前存储在方法区，即永久代
+- JDK 7 及之后，存储在堆中的 Class 对象
+
+#### 字符串拼接
+
+- 变量连接使用 StringBuilder
+- 常量连接，编译阶段直接连接（编译优化）
+
+【案例-变量连接 】
+```java
+public static void main(String[] args) throws Exception {
+	String a = "1";
+	String b = "2";
+	String c = "12"; // 字符串常量池
+	String d = a + b; // 堆中对象
+	System.out.println(c == d); // false
+}
+
+ 0 ldc #2 <1> //从常量池中获取字符串1的地址放入操作数栈
+ 2 astore_1 //将操作数栈中的值放入局部变量表中
+ 3 ldc #3 <2> //
+ 5 astore_2
+ 6 ldc #4 <12> //
+ 8 astore_3
+ 9 new #5 <java/lang/StringBuilder>
+12 dup
+13 invokespecial #6 <java/lang/StringBuilder.<init> : ()V>
+16 aload_1
+17 invokevirtual #7 <java/lang/StringBuilder.append : (Ljava/lang/String;)Ljava/lang/StringBuilder;>
+20 aload_2
+21 invokevirtual #7 <java/lang/StringBuilder.append : (Ljava/lang/String;)Ljava/lang/StringBuilder;>
+24 invokevirtual #8 <java/lang/StringBuilder.toString : ()Ljava/lang/String;>
+27 astore 4
+```
+
+【案例-常量连接】
+```java
+public static void main(String[] args) throws Exception {
+	String a = "1";
+	String b = "2";
+	String c = "12";
+	String d = "1" + "2";
+	System.out.println(c == d); // true
+}
+    
+ 0 ldc #2 <1>
+ 2 astore_1
+ 3 ldc #3 <2>
+ 5 astore_2
+ 6 ldc #4 <12>
+ 8 astore_3
+ 9 ldc #4 <12> // 直接拼接
+11 astore 4
+```
+
+#### `intern()`
+
+JDK 6 中 intern 会把第一次遇到的字符串**实例**复制到永久代的字符串常量池中，返回的是常量池中字符串实例的引用。
+
+```java
+public static void main(String[] args) throws Exception {
+	String s = new StringBuilder().append("aaa").append("bb").toString();
+	System.out.println(s.intern() == s); //false
+	String s1 = new StringBuilder().append("ja").append("va").toString();
+	System.out.println(s1.intern() == s1); //false
+}
+```
+
+![](assets/Pasted%20image%2020240122212703.png)
+
+JDK 7 及之后，由于字符串常量池在**堆**上，所以 intern 方法会把第一次遇到的字符串的**引用**放入字符串常量池。
+
+```java
+public static void main(String[] args) throws Exception {
+	String s = new StringBuilder().append("aaa").append("bb").toString();
+	System.out.println(s.intern() == s); //true
+	String s1 = new StringBuilder().append("ja").append("va").toString();
+	System.out.println(s1.intern() == s1); //false
+}
+```
+
+![](assets/Pasted%20image%2020240122213127.png)
+
+> JVM 启动时就会把“java”加入到常量池中
+
 ## 直接内存
 
+直接内存不在《JVM 规范》中存在，所以不属于 Java 运行时的内存区域
 
+Jdk 1.4 中引入了 NIO 机制，使用了直接内存，主要是为了解决以下两个问题：
+1. Java 堆中的对象如果不再使用要回收，回收时会影响对象的创建和使用
+2. IO 操作比如读文件，需要先把文件读入直接内存（缓冲区），再把数据复制到 Java 堆中。
 
+现在直接放入直接内存即可，同时 Java 堆上维护直接内存的引用，减少了数据复制的开销，写文件也是类似的思路。
 
+---
+要创建直接内存上的数据，可以使用 **ByteBuffer**
+- 语法：`ByteBuffer buffer = ByteBuffer.allocateDirect(size);`
+
+【案例】Arthas 的 dashboard 监控以下代码：
+
+```java
+public class Demo {
+    static int size = 1024 * 1024 * 100;
+    static ArrayList<ByteBuffer> list = new ArrayList<>();
+    static int count;
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+        System.in.read();
+        while (true) {
+            ByteBuffer buffer = ByteBuffer.allocateDirect(size);
+            list.add(buffer);
+            System.out.println(++count);
+            Thread.sleep(5000);
+        }
+    }
+}
+```
+
+---
+手动调整直接内存的大小
+- VM 参数：`-XX:MaxDirectMemorySize=大小`
+- 默认不设置该参数的情况下，JVM 自动选择最大分配的大小
 
 # JVM 的垃圾回收
+
+在 C/C++这类没有自动垃圾回收机制的语言中，一个对象如果不再使用，需要手动释放，否则就会出现内存泄漏。我们称这种释放对象的过程为垃圾回收，而需要程序员编写代码进行回收的方式为**手动回收**。
+
+**内存泄漏**：不再使用的对象在系统中未被回收  
+- 内存泄漏的积累可能会导致**内存溢出**
+
+Java 的内存管理：
+- Java 中为了简化对象的释放，引入了**自动的垃圾回收**（Garbage Collection 简称 GC）机制。
+- 通过垃圾回收器来对**不再使用**的对象完成自动的回收，
+- 垃圾回收器主要负责对**堆**上的内存进行回收。
+
+> 其他很多现代语言比如 C#、Python、Go 都拥有自己的垃圾回收器。
+
+垃圾回收的对比：
+- 自动垃圾回收：自动根据对象是否使用由虚拟机来回收对象
+	- 优点：降低程序员实现难度、降低对象回收 bug 的可能性
+	- 缺点：程序员无法控制内存回收的及时性
+- 手动垃圾回收：由程序员编程实现对象的删除
+	- 优点：回收及时性高，由程序员把控回收的时机
+	- 缺点：编写不当容易出现悬空指针、重复释放、内存泄漏等问题
+
+线程不共享的部分，都是伴随着线程的创建而创建，线程的销毁而销毁。而方法的栈帧在执行完方法之后就会**自动弹出栈并释放掉对应的内存**。
+
+## 方法区的回收
+
+方法区中能回收的内容主要就是不再使用的类。
+
+判定一个类可以被**卸载**。需要同时满足下面三个条件：
+1. 此类所有实例对象都已经被回收，在堆中不存在任何该类的**实例对象以及子类对象**。
+2. 加载该类的**类加载器**已经被回收。
+3. 该类对应的 java.lang.**Class** 对象没有在任何地方被**引用**。
+
+手动触发回收：
+- 调用 `System.gc()` 方法。
+- 并**不一定会立即回收垃圾**，仅仅是向 Java 虚拟机发送一个垃圾回收的请求，具体是否需要执行垃圾回收 Java 虚拟机会自行判断。
+
+> 开发中此类场景一般很少出现，主要在如 OSGi、JSP 的**热部署**等应用场景中。每个 jsp 文件对应一个唯一的类加载器，当一个 jsp 文件修改了，就直接卸载这个 jsp 类加载器。重新创建类加载器，重新加载 jsp 文件。
+
+【案例】类卸载
+
+```java
+/**
+ * 类的卸载
+ */
+public class ClassUnload {
+    public static void main(String[] args) throws InterruptedException {
+        try {
+            ArrayList<Class<?>> classes = new ArrayList<>();
+            ArrayList<URLClassLoader> loaders = new ArrayList<>();
+            ArrayList<Object> objs = new ArrayList<>();
+
+            while (true) {
+                URLClassLoader loader = new URLClassLoader(new URL[]{
+                        new URL("file:E:\\E_Boer_workpace\\study-project\\JVM-learn\\myjar\\")});
+                // 不要是类路径下的类，会双亲委派给父类加载器，卸载不掉
+                Class<?> clazz = loader.loadClass("com.boer.A");
+                Object o = clazz.newInstance();
+
+//                objs.add(o); // 引用该类的实例对象
+//                classes.add(clazz); //引用该类的Class对象
+//                 loaders.add(loader); //引用该类的类加载器
+
+                System.gc();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+## 堆回收
+
+Java 中的对象是否能被回收，是根据对象是否被引用来决定的。如果对象被引用了，说明该对象还在使用，不允许被回收。
+
+### 引用计数法和可达性分析法
+
+引用计数法会为每个对象维护一个引用计数器，当对象被引用时加1，取消引用时减1。
+- 引用计数法的优点是实现简单，C++中的智能指针就采用了引用计数法，
+- 但是它也存在缺点，主要有两点：
+	- 每次引用和取消引用都需要**维护**计数器，对系统性能会有一定的影响
+	- 存在**循环引用**问题，所谓循环引用就是当A引用B，B同时引用A时会出现对象无法回收的问题。
+
+---
+VM 参数  `-verbose:gc` 查看垃圾回收的日志
+
+```java
+public class Demo {
+    public static void main(String[] args) {
+        while (true) {
+            A a = new A();
+            B b = new B();
+            a.b = b;
+            b.a = a;
+            a = null;
+            b = null;
+            System.gc();
+        }
+    }
+}
+
+class A {
+    B b;
+}
+
+class B {
+    A a;
+}
+```
+
+以上代码输出的日志如下。
+
+```java
+[GC (System.gc())  5161K->944K(247296K), 0.0009940 secs]
+[Full GC (System.gc())  944K->726K(247296K), 0.0053908 secs]
+```
+
+日志信息包含三部分：
+- 垃圾回收的类型
+- 回收前的年轻代大小、回收后的年轻代大小、整个堆的大小
+- 垃圾回收消耗的时间
+
+---
+Java 使用的是**可达性分析算法**来判断对象是否可以被回收。
+
+可达性分析将对象分为两类：
+- 垃圾回收的**根对象**（GC Root）和
+- 普通对象，对象与对象之间存在引用关系。
+
+下图中 A 到 B 再到 C 和 D，形成了一个引用链，可达性分析算法指的是如果从**某个对象到 GC Root 对象是可达的**，对象就不可被回收。
+
+![](assets/Pasted%20image%2020240123143636.png)
+
+哪些对象被称之为 GC Root 对象呢？
+- 1）**线程 Thread 对象**。
+	- 引用线程栈帧中的方法参数、局部变量等。
+- 2）**系统类加载器**加载的 **`java.Lang.Class` 对象**。
+	- 引用类中的静态变量。
+- 3）**监视器对象**：用来保存同步锁 synchronized 关键字持有的对象。
+- 4）本地方法调用时使用的全局对象。
+
+1） A 的实例对象和 B 的实例对象无法到达 **线程对象**
+![](assets/Pasted%20image%2020240123145702.png)
+
+2）
+![](assets/Pasted%20image%2020240123150246.png)
+
+3）
+![](assets/Pasted%20image%2020240123151717.png)
+
+查看 GC Root
+- 通过 arthas 和 eclipse Memory Analyzer (MAT) 工具可以查看 GC Root，MAT 工具是 eclipse 推出的 Java 堆内存检测工具。
+- 具体操作步骤如下：
+	- 1、使用 arthas 的 `heapdump` 命令将堆内存快照保存到本地磁盘中。
+	- 2、使用 MAT 工具打开堆内存快照文件。
+	- 3、选择 GC Roots 功能查看所有的 GC Root。
+
+![](assets/Pasted%20image%2020240123160339.png)
+
+### 五种对象引用
+
+可达性算法中描述的对象引用，一般指的是**强引用**，即是 GCRoot 对象对普通对象有引用关系，只要这层关系存在，普通对象就不会被回收。
+
+除了强引用之外，Java中还设计了几种其他引用方式：
+- 软引用
+- 弱引用
+- 虚引用
+- 终结器引用
+
+#### 软引用
+
+【是啥】软引用相对于强引用是一种比较弱的引用关系，如果一个对象只有软引用关联到它，**当程序内存不足时**，就会将软引用中的数据进行回收。
+
+在 JDK 1.2 版之后提供了 **SoftReference 类**来实现软引用，软引用常用于缓存中。
+
+SoftReference 对象像一个盒子一样包在可回收对象外面，需要注意的是，GCRoot 对象还是通过强引用指向 SoftReference 对象，不然 SoftReference 对象会被回收掉。
+
+![](assets/Pasted%20image%2020240123161252.png)
+
+软引用的执行过程如下：
+1. 将对象使用软引用包装起来，`new SoftReference<对象类型>(对象)`。
+2. 内存不足时，虚拟机尝试进行垃圾回收。
+3. 如果垃圾回收仍**不能解决内存不足**的问题，回收软引用中的对象。
+4. 如果依然内存不足，抛出 **OutOfMemory 异常**
+
+软引用中的对象如果在内存不足时回收，SoftReference 对象**本身也需要被回收**。如何知道哪些 SoftReference 对象需要回收呢？
+
+SoftReference 提供了一套队列机制：
+- 软引用创建时，通过构造器传入引用队列
+- 在软引用中**包含的对象被回收时**，该软引用对象会被**放入引用队列**
+- 通过代码遍历引用队列，将 SoftReference 的强引用删除
+
+【案例】队列机制演示
+```java
+/**
+ *  VM参数：-Xmx200m（堆最大内存200mB）
+ */
+public class Demo {
+    public static void main(String[] args) {
+        // 存放软引用
+        ArrayList<SoftReference> softReferences = new ArrayList<>();
+        // 引用队列
+        ReferenceQueue<byte[]> queue = new ReferenceQueue<>();
+        for (int i = 0; i < 10; i++) {
+            byte[] bytes = new byte[1024 * 1024 * 100]; //100m
+            SoftReference<byte[]> studentRef = new SoftReference<>(bytes, queue);
+            // 堆只有200m，最多只能放一个100m的字节数组（还有其它内存开销）
+            softReferences.add(studentRef);
+        }
+
+        int count = 0;
+        while (true) {
+            Reference<? extends byte[]> poll = queue.poll();
+            if (poll != null) {
+                count++;
+            } else {
+                break;
+            }
+        }
+        System.out.println(count); //9，说明前9个SoftReference对象都要被回收
+//        System.out.println(softReferences.size()); //10
+    }
+}
+```
+
+
+软引用也可以使用**继承自 SoftReference 类**的方式来实现，
+- StudentRef 类就是一个软引用对象。
+- 通过构造器传入
+	- 软引用包含的对象，
+	- 以及引用队列。
+
+【案例】软引用适用场景-缓存
+
+![](assets/Pasted%20image%2020240123202108.png)
+
+```java
+/**
+ * 软引用案例-学生信息的缓存
+ * - VM options: -Xmx10m
+ * - 通过输出map的size查看回收情况
+ *
+ * @author Boer
+ */
+public class StudentCache {
+
+    public static void main(String[] args) {
+        for (int i = 0; ; i++) {
+            StudentCache.getInstance().cacheStudent(new Student(i, String.valueOf(i)));
+        }
+    }
+
+    private static StudentCache cache = new StudentCache();
+    private Map<Integer, StudentRef> StudentRefs; // 用于Cache内容的存储
+    private ReferenceQueue<Student> q; // 垃圾Reference的队列
+
+    // 继承SoftReference，使得每一个实例都具有可识别的标识。
+    // 并且该标识与其在HashMap内的key相同。
+    private class StudentRef extends SoftReference<Student> {
+        private Integer _key = null;
+
+        public StudentRef(Student em, ReferenceQueue<Student> q) {
+            super(em, q);
+            _key = em.getId();
+        }
+    }
+
+    // 构建一个缓存器实例
+    private StudentCache() {
+        StudentRefs = new HashMap<>();
+        q = new ReferenceQueue<>();
+    }
+
+    // 取得缓存器实例
+    public static StudentCache getInstance() {
+        return cache;
+    }
+
+    // 以软引用的方式对一个Student对象的实例进行引用并保存该引用
+    private void cacheStudent(Student em) {
+        cleanCache(); // 清除垃圾引用
+        StudentRef ref = new StudentRef(em, q);
+        StudentRefs.put(em.getId(), ref);
+        System.out.println(StudentRefs.size());
+    }
+
+    // 依据所指定的ID号，重新获取相应Student对象的实例
+    public Student getStudent(Integer id) {
+        Student em = null;
+        // 缓存中是否有该Student实例的软引用，如果有，从软引用中取得。
+        if (StudentRefs.containsKey(id)) {
+            StudentRef ref = StudentRefs.get(id);
+            em = ref.get();
+        }
+        // 如果没有软引用，或者从软引用中得到的实例是null，重新构建一个实例，
+        // 并保存对这个新建实例的软引用
+        if (em == null) {
+            em = new Student(id, String.valueOf(id));
+            System.out.println("Retrieve From StudentInfoCenter. ID=" + id);
+            this.cacheStudent(em);
+        }
+        return em;
+    }
+
+    // 清除那些已经被回收的StudentRef对象
+    private void cleanCache() {
+        StudentRef ref = null;
+        while ((ref = (StudentRef) q.poll()) != null) {
+            //
+            StudentRefs.remove(ref._key);
+        }
+    }
+
+//    // 清除Cache内的全部内容
+//    public void clearCache() {
+//        cleanCache();
+//        StudentRefs.clear();
+//        //System.gc();
+//        //System.runFinalization();
+//    }
+}
+
+@Data
+@AllArgsConstructor
+class Student {
+    int id;
+    String name;
+}
+```
+
+#### 弱引用
+
+【是啥】弱引用的整体机制和软引用基本一致，区别在于弱引用包含的对象在垃圾回收时，**不管内存够不够**都会直接被回收。
+- 在 JDK 1.2版之后提供了 **WeakReference 类**来实现弱引用，
+- 弱引用主要在 **ThreadLocal** 中使用。
+- 弱引用对象本身也可以使用**引用队列进行回收**。
+
+【案例】触发弱引用对象的回收
+
+```java
+/**
+ * 案例：触发弱引用对象的回收
+ * - VM参数：-Xmx200m（堆最大内存200mB）
+ */
+public class Demo {
+    public static void main(String[] args) {
+        byte[] bytes = new byte[1024 * 1024 * 100];
+        WeakReference<byte[]> weakReference = new WeakReference<byte[]>(bytes);
+        bytes = null;
+        System.out.println(weakReference.get());
+
+        // 内存充足，也会触发回收
+        System.gc();
+        System.out.println(weakReference.get()); //null
+    }
+}
+```
+
+#### 虚引用和终结器引用
+
+> 这两种引用在常规开发中是不会使用的。
+
+**虚引用**也叫幽灵引用/幻影引用，**不能**通过虚引用对象获取到包含的对象。虚引用唯一的用途是当对象被垃圾回收器回收时可以接收到对应的通知。
+- Java 中使用 **PhantomReference 类** 实现了虚引用，
+- 直接内存中为了及时知道直接内存对象不再使用，从而回收内存，使用了虚引用来实现。
+
+```java
+案例跳过
+```
+
+**终结器引用**指的是在对象需要被回收时，终结器引用会关联对象并放置在 **Finalizer 类中的引用队列中**，在稍后由一条由 **FinalizerThread 线程**从队列中获取对象，然后执行对象的 **finalize 方法**，在对象**第二次**被回收时，该对象才真正的被回收。
+- 在这个过程中可以在 finalize 方法中再将自身对象使用强引用关联上，但是**不建议**这样做。
+
+> 注意下面的案例代码只是帮助理解，实际中是不会有这样的代码的
+> 
+> 【提示】一个对象的 finalize 方法最多只会执行一次
+
+【案例】终结器引用
+
+```java
+/**
+ * 案例：终结器引用
+ */
+public class FinalizeReferenceDemo {
+
+    public static void main(String[] args) throws Throwable {
+        reference = new FinalizeReferenceDemo();
+        test();
+        test();
+        // finalize()执行了...
+        // 当前对象还存活
+        // 对象已被回收
+    }
+
+    // 自救强引用
+    public static FinalizeReferenceDemo reference = null;
+
+    public void alive() {
+        System.out.println("当前对象还存活");
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        try {
+            System.out.println("finalize()执行了...");
+            // 设置强引用自救
+            reference = this;
+        } finally {
+            super.finalize();
+        }
+    }
+
+    private static void test() throws InterruptedException {
+        reference = null;
+        // 回收对象
+        System.gc();
+        // 执行finalize方法的优先级比较低，休眠500ms等待一下
+        Thread.sleep(500);
+        if (reference != null) {
+            reference.alive();
+        } else {
+            System.out.println("对象已被回收");
+        }
+    }
+}
+```
+
+### 垃圾回收算法
+
+Java 是如何实现垃圾回收的呢？简单来说，垃圾回收要做的有两件事：
+1. 找到内存中存活的对象
+2. 释放不再存活对象的内存，使得程序能再次利用这部分空间
+
+垃圾回收算法的历史和分类：
+- 1960 年 John McCarthy 发布了第一个 GC 算法：标记-清除算法（Mark Sweep GC）。
+- 1963 年 Marvin L. Minsky 发布了复制算法。
+- 本质上后续所有的垃圾回收算法，都是在上述两种算法的基础上优化而来。
+
+标记-清楚算法 (Mark Sweep GC) ---> 复制算法 (Coping GC) ---> 标记-整理算法 (Mark Compact GC) ---> 分代 GC (Generational GC)
+
+#### 垃圾回收算法的评价标准
+
+STW：
+- Java 垃圾回收过程会通过**单独的 GC 线程**来完成，但是不管使用哪一种 GC 算法，都会有部分阶段需要**停止所有的用户线程**。这个过程被称之为 **Stop The World** 简称 STW，
+- 如果 STW 时间过长则会影响用户的使用。
+
+> 执行用户代码 ---> GC, STW ---> 执行用户代码 ---> GC, STW ---> 执行用户代码
+
+【案例】STW 测试
+
+```java
+/**
+ * 案例：STW测试
+ * - VM Options: -XX:+UseSerialGC -Xmx10g -verbose:gc
+ */
+public class StopWorldTest {
+    public static void main(String[] args) {
+        new PrintThread().start();
+        new ObjectThread().start();
+    }
+}
+
+class PrintThread extends Thread {
+    @SneakyThrows
+    @Override
+    public void run() {
+        // 记录开始时间
+        long last = System.currentTimeMillis();
+        while (true) {
+            long now = System.currentTimeMillis();
+            System.out.println(now - last);
+            last = now;
+            Thread.sleep(100);
+        }
+    }
+}
+
+class ObjectThread extends Thread {
+    @SneakyThrows
+    @Override
+    public void run() {
+        List<byte[]> bytes = new LinkedList<>();
+        while (true) {
+            // 最多存放8g，然后删除强引用，垃圾回收时释放8g
+            if (bytes.size() >= 80) {
+                bytes.clear();
+            }
+            bytes.add(new byte[1024 * 1024 * 100]); // 100m
+            Thread.sleep(10);
+        }
+    }
+}
+```
+
+垃圾回收算法的评价标准：
+- 吞吐量：
+	- CPU 用于执行用户代码的时间与 CPU 总执行时间的比值，即 `吞吐量 = 执行用户代码时间 /（执行用户代码时间 + GC 时间）`。
+	- 吞吐量数值越高，垃圾回收的效率就越高。
+- 最大暂停时间：
+	- 所有在垃圾回收过程中的 **STW 时间最大值**。
+	- 最大暂停时间越短，用户使用系统时受到的影响就越短
+- 堆使用效率
+	- 不同垃圾回收算法，对堆内存的使用方式是不同的。比如标记清除算法，可以使用完整的堆内存。而复制算法会将堆内存一分为二，每次只能使用一半内存。从堆使用效率上来说，标记清除算法要优于复制算法。
+
+上述三种评价标准不可兼得。
+- 一般来说，堆内存越大，最大暂停时间就越长。
+- 想要减少最大暂停时间（比如拆分成多次，准备的时间变多了，gc 的总时间变长了），就会降低吞吐量。
+
+不同的垃圾回收算法，适用于不同的场景。
+
+#### 标记清除 gc 算法
+
+核心思想分为两个阶段：
+1. 标记阶段：将所有存活的对象进行标记。Java 中使用可达性分析算法，从 GC Root 开始通过引用链遍历出所有存活对象。
+2. 清除阶段：从内存中删除没有被标记也就是非存活对象。
+
+优点：实现简单，只需要在第一阶段给每个对象维护标志位，第二阶段删除对象即可。
+
+缺点：
+1. **碎片化问题**：由于内存是连续的，所以在对象被删除之后，内存中会出现很多细小的可用内存单元。如果我们需要的是一个比较大的空间，很有可能这些内存单元的大小过小无法进行分配。
+2. **分配速度慢**：由于内存碎片的存在，需要维护一个空闲链表，极有可能发生每次需要遍历到链表的最后才能获得合适的内存空间
+
+![](assets/Pasted%20image%2020240123224804.png)
+
+#### 复制 gc 算法
+
+核心思想是：
+1. 准备两块空间 *From* 空间和 *To* 空间，每次在对象分配阶段，只能使用其中一块空间（From 空间）。
+2. 在垃圾回收 GC 阶段，将 From 中存活对象复制到 To 空间。
+3. 将两块空间的 **From 和 To 名字互换**。
+
+完整的复制算法的例子：
+1. 将堆内存分割成两块 From 空间 To 空间，对象分配阶段，创建对象。
+2. GC 阶段开始，将 *GC Root* 搬运到 To 空间
+3. 将 GC Root **关联的对象**，搬运到 To 空间
+4. 清理 *From* 空间，并把**名称互换**
+
+优点：
+- *吞吐量高*：复制算法只需要遍历一次存活对象复制到 To 空间即可，
+	- 比*标记-整理*算法少了一次遍历的过程，因而性能较好，
+	- 但是不如*标记-清除*算法，因为标记清除算法不需要进行对象的移动
+- *不会发生对象的移动*：复制算法在复制之后就会将对象按顺序放入 To 空间中，所以对象以外的区域都是可用空间，不存在碎片化内存空间。
+
+缺点：
+- *内存的使用效率低*：每次只能让一半的内存空间来为创建对象使用
+
+#### 标记整理 gc 算法
+
+也叫标记压缩算法，是对标记清理算法中容易产生内存碎片问题的一种解决方案。
+
+核心思想分为两个阶段：
+1. *标记阶段*：将所有存活的对象进行标记。Java 中使用可达性分析算法，从 GC Root 开始通过引用链遍历出所有存活对象。
+2. *整理阶段*：将存活对象**移动到堆的一端**。清理掉存活对象的内存空间。
+
+![](assets/Pasted%20image%2020240123224741.png)
+
+优点：
+- *内存使用效率高*：整个堆内存都可以使用，不会像*复制算法*只能使用半个堆内存
+- *不会发生碎片化*：在整理阶段可以将对象往内存的一侧进行移动，剩下的空间都是可以分配对象的有效空间
+
+缺点：
+- *整理阶段的效率不高*：整理算法有很多种，比如 Lisp2 整理算法需要对整个堆中的对象搜索3次，整体性能不佳。可以通过 TwoFinger、表格算法、ImmixGC 等高效的整理算法优化此阶段的性能
+
+#### 分代 gc 算法
+
+现代优秀的垃圾回收算法，会将上述描述的垃圾回收算法组合进行使用，其中应用最广的就是分代垃圾回收算法 (Generational GC)。
+
+分代垃圾回收将整个内存区域划分为*年轻代*和*老年代*
+
+分代 gc 过程：
+- 分代回收时，创建出来的对象，首先会被放入 *Eden 伊甸园区*。
+- 随着对象在 Eden 区越来越多，如果 **Eden 区满**，新创建 1的对象已经无法放入，就会触发年轻代的 GC，称为 *Minor GC* 或者 Young GC。
+	- Minor GC 会把 **eden 和 From** 中需要回收的对象回收，把**没有回收的对象放入 To 区**
+	- 接下来，S0 会变成 To 区，S1 变成 From 区。当 eden 区满时再往里放入对象，依然会发生 Minor GC。
+	- 此时会回收 eden 区和 S1 (from) 中的对象，并把 eden 和 from 区中剩余的对象放入 S0。
+	- 注意：每次 Minor GC 中都会为对象记录他的年龄，初始值为 0，每次 GC 完加 1。
+- 如果 Minor GC 后对象的年龄达到**阈值（最大 15，默认值和垃圾回收器有关）**，对象就会被晋升至*老年代*。
+	- 【By Boer】如果 To 区放不下了没到年龄的应该也会提前晋升老年代
+- 当老年代中空间不足，无法放入新的对象时，
+	- **先尝试** minor gc，
+	- 如果还是不足，就会触发 *Full GC*，Full GC 会**对整个堆进行垃圾回收**。
+- 如果 Full GC 依然无法回收掉老年代的对象，那么当**对象继续放入老年代时**，就会抛出 *Out Of Memory 异常*
+
+> 年轻代的 gc 思想是基于复制 gc 算法。
+> 
+> 【By Boer】幸存者区应该就是 S0 和  S1 中的 to 区
+> 
+> 【By Boer】为什么要区分 from 和 Eden？复制 gc 算法不是俩区就够了？
+> - Eden 区要大一些，内存的利用率高，不然对半分始终有一般的内存没法用，会频繁触发 gc
+
+![](assets/Pasted%20image%2020240124153809.png)
+
+---
+【VM 参数】在 JDK8中， `-XX:+UseSerialGC` ：使用分代 gc 的垃圾回收器运行程序。
+
+| 参数名 | 参数含义 |  |
+| ---- | ---- | ---- |
+| `-Xms` | 设置堆的最小和初始大小，必须是 1024 倍数且大于 1 MB |  |
+| `-Xmx` | 设置最大堆的大小，必须是 1024 倍数且大于 2 MB |  |
+| `-Xmn` | *新生代* 的大小 |  |
+| `-XX:SurvivorRatio` | *伊甸园区* 和 *幸存区* 的比例，默认为 8<br><br>例如：新生代 1 g 内存，伊甸园区 800 MB, S0 和 S1各100MB |  |
+| `-XX:+PrintGCDetails` or  `-verbose:gc` | 打印 GC 日志日志 |  |
+
+【案例】分代 gc 演示
+
+```java
+/**
+ * 案例：分代gc演示
+ * - VM参数：-XX:+UseSerialGC -Xms60m -Xmx60m -Xmn20m -XX:SurvivorRatio=3 -XX:+PrintGCDetails
+ * - 理论的内存分配：堆 60，年轻代 20，老年代 40，Eden 12，s0 4，s1 4
+ */
+public class GgcDemo {
+    public static void main(String[] args) throws IOException {
+        ArrayList<Object> list = new ArrayList<>();
+        int count = 0;
+        while (true) {
+            System.in.read();
+            System.out.println(++count);
+            // 每次添加1m数据
+            list.add(new byte[1024 * 1024]);
+        }
+    }
+}
+```
+
+查看日志
+
+```java
+9
+[GC (Allocation Failure) [DefNew: 12194K->4095K(16384K), 0.0207687 secs] 12194K->9251K(57344K), 0.0210071 secs] [Times: user=0.00 sys=0.00, real=0.02 secs] 
+// 放第10个触发垃圾回收。
+// [DefNew: gc前年轻代大小-->gc后年轻代大小, time] gc前堆大小-->gc后堆大小, time]
+// 幸存者区只有4m，超出的就会放到老年代里
+
+20
+[GC (Allocation Failure) [DefNew: 15570K->3072K(16384K), 0.0097464 secs] 20726K->20515K(57344K), 0.0097842 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+
+31
+[GC (Allocation Failure) [DefNew: 14559K->3072K(16384K), 0.0089644 secs] 32002K->31780K(57344K), 0.0090065 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+
+42
+[GC (Allocation Failure) [DefNew: 14565K->14565K(16384K), 0.0000155 secs][Tenured: 28707K->39972K(40960K), 0.0135928 secs] 43273K->43044K(57344K), [Metaspace: 3748K->3748K(1056768K)], 0.0143287 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+
+54
+[Full GC (Allocation Failure) [Tenured: 40933K->40933K(40960K), 0.0062248 secs] 55751K->55269K(57344K), [Metaspace: 3751K->3751K(1056768K)], 0.0062861 secs] [Times: user=0.00 sys=0.00, real=0.01 secs] 
+[Full GC (Allocation Failure) [Tenured: 40933K->40933K(40960K), 0.0022187 secs] 55269K->55269K(57344K), [Metaspace: 3751K->3751K(1056768K)], 0.0022367 secs] [Times: user=0.00 sys=0.00, real=0.00 secs] 
+Heap
+ def new generation   total 16384K, 
+  eden space 12288K,  93% 
+  from space 4096K,  75% 
+  to   space 4096K,   0% 
+ tenured generation   total 40960K, 
+   the space 40960K,  99% 
+ Metaspace       used 3782K, capacity 4536K, committed 4864K, reserved 1056768K
+  class space    used 415K, capacity 428K, committed 512K, reserved 1048576K
+// 老年代满了触发full gc，但还是放不下，抛出 out Of Memory 异常
+
+Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
+	at com.boer.gc.GgcDemo.main(GgcDemo.java:19)
+```
+
+【arthas】 `memory` 命令查看内存，显示出三个区域的内存情况
+
+![](assets/Pasted%20image%2020240124160503.png)
+
+### 垃圾回收器
+
+> 系统中的大部分对象，都是创建出来之后很快就不再使用可以被回收，比如用户获取订单数据，订单数据返回给用户之后就可以释放了。
+> 
+> 老年代中会存放长期存活的对象，比如 Spring 的大部分 bean 对象，在程序启动之后就不会被回收了。
+> 
+> 在虚拟机的默认设置中，**新生代大小要远小于老年代的大小**
+
+为什么分代 GC 算法要把堆分成年轻代和老年代？
+- 可以通过调整年轻代和老年代的比例来适应不同类型的应用程序，**提高内存的利用率和性能**。
+- 新生代和老年代使用不同的垃圾回收算法，
+	- *新生代* 一般选择 *复制 gc 算法*，
+	- *老年代* 可以选择 *标记-清除 gc 算法* 和 *标记-整理 gc 算法*，由程序员来选择灵活度较高。
+- 分代的设计中**允许只回收新生代**（minor gc），如果能满足对象分配的要求就不需要对整个堆进行回收 (full gc)，STW 时间就会减少。
+
+【是啥】垃圾回收器是垃圾回收算法的具体实现。
+
+由于垃圾回收器分为年轻代和老年代，除了 G1 之外其他垃圾回收器必须**成对组合进行使用**。具体的关系图如下
+
+![](assets/Pasted%20image%2020240124173211.png)
+
+*Serial* 是是一种**单线程串行**回收年轻代的垃圾回收器
+- 年轻代
+- 复制 gc 算法
+- 优点：单 CPU 处理器下吞吐量非常出色
+- 缺点：多 CPU 下*吞吐量*不如其他垃圾回收器，堆如果偏大会让用户线程处于长时间的等待
+- 适用场景：Java 编写的客户端程序或者硬件配置有限的场景
+
+*SerialOld* 是 Serial 垃圾回收器的**老年代版本**，采用单线程串行回收
+- 老年代
+- 标记-整理 gc 算法
+- 优点：单 CPU 处理器下吞吐量非常出色
+- 缺点：多 CPU 下吞吐量不如其他垃圾回收器，堆如果偏大会让用户线程处于长时间的等待
+- 适用场景：与 Serial 垃圾回收器搭配使用，或者在 CMS 特殊情况下使用
+
+【VM 参数】 `-XX:+UseSerialGC` 新生代、老年代都使用串行回收器。
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

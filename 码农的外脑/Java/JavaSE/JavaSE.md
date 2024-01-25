@@ -1,4 +1,4 @@
-
+        
 # 类和对象_基础
 ## 包
 
@@ -1354,6 +1354,613 @@ class Outer {
 
     public static Inner getInnerInstance_() {
         return new Inner();
+    }
+}
+```
+
+# 反射
+
+## 引入
+
+根据配置文件 `re.properties` 指定信息，创建 Cat 对象并调用方法 hi()
+
+```properties
+classfullpath=com.boer.reflection.Cat
+method=cry
+```
+
+这样的需求在框架中特别多，即通过外部文件配置，在不修改源码的情况下控制程序，符合设计程序的 ocp 原则（开闭原则，不修改代码，扩容功能）
+
+```java
+public class Demo {
+    public static void main(String[] args) throws Exception {
+        //----- 传统的方式 new 对象，调用方法
+        // Cat cat = new Cat();
+        // cat.hi(); ===> cat.cry() 修改源码.
+
+        // Properties类, 读写配置文件
+        Properties properties = new Properties();
+        properties.load(new FileInputStream("src\\main\\resources\\re.properties"));
+        String classfullpath = properties.get("classfullpath").toString();
+        String methodName = properties.get("method").toString();
+        System.out.println("classfullpath=" + classfullpath); // classfullpath=com.boer.reflection.Cat
+        System.out.println("method=" + methodName); // method=cry
+
+        //----- 使用反射机制解决
+        // 1、加载类, 返回Class类型的对象cls
+        Class cls = Class.forName(classfullpath);
+        // 2、通过 cls 得到你加载的类 reflection.Cat 的对象实例
+        Object o = cls.newInstance();
+        System.out.println("o的运行类型=" + o.getClass()); // o的运行类型=class com.boer.reflection.Cat
+        // 3、通过 cls 得到你加载的类 reflection.Cat 的 methodName "hi" 的方法对象
+        //   即：在反射中，可以把方法视为对象（万物皆对象）
+        Method method1 = cls.getMethod(methodName);
+        // 4、通过method1 调用方法: 即通过方法对象来实现调用方法
+        method1.invoke(o); // cat cry
+    }
+}
+```
+
+## 反射介绍
+
+反射之所以被称为**框架的灵魂**，主要是因为它赋予了我们在**运行时**分析类以及执行类中方法的能力。通过反射你可以**获取**任意一个类的所有属性和方法，你还可以**调用**这些方法和属性。
+
+加载完类之后，在堆中就产生了一个 **Class 类型的对象**（一个类只有一个），这个对象包含了类的完整结构信息。这个对象就像一面镜子，透过这个镜子看到类的结构，故形象地称之为反射
+
+- 优点：可以**动态**地创建和使用对象（也是框架的底层核心），使用灵活，没有反射机制，框架技术就失去了底层支持
+- 缺点：反射基本是**解释执行**，对执行速度有有影响
+
+【案例】对比反射性能
+```java
+public class Demo {
+	// 执行次数
+    private static final int NUM = 90000000;
+
+    public static void main(String[] args) throws Exception {
+        m1();
+        m2();
+    }
+
+    public static void m1() {
+        Cat cat = new Cat();
+        
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < NUM; i++) {
+            cat.hi();
+        }
+        long end = System.currentTimeMillis();
+        
+        System.out.println(end - start);
+    }
+
+    public static void m2() throws Exception {
+        Class<?> cls = Class.forName("com.boer.reflection.Cat");
+        Object cat = cls.newInstance();
+        Method hi = cls.getMethod("hi");
+        
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < NUM; i++) {
+            hi.invoke(cat);
+        }
+        long end = System.currentTimeMillis();
+        
+        System.out.println(end - start);
+    }
+}
+```
+
+【原理图】左边两块属于 JVM 这块，面试高频
+
+![image-20220125163144279](assets/image-20220125163144279.png)
+
+## Class 类
+
+- 类的字节码二进制数据，存放在方法区，有的地方称为类的元数据。Class 对象存放在**堆**中
+- Class 类的对象不是 new 出来的，而是**系统创建**的
+- 对于某个类的 class 对象，在内存中只有一份，因为类只加载一次
+- 每个类的实例都知道自己是由哪个 Class 实例所生成的
+- 通过 Class 可以完整得到一个类的完整结构
+
+### 获取 Class 类对象的方式（重要）
+
+下面四种方式获取的都是同一个 Class 对象
+
+1、已知一个类的**全类名** ---> 通过 Class 类的静态方法 **`forName()`** 获取
+
+- 可能抛出 `ClassNotFoundException`
+- 应用场景：多用于配置文件，读取类全路径，加载类
+
+```java
+Class cls = Class.forName("com.boer.reflection.Car");
+```
+
+2、已知具体的类 ---> 通过**类的 class** 获取
+
+- 最可靠安全，程序**性能最高**
+- 应用场景：多用于**参数传递**，比如通过反射得到对应构造器对象
+
+```java
+Class cls2 = Car.class;
+```
+
+ 3、已知某个类的**实例** ---> 调用该实例的 **`getClass()`** 方法获取
+
+- 应用场景：通过创建好的对象，获取 Class 实例
+
+```java
+Car car = new Car();
+Class cls3 = car.getClass();
+```
+
+ 4、通过**类加载器**
+
+- 不会进行初始化，意味着不进行包括初始化等一系列步骤，静态代码块和静态对象不会得到执行
+
+```java
+Class clazz = ClassLoader.loadClass("cn.javaguide.TargetObject");
+```
+
+### 获取 Class 对象-基本数据类型及包装类
+
+基本数据类型会自动自动装箱，所以两种方式获得的 Class 对象是同样的
+
+```java
+public static void main(String[] args) throws Exception {
+	// 基本数据类型
+	Class<Integer> integerClass = int.class;
+	Class<Character> characterClass = char.class;
+	Class<Boolean> booleanClass = boolean.class;
+	System.out.println(integerClass); // int
+
+	// 包装类
+	Class<Integer> integerClass2 = Integer.TYPE;
+	Class<Character> characterClass2 = Character.TYPE;
+
+	// 基本数据类型会自动自动装箱，所以两种方式获得的 Class 对象是同样的
+	System.out.println(integerClass.hashCode()); // 621009875
+	System.out.println(integerClass2.hashCode()); // 621009875
+}
+```
+
+### 哪些类型有 Class 类对象
+
+外部类、内部类、接口、数组、枚举、注解、基本数据类型、void
+
+```java
+public static void main(String[] args) throws Exception {
+	Class<String> stringClass = String.class; // 外部类
+	Class<Serializable> serializableClass = Serializable.class; // 接口
+	Class<Integer[]> integerClass = Integer[].class; // 数组
+	Class<float[][]> floatClass = float[][].class; // 二维数组
+	Class<Deprecated> deprecatedClass = Deprecated.class; // 注解
+	Class<Thread.State> stateClass = Thread.State.class; // 枚举
+	Class<Long> longClass = long.class; // 基本数据类型
+	Class<Void> voidClass = void.class; // void 数据类型
+	Class<Class> classClass = Class.class;
+}
+```
+
+## 类加载
+
+反射机制是 java 实现动态语言的关键，即通过反射实现类**动态加载**
+
+- **静态加载**：编译时加载相关的类，如果没有则报错，依赖性太强
+- **动态加载**：运行时加载需要的类，如果运行时不用该类，即使不存在该类，也不报错，降低了依赖性
+
+类加载时机：
+
+- new 创建对象（静态加载）
+- 子类被加载时，父类也加载（静态加载）
+- 调用类中静态成员时（静态加载）
+- 反射（动态加载）
+
+类加载过程：
+
+![image-20220126111817800](assets/image-20220126111817800.png)
+
+类加载各阶段完成任务：
+
+![image-20220126111901385](assets/image-20220126111901385.png)
+
+加载阶段：
+- JVM 在该阶段主要是将字节码从不同的数据源（class 文件、jar 包、网络）转换为二进制字节流**加载到内存中（方法区）**，
+- 并生成一个代表该类的 **`java.lang.Class`** 对象
+
+连接阶段
+- 验证：
+	- 确保 Class 文件的字节流中包含的信息符合当前 JVM 的要求，并且不会危害 JVM 自身的安全，包括文件格式验证（是否以魔数 `0xcafebabe` 开头）、元数据验证、字节码验证和符号引用验证。
+	- 可以考虑使用 `-Xverify:none` 参数来**关闭**大部分的类验证措施，缩短虚拟机类加载的时间
+- 准备
+	- JVM 会在该阶段对静态变量，分配内存并默认初始化（0、0 L、null、false 等）这些变量所使用的内存都将在方法区中进行分配
+- 解析：
+	- 虚拟机将常量池内的符号引用替换为直接引用的过程
+
+```java
+class A {
+     //属性-成员变量-字段
+     //类加载的连接阶段-准备 属性是如何处理
+     //1. n1 是实例属性, 不是静态变量，因此在准备阶段，是不会分配内存
+     //2. n2 是静态变量，分配内存 n2 是默认初始化 0 ,而不是20
+     //3. n3 是static final 是常量, 他和静态变量不一样, 因为一旦赋值就不变 n3 = 30
+     public int n1 = 10;
+     public static  int n2 = 20;
+     public static final  int n3 = 30;
+}
+```
+
+初始化阶段：
+
+![image-20220126114706731](assets/image-20220126114706731.png)
+
+## 反射的基本操作（重要）
+
+### 通过反射 (Class) 获取类的信息
+
+准备 Person 类
+```java
+class A {
+    public String hobby;
+    public void hi() {}
+    public A() {}
+    public A(String name) {}
+}
+
+interface IA {}
+interface IB {}
+
+@Deprecated // 注解
+class Person extends A implements IA, IB {
+    // 属性
+    public String name;
+    protected static int age; // 4 + 8 = 12
+    String job;
+    private double sal;
+
+    // 构造器
+    public Person() {}
+    public Person(String name) {}
+    
+    // 私有构造器
+    private Person(String name, int age) {}
+    
+    // 公有方法
+    public void m1(String name, int age, double sal) {}
+    // 保护方法
+    protected String m2() {
+        return null;
+    }
+    // 方法
+    void m3() {}
+    // 私有方法
+    private void m4() {}
+}
+```
+
+获取 Class 对象
+```java
+public class ReflectionDemo {
+	static Class<?> personCls;
+	
+	static {
+		try {
+			personCls = Class.forName("com.boer.reflection.Person");
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+	}
+}
+```
+
+```java
+/**
+ * 获取类名、包名
+ * - getName() 获取全类名
+ * - getSimpleName() 获取简单类名
+ * - getPackage() 返回包名
+ */
+public static void getNames() {
+	System.out.println(personCls.getName()); // com.boer.test.Person
+	System.out.println(personCls.getSimpleName()); // Person
+	System.out.println(personCls.getPackage()); // package com.boer.test
+}
+
+/**
+ * 返回父类和接口的信息
+ * - getSuperClass() 返回父类的class对象
+ * - getInterfaces() 返回实现接口的Class[]
+ */
+public static void getSuper() {
+	Class<?> superclass = personCls.getSuperclass();
+	System.out.println("父类的class对象=" + superclass); // 父类的class对象=class com.boer.reflection.A
+
+	Class<?>[] interfaces = personCls.getInterfaces();
+	for (Class<?> anInterface : interfaces) {
+		System.out.println("接口信息=" + anInterface);
+		// 接口信息=interface com.boer.reflection.IA
+		// 接口信息=interface com.boer.reflection.IB
+	}
+}
+
+/**
+ * 返回注解信息
+ * - getAnnotations:以Annotation[] 形式返回注解信息
+ */
+public static void getAnnotations() {
+	Annotation[] annotations = personCls.getAnnotations();
+	for (Annotation annotation : annotations) {
+		System.out.println("注解信息=" + annotation);
+		// 注解信息=@java.lang.Deprecated()
+	}
+}
+
+/**
+ * 获取构造器
+ * - getConstructors() 获取所有本类public修饰的构造器
+ * - getDeclaredConstructors() 获取本类中所有构造器
+ */
+public static void getConstructors() {
+	Constructor<?>[] constructors = personCls.getConstructors();
+	for (Constructor<?> constructor : constructors) {
+		System.out.println("本类public修饰的构造器=" +constructor.getName());
+		// 本类public修饰的构造器=com.boer.reflection.Person
+		// 本类public修饰的构造器=com.boer.reflection.Person
+	}
+
+	Constructor<?>[] declaredConstructors = personCls.getDeclaredConstructors();
+	for (Constructor<?> declaredConstructor : declaredConstructors) {
+		System.out.println("----- 本类中所有构造器=" + declaredConstructor.getName());
+		Class<?>[] parameterTypes = declaredConstructor.getParameterTypes();
+		for (Class<?> parameterType : parameterTypes) {
+			System.out.println("该构造器的形参类型=" + parameterType);
+		}
+		// ----- 本类中所有构造器=com.boer.reflection.Person
+		// 该构造器的形参类型=class java.lang.String
+		// 该构造器的形参类型=int
+		// ----- 本类中所有构造器=com.boer.reflection.Person
+		// 该构造器的形参类型=class java.lang.String
+		// ----- 本类中所有构造器=com.boer.reflection.Person
+	}
+}
+
+/**
+ * 获取属性
+ * - getFields() 获取所有public修饰的属性，包含本类以及所有父类的
+ * - getDeclaredFields() 获取本类中所有属性，包含private
+ */
+public static void getFields() {
+	Field[] fields = personCls.getFields();
+	for (Field field : fields) {
+		System.out.println("本类以及父类的属性=" + field.getName());
+		// 本类以及父类的属性=name
+		// 本类以及父类的属性=hobby
+	}
+
+	Field[] declaredFields = personCls.getDeclaredFields();
+	for (Field declaredField : declaredFields) {
+		// 默认修饰符是0，public是1，private是2，protected是4，static是8，final是16
+		System.out.println("本类中所有属性=" + declaredField.getName()
+				+ " 该属性的修饰符值=" + declaredField.getModifiers()
+				+ " 该属性的类型=" + declaredField.getType());
+		// 本类中所有属性=name 该属性的修饰符值=1 该属性的类型=class java.lang.String
+		// 本类中所有属性=age 该属性的修饰符值=12 该属性的类型=int
+		// 本类中所有属性=job 该属性的修饰符值=0 该属性的类型=class java.lang.String
+		// 本类中所有属性=sal 该属性的修饰符值=2 该属性的类型=double
+	}
+}
+
+/**
+ * 获取方法
+ * - getMethods() 获取所有public修饰的方法，包含本类以及所有父类的
+ * - getDeclaredMethods() 获取本类中所有方法
+ */
+public static void getMethods() {
+	Method[] methods = personCls.getMethods();
+	for (Method method : methods) {
+		System.out.println("本类以及父类public方法=" + method.getName());
+		// 本类以及父类public方法=m1
+		// 本类以及父类public方法=hi
+		// 本类以及父类public方法=wait
+		// 本类以及父类public方法=wait
+		// 本类以及父类public方法=wait
+		// 本类以及父类public方法=equals
+		// 本类以及父类public方法=toString
+		// 本类以及父类public方法=hashCode
+		// 本类以及父类public方法=getClass
+		// 本类以及父类public方法=notify
+		// 本类以及父类public方法=notifyAll
+	}
+
+	Method[] declaredMethods = personCls.getDeclaredMethods();
+	for (Method declaredMethod : declaredMethods) {
+		System.out.println("---- 本类中所有方法=" + declaredMethod.getName()
+				+ " 该方法的访问修饰符值=" + declaredMethod.getModifiers()
+				+ " 该方法返回类型" + declaredMethod.getReturnType());
+		// 输出当前这个方法的形参数组情况
+		Class<?>[] parameterTypes = declaredMethod.getParameterTypes();
+		for (Class<?> parameterType : parameterTypes) {
+			System.out.println("该方法的形参类型=" + parameterType);
+		}
+		// ---- 本类中所有方法=m1 该方法的访问修饰符值=1 该方法返回类型void
+		// 该方法的形参类型=class java.lang.String
+		// 该方法的形参类型=int
+		// 该方法的形参类型=double
+		// ---- 本类中所有方法=m2 该方法的访问修饰符值=4 该方法返回类型class java.lang.String
+		// ---- 本类中所有方法=m3 该方法的访问修饰符值=0 该方法返回类型void
+		// ---- 本类中所有方法=hi 该方法的访问修饰符值=4161 该方法返回类型void
+		// ---- 本类中所有方法=m4 该方法的访问修饰符值=2 该方法返回类型void
+	}
+}
+```
+
+### 取消安全检查
+
+```java
+public void setAccessible(boolean flag)
+```
+
+Method、Field、Constructor 对象都有 `setAccessible()`方法
+
+Flag 为 true 表明屏蔽 Java 语言的访问检查、使得对象的**私有属性**也可以被查询和设置
+
+```java
+@Test
+public void testSetAccessible() throws Exception {
+    Class<?> catCls = Class.forName("com.boer.pojo.Cat");
+    Object o = catCls.newInstance();
+    Method hi = catCls.getDeclaredMethod("hi"); //hi为私有方法
+    hi.setAccessible(true); //取消安全检查
+    hi.invoke(o); //hi~
+}
+
+public class Cat{
+    private void hi(){
+        System.out.println("hi~");
+    }
+}
+```
+
+### 通过反射创建对象的方式
+
+无参、有参、private 有参
+
+```java
+public static void main(String[] args) throws Exception {
+    Class<?> userClass = Class.forName("reflection.User");
+    //通过public的无参构造器创建实例
+    Object o = userClass.newInstance();
+    System.out.println(o);
+
+    //通过public的有参构造器创建实例
+    //先得到对应构造器 getConstructor()
+    Constructor<?> constructor = userClass.getConstructor(String.class);
+    //创建实例，并传入实参
+    Object hsp = constructor.newInstance("hsp");
+    System.out.println("hsp=" + hsp);
+
+    //通过非public的有参构造器创建实例
+    //得到private的构造器对象 getDeclaredConstructor()
+    Constructor<?> constructor1 = userClass.getDeclaredConstructor(int.class, String.class);
+    //创建实例
+    //暴破【暴力破解】, 使用反射可以访问private构造器/方法/属性, 反射面前，都是纸老虎
+    constructor1.setAccessible(true);
+    Object user2 = constructor1.newInstance(100, "张三丰");
+    System.out.println("user2=" + user2);
+}
+```
+
+```java
+class User {
+    private int age = 10;
+    private String name = "韩顺平教育";
+
+    public User() {}
+
+    public User(String name) {
+        this.name = name;
+    }
+
+    private User(int age, String name) {
+        this.age = age;
+        this.name = name;
+    }
+
+    public String toString() {
+        return "User [age=" + age + ", name=" + name + "]";
+    }
+}
+```
+
+
+
+### 通过反射访问类中的属性
+
+如果是静态属性，则 set 和 get 中的参数 Object，可以写成 null
+
+```java
+public class ReflecAccessMethod {
+    public static void main(String[] args) throws Exception {
+        Class<?> stuClass = Class.forName("reflection.Student");
+        Object o = stuClass.newInstance();
+
+        //操作public属性
+        Field age = stuClass.getField("age");
+        age.set(o, 88);//设置属性值
+        System.out.println(age.get(o));//获取属性值
+
+        //操作private属性
+        Field name = stuClass.getDeclaredField("name");
+        name.setAccessible(true); //爆破
+        name.set(null, "老韩~"); //static属性，o也可以null
+        System.out.println(name.get(o)); //获取属性值
+        System.out.println(name.get(null)); //获取static属性值
+    }
+}
+
+class Student {
+    public int age;
+    private static String name;
+
+    public Student() {}
+
+    public String toString() {
+        return "Student [age=" + age + ", name=" + name + "]";
+    }
+}
+```
+
+
+
+### 通过反射访问类中的方法
+
+```java
+public class ReflectionDemo {
+    public static void main(String[] args) throws Exception{
+        Class<?> bossCls = Class.forName("reflection.Boss");
+        Object o = bossCls.newInstance();
+        //调用public的方法
+        //得到hi方法对象，下面两种都可以
+        //Method hi = bossCls.getMethod("hi", String.class);
+        Method hi = bossCls.getDeclaredMethod("hi", String.class);
+        //调用
+        hi.invoke(o, "韩顺平教育~");
+
+        //调用private static 方法
+        Method say = bossCls.getDeclaredMethod("say", int.class, String.class, char.class);
+        //暴破
+        say.setAccessible(true);
+        System.out.println(say.invoke(o, 100, "张三", '男'));
+        //因为say方法是static的，还可以这样调用 ，可以传入null
+        System.out.println(say.invoke(null, 200, "李四", '女'));
+
+        //在反射中，如果方法有返回值，统一返回Object , 但是他运行类型和方法定义的返回类型一致
+        Object reVal = say.invoke(null, 300, "王五", '男');
+        System.out.println("reVal 的运行类型=" + reVal.getClass());//String
+        
+        //演示一个返回的案例
+        Method m1 = bossCls.getDeclaredMethod("m1");
+        Object reVal2 = m1.invoke(o);
+        System.out.println("reVal2的运行类型=" + reVal2.getClass());//Monster
+    }
+}
+
+class Monster {}
+
+class Boss {
+    public int age;
+    private static String name;
+
+    public Boss() {}
+
+    public Monster m1() {
+        return new Monster();
+    }
+
+    private static String say(int n, String s, char c) {//静态方法
+        return n + " " + s + " " + c;
+    }
+
+    public void hi(String s) {//普通public方法
+        System.out.println("hi " + s);
     }
 }
 ```
