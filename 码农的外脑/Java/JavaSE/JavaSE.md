@@ -968,9 +968,8 @@ class B extends A {
 - 相当于另外一种形式的构造器，可以做**初始化操作**
 - 如果多个构造器都有重复的语句，可以抽取到初始化块中，提高代码的重用性
 
-> 普通代码块
+普通代码块：每创建一个对象执行一次
 
-==每创建一个对象执行一次==
 ```java
 public class Test1 {
     public static void main(String[] args) {
@@ -1014,9 +1013,8 @@ class Movie {
 }
 ```
 
-> 静态代码块
+静态代码块：`static{...}`，作用是对类进行**初始化**，随着类的加载而执行，并且只会执行一次
 
-`static{...}`，作用是对类进行**初始化**，随着类的加载而执行，并且==只会执行一次==
 ```java
 public class Test2 {
     public static void main(String[] args) {
@@ -1059,7 +1057,7 @@ class Cat extends Animal {
 }
 ```
 
-> 只是使用类的静态成员，普通代码块不会执行
+只是使用类的静态成员，普通代码块不会执行
 
 ```java
 public class Test3 {
@@ -1083,7 +1081,7 @@ class A {
 }
 ```
 
-> 静态代码块只能调用**静态成员**，普通代码块可以调用**任意成员**
+静态代码块只能调用**静态成员**，普通代码块可以调用**任意成员**
 
 ```java
 class A {
