@@ -470,7 +470,7 @@ public class Demo {
 - 执行 Main 方法的当前类。
 - 子类的初始化 clinit 调用之前，会**先调用**父类的 clinit 初始化方法
 
-【#VM参数】 `-XX:+TraceClassLoading` 打印出加载并初始化的类
+#VM参数 `-XX:+TraceClassLoading` 打印出加载并初始化的类
 
 【案例】初始化日志打印演示
 ```java
@@ -706,9 +706,9 @@ public class ExtClassLoaderDemo {
 }
 ```
 
-通过扩展类加载器去加载用户 jar 包：
+通过“扩展类加载器”去加载用户 jar 包：
 - 【不推荐】放入 /jre/lib/ext 下进行扩展：尽可能不要去更改 JDK 安装目录中的内容
-- 【推荐】 #VM参数  参数扩展： `-Djava.ext.dirs=jar包目录[分隔符]用户jar包目录` 
+- 【推荐】 #VM参数  `-Djava.ext.dirs=<jar包目录>[分隔符]<用户jar包目录>` 扩展加载路径
 	- 这种方式会覆盖掉原始目录（应该是 `/jre/lib/ext`，By Boer.），所以用分隔符追加上原始目录。
 		- Windows 分隔符 `;`
 		- Macos/linux 分隔符 `:`
@@ -1222,8 +1222,7 @@ Java 虚拟机栈**内存溢出**时会出现 **`StackOverflowError` 的错误**
 
 ![](assets/Pasted%20image%2020240120163257.png)
 
-#VM参数 修改 Java 虚拟机栈的大小
-- 语法：`-Xss栈大小` 
+#VM参数 `-Xss<size>[unit]` 修改 Java 虚拟机栈的大小
 - 单位：字节（默认，必须是 1024 的倍数）、k 或者 K (KB)、m 或者 M (MB)、g 或者 G (GB)
 
 >  `-XX:ThreadStackSize=1024` 调整标志来配置栈大小，推荐 `-Xss`
@@ -1251,9 +1250,9 @@ public class StackOverflowDemo {
 ```
 
 注意事项：
-- HotSpot 虚拟机 对栈大小的**最大值和最小值**有要求。Windows（64 位）下的 JDK 8 测试最小值为 180 k，最大值为 1024m
-- **局部变量**过多、**操作数栈深度**过大也会影响栈内存的大小
-	-  一般情况下，工作中即便使用了递归进行操作，栈的深度最多也只能到几百，不会出现栈的溢出。所以此参数可以**手动指定为 `-Xss256k` 节省内存**。
+- HotSpot 虚拟机对**栈大小的最大值和最小值**有要求。Windows（64 位）下的 JDK 8 测试最小值为 180 k，最大值为 1024m
+- **局部变量过多**、**操作数栈深度过大**也会影响栈内存的大小
+	-  一般情况下，工作中即便使用了递归进行操作，栈的深度最多也只能到几百，不会出现栈的溢出。所以此参数可以**手动指定为 `-Xss256k` 节省内存**
 
 ## 本地方法栈
 
@@ -1324,8 +1323,8 @@ public class OutOfMemoryError {
 
 堆空间有三个需要关注的值：
 1. `used`：已使用的堆内存
-2. `total`：java 虚拟机已经分配的可用堆内存
-3. `max`：java 虚拟机可以分配的最大堆内存
+2. `total`：java 虚拟机已经分配的可用堆内存（最小堆大小）
+3. `max`：java 虚拟机可以分配的最大堆内存（最大堆大小）
 
 #Arthas  `memory` 命令监控下面程序的内存情况
 
@@ -1351,10 +1350,9 @@ public class OutOfMemoryError {
 如果堆内存不足，java 虚拟机就会不断地分配内存，**total 会变大**，total 最多只能和 max 相等。
 
 > 当 used=max=total 的时候，堆内存就溢出了吗？
-> 
-> 不是，堆内存溢出的判断条件比较复杂，在下一章《垃圾回收器》中会详细介绍。
+> - 不是，堆内存溢出的判断条件比较复杂，在下一章《垃圾回收器》中会详细介绍。
 
-#VM参数 堆大小设置 `-Xmx` （max）和 `-Xms` （total）
+#VM参数  `-Xmx<size>[unit]` 和 `-Xms<size>[unit]` 指定最小和最大“堆”大小
 - 单位：字节（默认，必须是 1024 的倍数）、k 或者 K (KB)、m 或者 M (MB)、g 或者 G (GB)
 - 限制：Xmx 必须大于 2 MB，Xms 必须大于 1MB
 
@@ -1394,7 +1392,7 @@ public class OutOfMemoryError {
 方法区是《JVM 规范》中设计的**虚拟概念**，每款 JVM 在实现上都各不相同。**Hotspot** 设计如下：
 - Jdk7 及之前的版本，将方法区放在**堆**中的**永久代**空间，堆的大小由 JVM 参数来控制。
 - Jdk8 及之后的版本，将方法区放在**元空间**中，元空间位于操作系统的**直接内存**中，默认情况下只要不超过操作系统承受的上限，可以一直分配。
-	- #VM参数  `-XX:MaxMetaspaceSize=值` 对元空间大小进行限制
+	- #VM参数  `-XX:MaxMetaspaceSize=<size>[unit]` 对元空间大小进行限制
 
 > 【案例】模拟方法区的溢出
 > 
@@ -1564,12 +1562,9 @@ public class Demo {
 }
 ```
 
----
-手动调整直接内存的大小
-- #VM参数：`-XX:MaxDirectMemorySize=大小`
-- 默认不设置该参数的情况下，JVM 自动选择最大分配的大小
+#VM参数 `-XX:MaxDirectMemorySize=<size>[unit]` 手动调整直接内存的大小。默认不设置该参数的情况下，JVM 自动选择最大分配的大小
 
-# JVM 的垃圾回收
+# ---------- JVM 的垃圾回收
 
 > 在 C/C++这类没有自动垃圾回收机制的语言中，一个对象如果不再使用，需要手动释放，否则就会出现内存泄漏。我们称这种释放对象的过程为垃圾回收，而需要程序员编写代码进行回收的方式为**手动回收**。
 
@@ -2158,6 +2153,10 @@ class ObjectThread extends Thread {
 
 #### 标记-整理算法
 
+> #《深入理解Java虚拟机》 
+> 
+> 针对**老年代对象的存亡特征**，1974 年 Edward Lueders 提出了另外一种有针对性的“标记-整理”（Mark-Compact）算法，其中的标记过程仍然与“标记-清除”算法一样，但后续步骤不是直接对可回收对象进行清理，而是**让所有存活的对象都向内存空间一端移动，然后直接清理掉边界以外的内存**
+
 也叫标记压缩算法，是对标记清理算法中容易产生内存碎片问题的一种解决方案。
 
 核心思想分为两个阶段：
@@ -2173,11 +2172,39 @@ class ObjectThread extends Thread {
 缺点：
 - *整理阶段的效率不高*：整理算法有很多种，比如 Lisp2 整理算法需要对整个堆中的对象搜索3次，整体性能不佳。可以通过 TwoFinger、表格算法、ImmixGC 等高效的整理算法优化此阶段的性能
 
-#### 分代 gc 算法
+#### 分代收集算法
+
+> #《深入理解Java虚拟机》 
+> 
+> 针对 HotSpot VM 的实现，它里面的 GC 其实准确分类只有两大种
+> 
+> 1）部分收集（Partial GC）：指目标不是完整收集整个 Java 堆的垃圾收集，其中又分为：
+> - 新生代收集（Minor GC/Young GC）：指目标只是新生代的垃圾收集。
+> - 老年代收集（Major GC/Old GC）：指目标只是老年代的垃圾收集。目前只有 CMS 收集器会有单独收集老年代的行为。另外请注意“Major GC”这个说法现在有点混淆，在不同资料上常有不同所指，读者需按上下文区分到底是指老年代的收集还是整堆收集。
+> - 混合收集（Mixed GC）：指目标是收集整个新生代以及部分老年代的垃圾收集。目前只有 G1 收集器会有这种行为。
+>   
+> 2）整堆收集（Full GC）：收集整个 Java 堆和方法区的垃圾收集。
+> 
+> ---
+> 分代内存分配和回收规则：
+>   
+> 1）对象优先在新生代中 Eden 区分配。
+> - 当 Eden 区没有足够空间进行分配时，虚拟机将发起一次 Minor GC。
+>   
+> 2）大对象直接进入老年代
+> - 大对象就是指需要大量连续内存空间的 Java 对象，最典型的大对象便是那种很长的字符串，或者元素数量很庞大的数组
+> - 比遇到一个大对象更加坏的消息就是遇到一群“朝生夕灭”的“短命大对象”，我们**写程序的时候应注意避免**
+> 	- 在分配空间时，它容易导致内存明明还有不少空间时就提前触发垃圾收集，以获取足够的连续空间才能安置好它们，
+> 	- 而当复制对象时，大对象就意味着高额的内存复制开销
+> - HotSpot 虚拟机提供了 #VM参数 `-XX:PretenureSizeThreshold` （只对 Serial 和 ParNew 两款新生代收集器有效），指定大于该设置值的对象直接在老年代分配，这样做的目的就是**避免在 Eden 区及两个 Survivor 区之间来回复制** 
+>   
+> 3）动态对象年龄判定
+>  - 如果在 Survivor 空间中**相同年龄所有对象大小的总和**大于 Survivor 空间的一半，年龄大于或等于该年龄的对象就可以直接进入老年代，无须等到 #VM参数  `-XX:MaxTenuringThreshold` 中要求的年龄。
+>   
 
 现代优秀的垃圾回收算法，会将上述描述的垃圾回收算法组合进行使用，其中应用最广的就是分代垃圾回收算法 (Generational GC)。
 
-分代垃圾回收将整个内存区域划分为*年轻代*和*老年代*
+分代垃圾回收将整个内存区域划分为“年轻代”和“老年代”。
 
 分代 gc 过程：
 - 分代回收时，创建出来的对象，首先会被放入 *Eden 伊甸园区*。
@@ -2187,7 +2214,7 @@ class ObjectThread extends Thread {
 	- 此时会回收 eden 区和 S1 (from) 中的对象，并把 eden 和 from 区中剩余的对象放入 S0。
 	- 注意：每次 Minor GC 中都会为对象记录他的年龄，初始值为 0，每次 GC 完加 1。
 - 如果 Minor GC 后对象的年龄达到**阈值（最大 15，默认值和垃圾回收器有关）**，对象就会被晋升至*老年代*。
-	- 【By Boer】如果 To 区放不下了没到年龄的应该也会提前晋升老年代
+	- #Boer 如果 To 区放不下了没到年龄的应该也会提前晋升老年代
 - 当老年代中空间不足，无法放入新的对象时，
 	- **先尝试** minor gc，
 	- 如果还是不足，就会触发 *Full GC*，Full GC 会**对整个堆进行垃圾回收**。
@@ -2203,15 +2230,15 @@ class ObjectThread extends Thread {
 ![](assets/Pasted%20image%2020240124153809.png)
 
 ---
-【#VM参数】在 JDK8中， `-XX:+UseSerialGC` ：使用分代 gc 的垃圾回收器运行程序。
+相关 #VM参数 
 
-| 参数名 | 参数含义 |  |
-| ---- | ---- | ---- |
-| `-Xms` | 设置堆的最小和初始大小，必须是 1024 倍数且大于 1 MB |  |
-| `-Xmx` | 设置最大堆的大小，必须是 1024 倍数且大于 2 MB |  |
-| `-Xmn` | *新生代* 的大小 |  |
-| `-XX:SurvivorRatio` | *伊甸园区* 和 *幸存区* 的比例，默认为 8<br><br>例如：新生代 1 g 内存，伊甸园区 800 MB, S0 和 S1各100MB |  |
-| `-XX:+PrintGCDetails` or  `-verbose:gc` | 打印 GC 日志日志 |  |
+| 参数名 | 参数含义 |
+| ---- | ---- |
+| `-Xms` | 设置堆的最小和初始大小，必须是 1024 倍数且大于 1 MB |
+| `-Xmx` | 设置“最大堆”的大小，必须是 1024 倍数且大于 2 MB |
+| `-Xmn<size>[unit]` | “新生代”的大小 |
+| `-XX:SurvivorRatio=<ratio>` | “伊甸园区”和“幸存区” 的比例，默认为 8<br><br>例如：新生代 1 g 内存，伊甸园区 800 MB, S0 和 S1 各 100MB |
+| `-XX:+PrintGCDetails` or  `-verbose:gc` | 打印 GC 日志 |
 
 【案例】分代 gc 演示
 
@@ -2315,16 +2342,24 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 - 缺点：多 CPU 下吞吐量不如其他垃圾回收器，堆如果偏大会让用户线程处于长时间的等待
 - 适用场景：与 **Serial 垃圾回收器搭配使用**，或者在 **CMS 特殊情况**下使用
 
-【#VM参数】 `-XX:+UseSerialGC` 新生代、老年代都使用串行回收器。
+#VM参数 `-XX:+UseSerialGC` 新生代、老年代都使用串行回收器。
 
 #### ParNew
+
+> #《深入理解Java虚拟机》 
+> 
+> 在 JDK 5 中使用 CMS 来收集老年代的时候，新生代只能选择 ParNew 或者 Serial 收集器中的一个。ParNew 收集器是激活 CMS 后（使用 `-XX:+UseConcMarkSweepGC` 选项）的默认新生代收集器，也可以使用 `-XX:+/-UseParNewGC` 选项来强制指定或者禁用它。
+> 
+> 官方希望它能完全被 G1 所取代，甚至还取消了 ParNew 加 Serial Old 以及 Serial 加 CMS 这两组收集器组合的支持（其实原本也很少人这样使用），并直接取消了 `XX:+UseParNewGC` 参数，这意味着 ParNew 和 CMS 从此只能互相搭配使用，
+> 
+> ParNew 收集器在单核心处理器的环境中绝对不会有比 Serial 收集器更好的效果
 
 *ParNew* 本质是对 Serial 在多 CPU 下的优化，**多线程**垃圾回收**年轻代**的垃圾回收器。
 - 复制算法
 - 优点：多 CPU 处理器下停顿时间较短
 - 缺点：吞吐量和停顿时间不如 G1，所以在 JDK 9 之后不建议使用
 - 适用场景：**JDK8 及之前**的版本中，与 CMS 老年代垃圾回收器搭配使用
-- 【#VM参数】 `-XX:+UseParNewGC `， 新生代使用 ParNew 回收器，老年代使用串行回收器
+- #VM参数 `-XX:+UseParNewGC`：新生代使用 ParNew 回收器，老年代使用串行回收器（该组合 JDK9 废弃）
 
 ![](assets/Pasted%20image%2020240125151027.png)
 
@@ -2334,11 +2369,11 @@ Exception in thread "main" java.lang.OutOfMemoryError: Java heap space
 
 *CMS* (Concurrent Mark Sweep) 垃圾回收器关注的是系统的**暂停时间**，允许用户线程和垃圾回收线程在某些步骤中同时执行，减少了用户线程的等待时间。
 - 老年代
-- 标记清除算法
+- 标记-清除算法
 - 优点：系统由于垃圾回收出现的停顿时间较短，用户体验好
 - 缺点：内存碎片问题、退化问题、浮动垃圾问题
 - 适用场景：大型的互联网系统中**用户请求数据量大、频率高的场景**比如订单接口、商品接口等
-- 【#VM参数】：`-XX:+UseConcMarkSweepGC`
+- #VM参数 `-XX:+UseConcMarkSweepGC` ParNew + CMS
 
 > 关注点更多的是用户线程的停顿时间（提高用户体验）
 
@@ -2351,8 +2386,8 @@ CMS 执行步骤：
 ![](assets/Pasted%20image%2020240125161108.png)
 
 缺点：
-- CMS 使用了标记-清除算法，在垃圾收集结束之后会出现大量的内存碎片，CMS 会在 Full GC 时进行碎片的整理。这样会导致用户线程暂停，
-	- 可以使用 `-XX:CMSFullGCsBeforeCompaction=N` 参数（默认0），调整 N 次 Full GC 之后再整理。
+- CMS 使用了“标记-清除”算法，在垃圾收集结束之后会出现大量的内存碎片，CMS 会在 Full GC 时进行碎片的整理。这样会导致用户线程暂停，
+	- 可以使用 #VM参数  `-XX:CMSFullGCsBeforeCompaction=<N>` （默认0）调整 N 次 Full GC 之后再整理。
 - 无法处理在并发清理过程中产生的 “浮动垃圾”，不能做到完全的垃圾回收。
 - 如果老年代内存不足无法分配对象，CMS 就会**退化成 Serial Old** 单线程回收老年代。
 
@@ -2362,35 +2397,35 @@ CMS 执行步骤：
 - 相较于 ParNew 的特别之处
 	- 关注的是系统的**吞吐量**。
 	- 具备**自动调整堆内存**大小的特点。
-- 复制算法
-- 优点：吞吐量高，而且手动可控。为了提高吞吐量，虚拟机会动态调整堆的参数
+- 复制算法提
+- 优点：吞吐量高，而且手动可控。为了高吞吐量，虚拟机会动态调整堆的参数
 - 缺点：不能保证**单次**的停顿时间
-- 适用场景：后台任务，**不需要与用户交互**，并且**容易产生大量的对象**。比如：大数据的处理，大文件导出
+- 适用场景：**后台任务**，不需要与用户交互，并且**容易产生大量的对象**。比如：大数据的处理，大文件导出
 
 > 并行
 
 ![](assets/Pasted%20image%2020240125163925.png)
 
 *Parallel Old* 是为 Parallel Scavenge 收集器设计的**老年代**版本，利用**多线程**并发收集。
-- 标记整理算法
+- 标记-整理算法
 - 优点：并发收集，在多核 CPU 下效率较高
 - 缺点：暂停时间会比较长
 - 适用场景：**与 Parallel Scavenge 配套使用**
 
 > 教案写错了应该，并行
 
-【#VM参数】 
--  `-XX:+UseParallelGC`：Parallel 处理器+老年代串行
-- `-XX:+UseParallelOldGC` ：以使用 Parallel Scavenge + Parallel Old 这种组合。
+#VM参数 设置并行回收器
+- `-XX:+UseParallelGC`：年轻代并行+老年代串行（JDK9 废弃）
+- `-XX:+UseParallelOldGC` ：使用 Parallel Scavenge + Parallel Old 这种组合。
 
 ---
-Parallel Scavenge 允许手动设置**最大**暂停时间和吞吐量。
+Parallel Scavenge 允许手动设置“最大暂停时间”和“吞吐量”。
 - Oracle 官方建议在使用这个组合时，**不要设置堆内存的最大值**，垃圾回收器会根据最大暂停时间和吞吐量自动调整内存大小。
 
-【#VM参数】
-- 最大暂停时间： `-XX:MaxGCPauseMillis=n` 设置每次垃圾回收时的最大停顿毫秒数
-- 吞吐量：`-XX:GCTimeRatio=n` 设置吞吐量为 n（用户线程执行时间 = `n/(n + 1)`）
-- 自动调整内存大小：`-XX:+UseAdaptiveSizePolicy` 设置可以让垃圾回收器根据吞吐量和最大停顿的毫秒数自动调整内存大小
+相关的 #VM参数
+-  `-XX:MaxGCPauseMillis=<n>` 设置最大暂停时间，n 为每次垃圾回收时的最大停顿毫秒数
+- `-XX:GCTimeRatio=<n>` 设置吞吐量为 n（用户线程执行时间 = `n/(n + 1)`）
+- `-XX:+UseAdaptiveSizePolicy` 让垃圾回收器根据“吞吐量”和“最大暂停时间”自动调整内存大小
 
 #### G1
 
@@ -2400,7 +2435,7 @@ Parallel Scavenge 允许手动设置**最大**暂停时间和吞吐量。
 > 
 > 2）*CMS* 关注暂停时间，但是**吞吐量方面会下降**。
 
-而 G1 **设计目标**就是将上述两种垃圾回收器的**优点融合**：
+而 G1 设计目标就是将上述两种垃圾回收器的**优点融合**：
 1. 支持巨大的堆空间回收，并有较高的吞吐量。
 2. 支持多CPU并行垃圾回收。
 3. 允许用户设置最大暂停时间。
@@ -2410,8 +2445,7 @@ Parallel Scavenge 允许手动设置**最大**暂停时间和吞吐量。
 内存结构
 - G1 的整个堆会被划分成多个**大小相等**的区域，称之为区 Region，区域**不要求是连续**的。分为 Eden、Survivor、Old 区。
 - Region 的大小通过 `堆空间大小/2048` 计算得到，
-- 【#VM参数】 `-XX:G1HeapRegionSize=32m` 也可以指定
-- Region size 必须是2的指数幂，取值范围从1M 到32M。
+- #VM参数 `-XX:G1HeapRegionSize=32m` 也可以指定 Region size，必须是2的指数幂，取值范围从1M 到32M。
 
 ---
 G1 垃圾回收有两种方式：
@@ -2421,7 +2455,7 @@ G1 垃圾回收有两种方式：
 回收 **Eden 区和 Survivor 区**中不用的对象。
 
 会导致 **STW**，
-- 【#VM参数】 `-XX:MaxGCPauseMillis=n`（默认 200） 设置每次垃圾回收时的**最大暂停时间毫秒数**，G1 垃圾回收器会尽可能地保证暂停时间。
+- #VM参数 `-XX:MaxGCPauseMillis=<n>`（默认 200） 设置每次垃圾回收时的**最大暂停时间毫秒数**，G1 垃圾回收器会尽可能地保证暂停时间。
 
 执行流程：
 - 新创建的对象会存放在 Eden 区。当 G1 判断年轻代区不足（max 默认 60%），无法分配对象时需要回收时会执行 Young GC。
@@ -2437,7 +2471,7 @@ G1 垃圾回收有两种方式：
 2）混合回收（Mixed GC）
 
 多次回收之后，会出现很多 Old 老年代区，此时**总堆占有率**达到阈值时会触发混合回收。
-- 【#VM参数】总堆占有率阈值 `-XX:InitiatingHeapOccupancyPercent` (默认 45%)
+- #VM参数  `-XX:InitiatingHeapOccupancyPercent` 设置总堆占有率阈值 (默认 45%)
 
 回收区域：
 - 所有年轻代
@@ -2479,9 +2513,9 @@ public class G1GCDemo {
 
 ---
 G1 总结：
-- 【#VM参数】
+- 相关 #VM参数
 	- `-XX:+UseG1GC` 打开 G1 的开关，JDK 9 之后默认不需要打开
-	- `-XX:MaxGCPauseMillis=毫秒值` 最大暂停的时间
+	- `-XX:MaxGCPauseMillis=<毫秒值>` 最大暂停的时间
 - 回收年代和算法
 	- 年轻代+老年代
 	- 复制算法
@@ -2504,5 +2538,55 @@ JDK9 之后:
 
 从 JDK9 之后，由于 G1 日趋成熟，JDK 默认的垃圾回收器已经修改为 G1，所以**强烈建议在生产环境上使用 G1。**
 
+# ---------- VM 参数汇总
 
+## 类加载相关参数
 
+- `-XX:+TraceClassLoading`：打印出加载并初始化的类
+- `-Djava.ext.dirs=<jar包目录>[分隔符]<用户jar包目录>`：“扩展类加载器”扩展加载路径
+
+## 内存区域
+
+- `-Xss<size>[unit]` 修改 “Java 虚拟机栈”的大小
+- `-Xmx<size>[unit]` 和 `-Xms<size>[unit]` 指定最小和最大“堆”大小
+- `-XX:MaxMetaspaceSize=<size>[unit]` 对元空间大小进行限制
+- `-XX:MaxDirectMemorySize=<size>[unit]` 手动调整直接内存的大小。
+
+## 垃圾回收
+
+### gc 日志
+
+`-XX:+PrintGCDetails` or `-verbose:gc` 打印垃圾回收的日志
+
+### 分代策略
+
+- `-Xmn<size>[unit]` 设置“新生代”大小
+- `-XX:SurvivorRatio=<ratio>` 设置“伊甸园区”和“幸存区” 的比例
+- `-XX:PretenureSizeThreshold` 指定**大于该设置值的对象**直接在老年代分配（只对 Serial 和 ParNew 两款新生代收集器有效）
+- `-XX:MaxTenuringThreshold=<age>` 设置年龄阈值。
+
+### 垃圾回收器
+
+> 按照 JDK9 之后的标准，JDK8 废弃的没有整理在内
+> 
+> ![](assets/Pasted%20image%2020240124173211.png)
+
+指定垃圾回收器
+- `-XX:+UseSerialGC` 新生代和老年代都使用串行回收器
+- `-XX:+UseConcMarkSweepGC` ParNew + CMS
+- `-XX:+UseParallelOldGC` Parallel Scavenge + Parallel Old
+- `-XX:+UseG1GC` 打开 G1 的开关，JDK 9 之后默认不需要打开
+
+CMS
+- `-XX:CMSFullGCsBeforeCompaction=<N>`（默认0）调整 N 次 Full GC 之后再整理
+
+Parallel Scavenge
+- `-XX:MaxGCPauseMillis=<n>` 设置最大暂停时间，n为毫秒数
+- `-XX:GCTimeRatio=<n>` 设置吞吐量为 n
+- `-XX:+UseAdaptiveSizePolicy` 让垃圾回收器根据“吞吐量”和“最大暂停时间”自动调整内存大小
+
+G1
+- `-XX:G1HeapRegionSize=32m` 指定“Region size”，必须是 2 的指数幂，取值范围从 1M 到 32M。
+- `-XX:MaxGCPauseMillis=<n>`（默认 200） 设置每次垃圾回收时的“最大暂停时间”毫秒数，G1 垃圾回收器会尽可能地保证暂停时间
+- `-XX:InitiatingHeapOccupancyPercent` 设置“总堆占有率”阈值 (默认 45%)
+- 
