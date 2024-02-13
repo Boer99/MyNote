@@ -11,7 +11,9 @@
 - 在一个进程中，如果开辟了多个线程，线程的运行由调度器安排调度，调度器是与操作系统紧密相关的，先后顺序是不能人为的干预的。对同一份资源操作时，会存在资源抢夺的问题，需要加入并发控制
 - 线程会带来额外的开销，如 cpu 调度时间，并发控制开销。
 - 每个线程在自己的工作内存交互，内存控制不当会造成数据不一致
+
 ## 线程创建
+
 ### 继承 Thread 类
 
 1. 自定义线程类**继承Thread类**
@@ -48,8 +50,9 @@ public class TestThread1 extends Thread {
 ### 实现 Runnable 接口
 
 1. 定义 MyRunnable 类实现 Runnable 接口
-2. 重写 run() 方法，编写线程执行体
-3. 创建Thread对象，调用 start() 方法启动线程
+2. 重写 `run()` 方法，编写线程执行体
+3. 创建 Thread 对象，调用 start() 方法启动线程
+
 ```java
 public class TestThread3 implements Runnable {
 
@@ -1150,14 +1153,15 @@ class Tv {
       - wait()会释放锁
 
 ## JDK5新增两种线程创建方式
-### 实现`Callable`接口
 
-- 创建一个实现`Callable`的实现类
-- 实现`call`方法
-- 创建`Callable`接口实现类的对象object1
-- 创建`FutureTask`的对象object2，参数为object1
-- 创建`Thread`对象，参数为object2，并调用start()
-- `futureTask.get()`获取Callable中call方法的返回值
+### 实现 Callable 接口
+
+- 创建 `Callable` 的实现类，实现 `call` 方法
+- 创建 `Callable` 对象 object1
+- 创建 `FutureTask` 的对象 object2，参数为 object1
+- 创建 `Thread` 对象，参数为 object2，并调用 start()
+- `futureTask.get()` 获取 Callable 中 call 方法的返回值
+
 ```java
 // 1.创建一个实现Callable的实现类
 class NumThread implements Callable {
@@ -1174,7 +1178,6 @@ class NumThread implements Callable {
         return sum;
     }
 }
-
 
 public class ThreadNew {
     public static void main(String[] args) {
@@ -1200,13 +1203,14 @@ public class ThreadNew {
 }
 ```
 
-如何理解实现`Callable`接口的方式创建多线程比实现`Runnable`接口创建多线程方式强大？
+实现 `Callable` 接口的方式创建多线程 比 实现 `Runnable` 接口创建多线程方式强大？
 
-1. call()可以有返回值的。
-2. call()可以抛出异常，被外面的操作捕获，获取异常的信息
-3. Callable支持泛型
+1. `call()` 可以有返回值。
+2. `call()` 可以抛出异常，被外面的操作捕获，获取异常的信息
+3. `Callable` 支持泛型
 
 ### 线程池
+
 背景：经常创建和销毁、使用量特别大的资源，比如并发情况下的线程，对性能影响很大。
 
 思路：**提前创建**好多个线程，放入线程池中，**使用时直接获取**，使用完放回池中。可以避免频繁创建销毁、实现重复利用。类似生活中的公共交通工具。
@@ -1221,13 +1225,13 @@ public class ThreadNew {
    - `maximumPoolSize`：最大线程数
    - `keepAliveTime`：线程没有任务时最多保持多长时间后会终止
 
-JDK 5.0 起提供了线程池相关 API: `ExecutorService`和 `Executor`
-
+JDK 5.0 起提供了线程池相关 API: `ExecutorService` 和 `Executor`
 - `ExecutorService`：真正的线程池接口。常见子类 `ThreadPoolExecutor`
-   - （1）`void execute(Runnable command)`︰执行任务/命令，没有返回值，**一般用来执行Runnable**
-   - （2）`<T> Future<T> submit(Callable<T> task)`：执行任务，有返回值，**一般用来执行Callable**
+   - （1）`void execute(Runnable command)`︰执行任务/命令，没有返回值，**一般用来执行 Runnable**
+   - （2）`<T> Future<T> submit(Callable<T> task)`：执行任务，有返回值，**一般用来执行 Callable**
    - （3）`void shutdown()`︰关闭连接池
 - `Executors`：工具类、线程池的工厂类，用于创建并返回不同类型的线程池
+
 ```java
 //测试线程池
 public class TestPool {
