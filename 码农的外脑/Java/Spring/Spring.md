@@ -9,8 +9,9 @@
 - IOC 源码：[Spring IOC 容器源码分析_Javadoop](https://javadoop.com/post/spring-ioc)
 - springaop 和 aspectj 的区别 [springAOP 和 aspectJ 有什么区别_spring aop and aspectj aop 有什么区别?-CSDN博客](https://blog.csdn.net/u013452337/article/details/100981702)
 
+# -------------------- Spring
 
-# Spring 介绍
+# ---------- Spring 介绍
 
 ## 为什么学？
 
@@ -154,7 +155,7 @@ DI（Dependency Injection）依赖注入
 
 最终结果：使用对象时不仅可以直接从 IOC 容器中获取，并且获取到的 bean 已经绑定了所有的依赖关系.
 
-# 入门案例
+# ---------- 入门案例
 
 ## IOC 入门案例
 
@@ -279,7 +280,7 @@ public class BookServiceImpl implements BookService {
 </bean>
 ```
 
-# IOC and DI 相关内容
+# ---------- IOC and DI 相关内容
 
 ## ----- IOC
 
@@ -1146,7 +1147,7 @@ bean 相关
 
 ![](assets/Pasted%20image%2020240208232530.png)
 
-# IOC/DI 注解开发
+# ---------- IOC/DI 注解开发
 
 > Spring 的 IOC/DI 对应的配置开发就已经讲解完成，但是使用起来相对来说还是比较复杂的，复杂的地方在==配置文件==。
 
@@ -1912,9 +1913,613 @@ public class App {
 }
 ```
 
+## AOP 工作流程
+
+> SpringAOP 的本质或者可以说底层实现是通过代理模式。
+
+- Spring 容器启动
+	- 需要被增强的类、通知类会被加载
+	- 此时bean对象还没有创建成功
+- 读取所有切面配置中的切入点
+	- 没有使用的切入点不会被读取
+- 初始化 bean，判定 bean 对应的类中的方法是否匹配到任意切入点
+	- 匹配失败，创建原始对象
+	- 匹配成功，创建原始对象（目标对象）的代理对象
+- 获取 bean 执行方法
+	- bean 是原始对象时，调用方法并执行
+	- bean 是代理对象时，根据代理对象的运行模式运行原始方法与增强的内容，完成操作
 
 
-# IOC
+> 这个例子中有两个切入点的配置，但是第一个 `ptx()` 并没有被使用，所以不会被读取。
+> 
+> ![](assets/Pasted%20image%2020240214163532.png)
+
+验证容器中是否为代理对象
+- 如果目标对象中的方法会被增强，那么容器中将存入的是目标对象的代理对象
+- 如果目标对象中的方法不被增强，那么容器中将存入的是目标对象本身。
+
+```java
+@Component
+@Aspect
+public class MyAdvice {
+    @Pointcut("execution(void com.itheima.dao.BookDao.update())")
+    private void pt(){}
+    
+    @Before("pt()")
+    public void method(){
+        System.out.println(System.currentTimeMillis());
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
+        BookDao bookDao = (BookDao) ctx.getBean("bookDaoImpl");
+        System.out.println(bookDao); // org.example.dao.impl.BookDaoImpl@3e0e1046
+        System.out.println(bookDao.getClass()); // class com.sun.proxy.$Proxy22
+    }
+}
+```
+
+> 代理对象内部内部对 toString 方法进行了重写，打印对象输出的是原始对象
+
+## AOP 配置
+
+### 切入表达式
+
+> - 切入点:要进行增强的方法
+> - 切入点表达式：要进行增强的方法的描述方式
+
+切入点表达式标准格式：
+
+```java
+动作关键字(访问修饰符 返回值 包名.类/接口名.方法名(参数) 异常名）
+
+@Pointcut(execution(public User com.itheima.service.UserService.findById(int)))
+```
+
+- execution：动作关键字，描述切入点的行为动作，例如 execution 表示执行到指定切入点
+- public：访问修饰符，还可以是 public，private 等，可以省略
+- User：返回值，写返回值类型
+- com.itheima.service：包名，多级包使用点连接
+- **UserService：类/接口名称**
+- findById：方法名
+- int：参数，直接写参数的类型，多个类型用逗号隔开
+- 异常名：方法定义中抛出指定异常，可以省略
+
+> 方法的定义会有很多，所以如果每一个方法对应一个切入点表达式，想想这块就会觉得将来编写起来会比较麻烦，有没有更简单的方式呢?
+
+通配符
+- `*`：**单个**独立的任意符号，可以独立出现，也可以作为前缀或者后缀的匹配符出现
+- `..`：**多个**连续的任意符号，可以独立出现，常用于简化包名与参数的书写
+- `+`：专用于匹配**子类类型**
+	- 这个使用率较低，JavaEE 开发中，继承机会就一次，使用都很慎重
+
+```java
+execution（public * com.itheima.*.UserService.find*(*))
+// 匹配com.itheima包下的任意包中的UserService类或接口中所有find开头的带有一个参数的方法
+
+execution（public User com..UserService.findById(..)
+// 匹配com包下的任意包中的UserService类或接口中所有名称为findById的方法
+
+execution(* *..*Service+.*(..))
+// *Service+，表示所有以Service结尾的接口的子类。
+
+execution(* com.itheima.*.*Service.find*(..))
+// 将项目中所有业务层方法的以find开头的方法匹配
+```
+
+书写技巧：
+- 描述切入点通**常描述接口**，而不描述实现类,如果描述到实现类，就出现紧耦合了
+- 访问控制修饰符针对接口开发均采用 public 描述（**可省略访问控制修饰符描述**）
+- 返回值类型对于增删改类使用精准类型加速匹配，对于查询类使用 `*` 通配快速描述
+- **包名**书写**尽量不使用 `..` 匹配**，效率过低，常用 `*` 做单个包描述匹配，或精准匹配
+- **接口名/类名**书写名称与模块相关的**采用 `*` 匹配**，
+	- 例如 UserService 书写成*`Service`，绑定业务层接口名
+- **方法名**书写以**动词**进行**精准匹配**，名词采用 `_` 匹配，
+	- 例如 getById 书写成 `getBy*`，selectAll 书写成 selectAll
+- 参数规则较为复杂，根据业务方法灵活调整
+- 通常**不使用异常**作为**匹配**规则
+
+> 所有代码按照标准规范开发，否则以上技巧全部失效
+
+### 通知类型
+
+> 通知具体要添加到切入点的哪里?
+
+5 种通知类型
+- 前置通知
+	- `@Before`
+- 后置通知：不管方法执行的过程中有没有抛出异常都会执行
+	- `@After`
+- **环绕通知 (重点)**：它可以**实现其他四种通知类型的功能**
+	- `@Around`
+- 返回后通知 (了解)：只有方法正常执行结束后才进行
+	- `@AfterReturning`
+- 抛出异常后通知 (了解)：只有方法执行出异常才进行
+	- `@AfterThrowing`
+
+![](assets/Pasted%20image%2020240214202400.png)
+
+@Around 注意事项
+- 环绕通知必须依赖**形参 ProceedingJoinPoint** 才能实现对原始方法的调用，进而实现原始方法调用前后同时添加通知
+	- 通知中如果未对原始方法进行调用，将跳过原始方法的执行
+- 要根据原始方法的返回值来设置环绕通知的返回值：
+	- 对原始方法的调用可以不接收返回值，通知方法设置成 void 即可；如果接收返回值，最好**设定为 Object 类型**
+	- 原始方法的返回值如果是 void 类型，通知方法的返回值类型可以设置成 void，也可以设置成 Object
+	- 在环绕通知中是可以对原始方法**返回值修改**的。
+- 由于无法预知原始方法运行后是否会抛出异常，因此环绕通知方法**必须要处理 Throwable 异常**
+	- 接口 ProceedingJoinPoint 中，`public Object proceed() throws Throwable;`
+
+---
+环绕通知演示
+
+```java
+@Component
+@Aspect
+public class MyAdvice {
+    
+    @Pointcut("execution(int com.itheima.dao.BookDao.select())")
+    private void pt2(){}
+    
+    @Around("pt2()")
+    public void aroundSelect(ProceedingJoinPoint pjp) throws Throwable {
+        System.out.println("around before advice ...");
+        //表示对原始操作的调用
+        pjp.proceed();
+        System.out.println("around after advice ...");
+    }
+}
+
+public class App {
+    public static void main(String[] args) {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
+        BookDao bookDao = ctx.getBean(BookDao.class);
+        int num = bookDao.select();
+    }
+}
+```
+
+运行后会报错，错误内容为:
+
+```java
+Exception in thread "main" org.springframework.aop.AopInvocationException: ==Null return value from advice does not match primitive return type for: public abstract int com.itheima.dao.BookDao.select()==
+	at org.springframework.aop.framework.JdkDynamicAopProxy.invoke(JdkDynamicAopProxy.java:226)
+	at com.sun.proxy.$Proxy19.select(Unknown Source)
+	at com.itheima.App.main(App.java:12)
+```
+
+错误大概的意思是：空的返回 不匹配 原始方法的 int 返回
+* void 就是返回 Null
+* 原始方法就是 BookDao 下的 select 方法
+
+所以使用环绕通知，要根据原始方法的返回值来设置环绕通知的返回值
+
+### 获取签名信息
+
+环绕通知的形参中 ProceedingJoinPoint 对象可以获取增强方法的签名信息：
+- 获取签名信息
+- 获取执行操作名称 (接口名)
+- 获取执行操作名称(方法名)
+
+```java
+@Component
+@Aspect
+public class ProjectAdvice {
+    //配置业务层的所有方法
+    @Pointcut("execution(* com.itheima.service.*Service.*(..))")
+    private void servicePt(){}
+    //@Around("ProjectAdvice.servicePt()") 可以简写为下面的方式
+    @Around("servicePt()")
+    public void runSpeed(ProceedingJoinPoint pjp){
+        //获取执行签名信息
+        Signature signature = pjp.getSignature();
+        //通过签名获取执行操作名称(接口名)
+        String className = signature.getDeclaringTypeName();
+        //通过签名获取执行操作名称(方法名)
+        String methodName = signature.getName();
+        
+        long start = System.currentTimeMillis();
+        for (int i = 0; i < 10000; i++) {
+           pjp.proceed();
+        }
+        long end = System.currentTimeMillis();
+        System.out.println("万次执行："+ className+"."+methodName+"---->" +(end-start) + "ms");
+    } 
+}
+```
+
+### 通知获取数据
+
+数据：参数、返回值和异常
+- “非环绕通知”：在方法上添加 JoinPoint 参数
+- “环绕通知”：在方法上添加 ProceedingJoinPoint 参数
+
+---
+1）获取参数
+
+JoinPoint 的 `Object[] getArgs();`
+
+- “环绕通知”可以修改参数：ProceedingJoinPoint 的
+	- `public Object proceed() throws Throwable;` 在调用中会自动传入原始方法的参数
+	- `public Object proceed(Object[] args) throws Throwable` 手动传入方法参数
+
+> ProceedingJoinPoint 是 JoinPoint 的子接口，JoinPoint 中是没有 `proceed()` 方法的
+
+```java
+@Component
+@Aspect
+public class MyAdvice {
+    @Pointcut("execution(* com.itheima.dao.BookDao.findName(..))")
+    private void pt(){}
+
+	// 非环绕通知
+    @Before("pt()")
+    public void before(JoinPoint jp) 
+        Object[] args = jp.getArgs();
+        System.out.println(Arrays.toString(args));
+        System.out.println("before advice ..." );
+    }
+    
+	// 环绕通知
+	@Around("pt()")
+    public Object around(ProceedingJoinPoint pjp)throws Throwable {
+        Object[] args = pjp.getArgs();
+        System.out.println(Arrays.toString(args));
+        // 修改参数
+        args[0] = 666;
+        Object ret = pjp.proceed(args);
+        return ret;
+    }
+}
+```
+
+---
+2）获取返回值
+
+- “环绕通知”获取返回值：`public Object proceed() throws Throwable;`，执行陨石方法并获取到返回值
+- “非环绕通知”获取返回值：
+	- `@AfterReturning(returning="参数名")` 
+		- `String returning() default "";`
+	- 通知方法上添加返回参数
+	- 注意：
+		- `returning` 和 方法参数名 要一致
+		- 通知方法的参数类型建议写成 Object 类型
+		- 通知方法如果有 JointPoint 参数，必须放第一位
+
+![](assets/Pasted%20image%2020240215204548.png)
+
+```java
+@Component
+@Aspect
+public class MyAdvice {
+    @Pointcut("execution(* com.itheima.dao.BookDao.findName(..))")
+    private void pt(){}
+
+	// 环绕通知
+    @Around("pt()")
+    public Object around(ProceedingJoinPoint pjp) throws Throwable{
+        Object ret = pjp.proceed(args);
+        return ret;
+    }
+    
+	// 返回后通知
+	@AfterReturning(value = "pt()", returning = "ret")
+    public void afterReturning(Object ret) {
+        System.out.println("afterReturning advice ..."+ret);
+    }
+}
+```
+
+---
+3）获取异常
+
+- “环绕通知”获取异常：直接捕获
+- “抛出异常后通知”获取异常：
+	- `@AfterThrowing(throwing ="")` 
+	- 通知方法上添加异常参数 Throwable
+	- 注意：
+		- `throwing` 和 异常参数名 一致
+
+```java
+@Component
+@Aspect
+public class MyAdvice {
+    @Pointcut("execution(* com.itheima.dao.BookDao.findName(..))")
+    private void pt(){}
+
+	// 环绕通知
+    @Around("pt()")
+    public Object around(ProceedingJoinPoint pjp){
+        Object ret = null;
+        try{
+            ret = pjp.proceed(args);
+        }catch(Throwable throwable){
+            t.printStackTrace();
+        }
+        return ret;
+    }
+    
+	// 抛出异常后通知
+	@AfterThrowing(value = "pt()",throwing = "t")
+    public void afterThrowing(Throwable t) {
+        System.out.println("afterThrowing advice ..."+t);
+    }
+}
+```
+
+# ---------- 事务
+
+## Spring 事务简介
+
+- 事务作用：在数据层保障一系列的数据库操作同成功同失败
+- Spring 事务作用：在数据层或业务层保障一系列的数据库操作同成功同失败
+
+Spring 为了管理事务，提供了一个平台事务管理器 `PlatformTransactionManager`
+- commit 是用来提交事务，rollback 是用来回滚事务。
+
+```java
+public interface PlatformTransactionManager extends TransactionManager {
+	TransactionStatus getTransaction(@Nullable TransactionDefinition definition) throws TransactionException;
+	
+	void commit(TransactionStatus status) throws TransactionException;
+	
+	void rollback(TransactionStatus status) throws TransactionException;
+}
+```
+
+PlatformTransactionManager 是一个接口，DataSourceTransactionManager 是它的一个具体实现类
+
+从名称上可以看出，我们只需要给它一个 DataSource 对象，它就可以帮你去在业务层管理事务。其内部采用的是 JDBC 的事务。所以说如果你持久层采用的是 JDBC 相关的技术，就可以采用这个事务管理器来管理你的事务，例如 Mybatis
+
+## Spring事务基本使用
+
+开启注解式事务驱动
+
+```java
+@Configuration
+@ComponentScan("com.itheima")
+@PropertySource("classpath:jdbc.properties")
+@Import({JdbcConfig.class,MybatisConfig.class
+// 开启注解式事务驱动
+@EnableTransactionManagement
+public class SpringConfig {
+}
+```
+
+业务层添加 Spring 事务管理注解
+- `@Transactional` 可以写在接口类上、接口方法上、实现类上和实现类方法上
+	- 加在类或接口上代表所有方法或实现类方法都会有事务
+- 通常添加在**业务层接口**中而不是实现类中，降低耦合
+
+```java
+public interface AccountService {
+    /**
+     * 转账操作
+     * @param out 传出方
+     * @param in 转入方
+     * @param money 金额
+     */
+    // 配置当前接口方法具有事务
+    public void transfer(String out, String in, Double money) ;
+}
+
+@Service
+public class AccountServiceImpl implements AccountService {
+    @Autowired
+    private AccountDao accountDao;
+    
+	@Transactional
+    public void transfer(String out,String in ,Double money) {
+        accountDao.outMoney(out,money);
+        int i = 1/0;
+        accountDao.inMoney(in,money);
+    }
+}
+```
+
+配置事务管理器
+- 事务管理器要根据实现技术进行选择，例如 MyBatis 框架使用的是 JDBC 事务
+- 注意：`DataSourceTransactionManager` 和 `SqlSessionFactoryBean` 使用的是同一个数据源 DataSource
+
+```java
+public class JdbcConfig {
+    @Value("${jdbc.driver}")
+    private String driver;
+    @Value("${jdbc.url}")
+    private String url;
+    @Value("${jdbc.username}")
+    private String userName;
+    @Value("${jdbc.password}")
+    private String password;
+
+    @Bean
+    public DataSource dataSource(){
+        DruidDataSource ds = new DruidDataSource();
+        ds.setDriverClassName(driver);
+        ds.setUrl(url);
+        ds.setUsername(userName);
+        ds.setPassword(password);
+        return ds;
+    }
+
+    // 配置事务管理器，mybatis使用的是jdbc事务
+    @Bean
+    public PlatformTransactionManager transactionManager(DataSource dataSource){
+        DataSourceTransactionManager transactionManager = new DataSourceTransactionManager();
+        transactionManager.setDataSource(dataSource);
+        return transactionManager;
+    }
+}
+```
+
+> MyBatis 需要注入的 SqlSessionFactoryBean：
+> 
+> ```java
+>     @Bean
+>     public SqlSessionFactoryBean sqlSessionFactory(DataSource dataSource) {
+>         SqlSessionFactoryBean ssfb = new SqlSessionFactoryBean();
+>         // 设置模型类的别名扫描
+>         ssfb.setTypeAliasesPackage("org.example.domain");
+>         // 设置数据源
+>         ssfb.setDataSource(dataSource);
+>         return ssfb;
+>     }
+> ```
+
+%% -- %%
+## Spring事务角色
+
+- 事务管理员：**发起**事务方，在 Spring 中通常指代业务层开启事务的方法
+- 事务协调员：**加入**事务方，在 Spring 中通常指代数据层方法，也可以是业务层方法
+
+---
+未开启Spring事务之前：
+
+![](assets/Pasted%20image%2020240216231324.png)
+
+- AccountDao 的 outMoney 因为是修改操作，会开启一个事务 T1
+- AccountDao 的 inMoney 因为是修改操作，会开启一个事务 T2
+- AccountService 的 transfer 没有事务，
+    - 运行过程中如果没有抛出异常，则 T1 和 T2 都正常提交，数据正确
+    - 如果在两个方法中间抛出异常，T1 因为执行成功提交事务，T2 因为抛异常不会被执行，就会导致数据出现错误
+
+开启 Spring 的事务管理后
+
+![](assets/Pasted%20image%2020240216231643.png)
+
+- transfer 上添加了 `@Transactional` 注解，在该方法上就会有一个事务 T
+- AccountDao 的 outMoney 方法的事务 T1 加入到 transfer 的事务 T 中
+- AccountDao 的 inMoney 方法的事务 T2 加入到 transfer 的事务 T 中
+- 这样就保证他们在同一个事务中，当业务层中出现异常，整个事务就会回滚，保证数据的准确性。
+
+## Spring事务属性
+
+> `@Transactional` 的属性
+
+### 事务配置
+
+这些属性都可以在`@Transactional`注解的参数上进行设置。
+
+- `boolean readOnly() default false;`：true只读事务，false读写事务
+	- 增删改要设为false，查询设为true。
+- `int timeout() default -1`：设置事务超时时间（单位秒），在设置时间之内事务没有提交成功就自动回滚，-1 表示不设置超时时间。
+- `Class<? extends Throwable>[] rollbackFor() default {};`：当出现指定异常进行事务回滚
+
+![](assets/Pasted%20image%2020240217113856.png)
+
+### 事务传播属性
+
+引入案例：转账业务追加日志
+
+需求：实现任意两个账户间转账操作，并对每次转账操作在数据库进行留痕
+
+创建日志表
+
+```java
+create table tbl_log(
+   id int primary key auto_increment,
+   info varchar(255),
+   createDate datetime
+)
+```
+
+日志业务类
+```java
+public interface LogDao {
+    @Insert("insert into tbl_log (info,createDate) values(#{info},now())")
+    void log(String info);
+}
+
+public interface LogService {
+    void log(String out, String in, Double money);
+}
+
+@Service
+public class LogServiceImpl implements LogService {
+    @Autowired
+    private LogDao logDao;
+    
+	@Transactional
+    public void log(String out,String in,Double money ) {
+        logDao.log("转账操作由"+out+"到"+in+",金额："+money);
+    }
+}
+```
+
+转账业务中添加记录日志
+
+```java
+public interface AccountService {
+    /**
+     * 转账操作
+     * @param out 传出方
+     * @param in 转入方
+     * @param money 金额
+     */
+    public void transfer(String out,String in ,Double money)throws IOException ;
+}
+
+@Service
+public class AccountServiceImpl implements AccountService {
+    @Autowired
+    private AccountDao accountDao;
+    @Autowired
+    private LogService logService;
+    
+	@Transactional
+    public void transfer(String out,String in ,Double money) {
+        try{
+            accountDao.outMoney(out,money);
+            // int a = 1/0;
+            accountDao.inMoney(in,money);
+        }finally {
+            logService.log(out,in,money);
+        }
+    }
+}
+```
+
+当程序正常运行，tbl_account 表中转账成功，tbl_log 表中日志记录成功。当转账业务之间出现异常(int i =1/0)，转账失败，tbl_account 成功回滚，但是 tbl_log 表未添加数据
+
+失败原因：日志的记录与转账操作隶属同一个事务，同成功同失败
+
+---
+事务传播行为：事务协调员对事务管理员所携带事务的处理态度
+- `@Transactional` 注解的 propagation 属性
+
+propagation的属性值：
+
+![](assets/Pasted%20image%2020240217152744.png)
+
+修改logService改变事务的传播行为
+
+```java
+@Service
+public class LogServiceImpl implements LogService {
+
+    @Autowired
+    private LogDao logDao;
+    
+	// propagation设置事务属性：传播行为设置为当前操作需要新事务
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void log(String out,String in,Double money ) {
+        logDao.log("转账操作由"+out+"到"+in+",金额："+money);
+    }
+}
+```
+
+![](assets/Pasted%20image%2020240217154034.png)
+
+-----
+
+
+
+
+
+
+
+# IOC 其他
 
 
 ## IOC 容器
@@ -1923,193 +2528,9 @@ IOC 思想基于 IOC 容器完成，IOC 容器底层就是对象工厂
 
 在Spring中，IoC 容器是 Spring 用来实现 IoC 的载体， IoC 容器实际上就是个 Map（key，value），Map中存放的是各种对象（以后可以看看IOC源码）
 
-
-
-## IOC 操作 Bean 管理——基于 xml 方式
-
-
-### 注入属性
-
-DI：依赖注入，就是注入属性
-
-#### 第一种：set方法 + 无参（重要）
-
-```java
-public class Book {
-    private String bname;
-    private String bauthor;
-
-    //创建属性对应的 set 方法
-    public void setBname(String bname) {
-        this.bname = bname;
-    }
-    public void setBauthor(String bauthor) {
-        this.bauthor = bauthor;
-    }
-
-    @Override
-    public String toString() {
-        return "Book{" +
-                "bname='" + bname + '\'' +
-                ", bauthor='" + bauthor + '\'' +
-                '}';
-    }
-}
-```
-
-```xml
-<bean id="book" class="com.boer.spring5.Book">
-    <!--使用 property 完成属性注入
-    name：类里面属性名称  value：向属性注入的值-->
-    <property name="bname" value="易筋经"></property>
-    <property name="bauthor" value="达摩老祖"></property>
-</bean>
-```
-
-```java
-@Test
-public void testBook() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    Book book = context.getBean("book", Book.class);
-    System.out.println(book);
-}
-```
-
-
-
-#### 第二种：有参构造方法注入
-
-```java
-public class Orders {
-    private String oname;
-    private String address;
-
-    //有参数构造
-    public Orders(String oname, String address) {
-        this.oname = oname;
-        this.address = address;
-    }
-
-    @Override
-    public String toString() {
-        return "Orders{" +
-                "oname='" + oname + '\'' +
-                ", address='" + address + '\'' +
-                '}';
-    }
-}
-```
-
-```xml
-<bean id="orders" class="com.boer.spring5.Orders">
-    <constructor-arg name="oname" value="电脑"></constructor-arg>
-    <constructor-arg name="address" value="China"></constructor-arg>
-</bean>
-```
-
-```java
-@Test
-public void testOrders() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    Orders orders = context.getBean("orders", Orders.class);
-    System.out.println(orders);
-}
-```
-
-
-
-### 工厂Bean
-
-Spring有两种类型bean，一种普通bean，另外一种工厂bean（FactoryBean） 
-
-- 普通 bean：在配置文件中定义 bean 类型就是返回类型
-- 工厂 bean：在配置文件定义 bean 类型可以和返回类型不一样
-
-**实现工厂bean：**
-
-1. 创建类，让这个类作为工厂bean，实现接口FactoryBean
-2. 实现接口里面的方法getObject()，在实现的方法中定义返回的bean类型
-
-```java
-public class MyBean implements FactoryBean<Orders> { //实现factory接口，泛型类型为Orders
-    @Override
-    public Orders getObject() throws Exception {
-        Orders orders=new Orders("boer","aaa");
-        return orders;
-    }
-
-//    @Override
-//    public Class<?> getObjectType() {
-//        return null;
-//    }
-//
-//    @Override
-//    public boolean isSingleton() {
-//        return FactoryBean.super.isSingleton();
-//    }
-}
-```
-
-```xml
-<bean id="myBean" class="com.boer.spring5.MyBean"></bean>
-```
-
-```java
-@Test
-public void testOrders() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    //返回类型为Orders，xml配置的类为myBean
-    Orders orders = context.getBean("myBean", Orders.class);
-    System.out.println(orders);
-}
-```
-
-
-
 ## Bean作用域
 
 在 Spring 里面，设置创建 bean 实例是单实例还是多实例
-
-### 默认作用域
-
-在 Spring 里面，默认情况下，bean 是单实例对象
-
-```java
-@Test
-public void testOrders() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    Orders orders = context.getBean("orders", Orders.class);
-    Orders orders2 = context.getBean("orders", Orders.class);
-    System.out.println(orders); //com.boer.spring5.Orders@7a30d1e6
-    System.out.println(orders2); //com.boer.spring5.Orders@7a30d1e6
-}
-```
-
-### 如何设置单实例还是多实例
-
-在 spring 配置文件 bean 标签里面有属性（scope）用于设置单实例还是多实例
-
-scope 属性值
-
-- singleton：==单例模式==，默认值，表示是单实例对象
-- prototype：==原型模式==，每次从容器中get对象时，都重新创建
-- request、session、application、websocket这些只能在web开发中使用，不常用，见八股文
-
-```java
-@Test
-public void testOrders() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    Orders orders = context.getBean("orders", Orders.class);
-    Orders orders2 = context.getBean("orders", Orders.class);
-    System.out.println(orders); //com.boer.spring5.Orders@7a30d1e6
-    System.out.println(orders2); //com.boer.spring5.Orders@5891e32e
-}
-```
-
-```xml
-<bean id="orders" class="com.boer.spring5.Orders" scope="prototype"></bean>
-```
-
 ### singleton 和 prototype 区别
 
 singleton：加载spring配置文件时候就会创建单实例对象
@@ -2119,8 +2540,6 @@ singleton：加载spring配置文件时候就会创建单实例对象
 > ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
 
 prototype：不是在加载spring配置文件时候创建对象，而是在调用getBean方法时候创建多实例对象
-
-
 
 ## Bean的生命周期
 
@@ -2212,321 +2631,9 @@ public void testOrders2() {
 
 
 
-## Bean的自动装配
 
-自动装配是 spring 满足 bean 依赖的一种方式，Spring 会在上下文中自动寻找，并自动给 bean 装配属性
 
-在Spring中由三种装配方式
-
-1. 在xml中显式配置
-2. 在java中显式配置
-3. 隐式的自动装配bean（重要）
-
-### byName与byType自动装配
-
-```xml
-<!--
-	autowire的属性值：
-  	byName:会在容器上下文中查找，和自己对象set方法后面的值相对应的beanid，比如：setCat()找的beanid就是cat
-  	byType：会自动在容器上下文中查找，和自己对象属性类型相同的bean
--->
-<bean id="people" class="com.boer.spring5.pojo.People" autowire="byName">
-    <property name="name" value="boer"></property>
-</bean>
-
-<bean id="cat" class="com.boer.spring5.pojo.Cat"></bean>
-<bean id="dog" class="com.boer.spring5.pojo.Dog"></bean>
-```
-
-```java
-public class People {
-    private Cat cat;
-    private Dog dog;
-    private String name;
-    //get、set
-}
-public class Dog {
-    public void shout(){
-        System.out.println("wang~");
-    }
-}
-public class Cat {} //同dog
-```
-
-```java
-@Test
-public void test1() {
-    ApplicationContext context = new ClassPathXmlApplicationContext("bean1.xml");
-    People people = context.getBean("people", People.class);
-    people.getCat().shout(); //miao~
-    people.getDog().shout(); //wang~
-}
-```
-
-**小结：**
-
-byName：需要保证所有bean的id唯一，并且这个bean需要和自动注入的属性的set方法的值一致
-
-byType：需要保证所有bean的class唯一，并且这个bean需要和自动注入的属性的类型一致
-
-
-
-### 注解实现自动装配
-
-配置xml，导入context约束
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xmlns:context="http://www.springframework.org/schema/context"
-      xmlns:aop="http://www.springframework.org/schema/aop"
-      xsi:schemaLocation="http://www.springframework.org/schema/beans
-       https://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context
-       https://www.springframework.org/schema/context/spring-context.xsd
-       http://www.springframework.org/schema/aop
-       https://www.springframework.org/schema/aop/spring-aop.xsd">
-
-   <!--开启注解支持-->
-   <context:annotation-config/>
-</beans>
-```
-
-**@Autowired**（常用）
-
-直接在属性上使用即可！也可以在set方法上使用
-
-默认ByType匹配（多个同类型好像好像也能匹配到）,要求依赖对象对象存在（可通过required更改）
-
-出现多个同类型的Bean，可以指定唯一Bean对象，通过==@Qualifier==，设置value值为bean的id
-
-**@Resource**
-
-JDK原生注解（没有Spring也能用），默认ByName匹配，找不到ByType
-
-```java
-public class People {
-    @Autowired(required = false) //说明这个对象可以为null，否则不允许为空
-    @Qualifier(value = "cat1") //点击导航图标会跳转到 beanid=dog1
-    private Cat cat;
-
-    @Resource
-    private Dog dog;
-
-    private String name;
-		//get、set
-}
-```
-
-```java
-<bean id="people" class="com.boer.spring5.pojo.People"></bean>
-
-<bean id="cat" class="com.boer.spring5.pojo.Cat"></bean>
-<bean id="cat1" class="com.boer.spring5.pojo.Cat"></bean>
-
-<bean id="dog" class="com.boer.spring5.pojo.Dog"></bean>
-<bean id="dog1" class="com.boer.spring5.pojo.Dog"></bean>
-```
-
-
-
-## 注解开发
-
-在Spring4之后，要使用注解开发，必须保证aop的包导入了
-
-使用注解需要导入context约束，增加注解的支持
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<beans xmlns="http://www.springframework.org/schema/beans"
-       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-       xmlns:context="http://www.springframework.org/schema/context"
-       xmlns:aop="http://www.springframework.org/schema/aop"
-       xsi:schemaLocation="http://www.springframework.org/schema/beans
-       https://www.springframework.org/schema/beans/spring-beans.xsd
-       http://www.springframework.org/schema/context
-       https://www.springframework.org/schema/context/spring-context.xsd
-       http://www.springframework.org/schema/aop
-       https://www.springframework.org/schema/aop/spring-aop.xsd">
-
-    <!--开启注解支持-->
-    <context:annotation-config/>
-
-    <!--这个标签已经暗含上面的注解支持标签了，可以点进component-scan查看注释-->
-    <context:component-scan base-package="com.boer.spring5.pojo"></context:component-scan>
-</beans>
-```
-
-
-
-### 装配bean==@Component==
-
-@Component有几个衍生注解，在web开发中，会按照mvc三层架构分层
-
-- dao层 ==@Repository==
-- service层 ==@Service==
-- controller层 ==@Controller==
-
-这四个注解功能都是一样的，都是代表将某个类注册到Spring中，装配Bean
-
-```java
-@Component //等价于<bean id="user" class="com.yang.entity.User"/>
-public class User {}
-```
-
-
-
-### 属性注入==@Value==
-
-对于复杂的属性值还是要用xml装配Bean
-
-```java
-@Component
-public class User {
-    @Value("Boer") //等价于<property name="name" value="yang"/>
-    private String name;
-}
-```
-
-
-
-### 自动装配==@Autowired==
-
-见Bean的自动装配
-
-
-
-### 作用域==@Scope==
-
-```java
-@Component 
-@Scope("prototype") //Bean作用域：原型模式
-public class User {}
-```
-
-
-
-### XML与注解
-
-xml更加万能，适用于任何场合，维护简单方便
-
-注解不是自己类使用不了，维护相对复杂
-
-XML与注解最佳实践：xml用来管理bean，注解只负责完成属性的注入
-
-
-
-## 完全注解开发（抛弃xml）
-
-> 这种纯java的配置方式在Spring Boot中随处可见
-
-编写一个配置类
-
-```java
-//@Configuration该注解代表了这是一个配置类，与applicationContext.xml一样
-@Configuration //这个也会被Spring容器托管，注册到容器中，打开注解里面有@Component
-@ComponentScan("com.boer.spring5.pojo") //开启包扫描
-@Import(BoerConfig2.class) //引入其他的配置类
-public class BoerConfig {
-    //注册一个Bean，就相当于我们之前写的一个bean标签
-    //方法名字：bean标签的id
-    //方法的返回值：bean标签中的class属性
-    @Bean
-    public User getUser () {
-        return new User(); //就是返回要注入到bean的对象
-    }
-}
-```
-
-注意：@Bean和@ComponentScan 会生成不一样的对象
-
-测试：
-
-```java
-//测试
-@Component //@Component 等价于<bean id="user" class="com.yang.entity.User"/>
-public class User {
-    @Value("Boer") //@Value("Boer") 等价于<property name="name" value="yang"/>
-    private String name;
-   //get、set
-}
-```
-
-```java
-@Test
-public void test3() {
-    //AnnotationConfigApplicationContext
-    ApplicationContext context1 = new AnnotationConfigApplicationContext(BoerConfig.class);
-    User user1 = context1.getBean("getUser", User.class); //getUser就是Beanid
-    User user = context1.getBean("user", User.class);
-
-    System.out.println(user.getName()); //boer
-    System.out.println(user1.getName()); //boer
-    //不是同一个对象
-    System.out.println(user); //com.boer.spring5.pojo.User@470f1802
-    System.out.println(user1); //com.boer.spring5.pojo.User@63021689
-}
-```
-
-
-
-# AOP
-
-## 问题引入
-
-现有三个类，`Horse`、`Pig`、`Dog`，这三个类中都有 eat 和 run 两个方法
-
-通过 OOP 思想中的继承，我们可以提取出一个 Animal 的父类，然后将 eat 和 run 方法放入父类中，`Horse`、`Pig`、`Dog`通过继承`Animal`类即可自动获得 `eat()` 和 `run()` 方法。这样将会少写很多重复的代码。
-
-OOP 编程思想可以解决大部分的代码重复问题。但是有一些问题是处理不了的。
-
-比如在父类 Animal 中的多个方法的相同位置出现了重复的代码，OOP 就解决不了。
-
-```java
-/**
- * 动物父类
- */
-public class Animal {
-    /** 身高 */
-    private String height;
-    /** 体重 */
-    private double weight;
-
-    public void eat() {
-        // 性能监控代码
-        long start = System.currentTimeMillis();
-        // 业务逻辑代码
-        System.out.println("I can eat...");
-        // 性能监控代码
-        System.out.println("执行时长：" + (System.currentTimeMillis() - start)/1000f + "s");
-    }
-
-    public void run() {
-        // 性能监控代码
-        long start = System.currentTimeMillis();
-        // 业务逻辑代码
-        System.out.println("I can run...");
-        // 性能监控代码
-        System.out.println("执行时长：" + (System.currentTimeMillis() - start)/1000f + "s");
-    }
-}
-```
-
-这部分重复的代码，一般统称为==横切逻辑代码==
-
-横切逻辑代码存在的问题：
-
-- 代码重复问题
-- 横切逻辑代码和业务代码混杂在一起，代码臃肿，不变维护
-
-AOP就是用来解决这些问题的，AOP另辟蹊径，提出横向抽取机制，将横切逻辑代码和业务逻辑代码分离
-
-代码拆分比较容易，难的是如何在不改变原有业务逻辑的情况下，悄无声息的将横向逻辑代码应用到原有的业务逻辑中，达到和原来一样的效果
-
-<img src="图片/640.png" alt="640" style="zoom: 50%;" />
-
-
+# AOP其他
 
 ## AOP相关概念 
 
@@ -2874,7 +2981,811 @@ public void test5() {
 }
 ```
 
+# -------------------- SpringMVC
+
+# SpringMVC概述
+
+SpringMVC 是隶属于 Spring 框架的一部分，主要是用来进行 Web 开发，是对 Servlet 进行了封装。
+
+![](assets/Pasted%20image%2020240217162507.png)
+
+SpringMVC 主要负责的就是
+- controller 如何接收请求和数据
+- 如何将请求和数据转发给业务层
+- 如何将响应数据转换成 json 发回到前端
 
 
-# 事务
+SpringMVC 是一种基于 Java 实现 MVC 模型的轻量级 Web 框架
+- 优点：
+	- 使用简单、开发便捷(相比于Servlet)
+	- 灵活性强
+
+# 入门案例
+
+## 基本使用
+
+新建一个 web 项目
+
+导入坐标
+- servlet 的坐标添加 `<scope>provided</scope>`
+- 只导入了 `spring-webmvc` jar 包的原因是它会自动依赖 spring 相关坐标
+
+> - scope 是 maven 中 jar 包依赖作用范围的描述，
+> - 如果不设置默认是 `compile` 在在编译、运行、测试时均有效
+> - 如果运行有效的话就会和 tomcat 中的 servlet-api 包发生冲突，导致启动报错
+> - provided 代表的是该包只在编译和测试的时候用，运行的时候无效直接使用 tomcat 中的，就避免冲突
+
+```xml
+<packaging>war</packaging>
+
+<dependencies>
+<dependency>
+  <groupId>javax.servlet</groupId>
+  <artifactId>javax.servlet-api</artifactId>
+  <version>3.1.0</version>
+  <scope>provided</scope>
+</dependency>
+<dependency>
+  <groupId>org.springframework</groupId>
+  <artifactId>spring-webmvc</artifactId>
+  <version>5.2.10.RELEASE</version>
+</dependency>
+</dependencies>
+
+<build>
+<plugins>
+  <plugin>
+	<groupId>org.apache.tomcat.maven</groupId>
+	<artifactId>tomcat7-maven-plugin</artifactId>
+	<version>2.1</version>
+	<configuration>
+	  <port>80</port>
+	  <path>/</path>
+	</configuration>
+  </plugin>
+</plugins>
+</build>
+```
+
+![](assets/Pasted%20image%2020240217170016.png)
+
+创建 springmvc 控制器类
+
+```java
+@Controller
+public class UserController {
+    @RequestMapping("/save")
+    @ResponseBody
+    public String save() {
+        System.out.println("user save ...");
+        return "{'info':'springmvc'}";
+    }
+}
+```
+
+初始化 springmvc 环境，设定 springmvc 加载指定的 bean
+
+```java
+@Configuration
+@ComponentScan("com.itheima.controller")
+public class SpringMvcConfig {
+}
+```
+
+初始化 Servlet 容器，加载 SpringMVC 环境，并设置 SpringMVC 技术处理的请求
+- 将 web.xml 删除，换成 ServletContainersInitConfig
+- AbstractDispatcherServletInitializer 类是 SpringMVC 提供的**快速初始化 Web3.0 容器的抽象类**，它提供了三个接口方法供用户实现
+    - `createServletApplicationContext()` ：创建 Servlet 容器时，加载 SpringMVC 对应的 bean 并放入 WebApplicationContext 对象范围中，而 WebApplicationContext 的作用范围为 ServletContext 范围，即整个 web 容器范围
+    - `getServletMappings()`：设定 SpringMVC 对应的请求映射路径，即 SpringMVC 拦截哪些请求
+    - `createRootApplicationContext()`：如果创建 Servlet 容器时需要加载非 SpringMVC 对应的 bean，使用当前方法进行，使用方式同 createServletApplicationContext
+- createServletApplicationContext 用来加载 SpringMVC 环境， createRootApplicationContext 用来加载 Spring 环境
+
+```java
+public class ServletContainersInitConfig extends AbstractDispatcherServletInitializer {
+    //加载springmvc配置类
+    protected WebApplicationContext createServletApplicationContext() {
+        //初始化WebApplicationContext对象
+        AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();
+        //加载指定配置类
+        ctx.register(SpringMvcConfig.class);
+        return ctx;
+    }
+
+    //设置由springmvc控制器处理的请求映射路径
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+
+    //加载spring配置类
+    protected WebApplicationContext createRootApplicationContext() {
+        return null;
+    }
+}
+```
+
+三个基本注解
+
+|名称|@Controller|
+|---|---|
+|类型|类注解|
+|位置|SpringMVC 控制器类定义上方|
+|作用|设定 SpringMVC 的核心控制器 bean|
+
+|名称|@RequestMapping|
+|---|---|
+|类型|类注解或方法注解|
+|位置|SpringMVC 控制器类或方法定义上方|
+|作用|设置当前控制器方法请求访问路径|
+|相关属性|value (默认)，请求访问路径 |
+
+|名称|@ResponseBody|
+|---|---|
+|类型|类注解或方法注解|
+|位置|SpringMVC 控制器类或方法定义上方|
+|作用|设置当前控制器方法响应内容为当前返回值，无需解析|
+
+## 工作流程
+
+启动服务器初始化过程
+- 服务器启动，执行 ServletContainersInitConfig 类，初始化 web 容器
+    - 功能类似于以前的 web.xml
+- 执行 createServletApplicationContext 方法，创建了 WebApplicationContext 对象
+    - 该方法加载 SpringMVC 的配置类 SpringMvcConfig 来初始化 SpringMVC 的容器
+- 加载 SpringMvcConfig 配置类
+- 执行 `@ComponentScan` 加载对应的 bean
+    - 扫描指定包及其子包下所有类上的注解，如 Controller 类上的 `@Controller` 注解
+- 加载 UserController，每个 `@RequestMapping` 的名称对应一个具体的方法
+	- 加载 UserController，每个 `@RequestMapping` 的名称对应一个具体的方法
+- 执行 getServletMappings 方法，设定 SpringMVC 拦截请求的路径规则
+
+![](assets/Pasted%20image%2020240217195113.png)
+
+单次请求过程
+- 发送请求 `http://localhost/save`
+- web 容器发现该请求满足 SpringMVC 拦截规则，将请求交给 SpringMVC 处理
+- 解析请求路径 `/save`
+- 由/save 匹配执行对应的方法 `save()`
+- 执行 `save()`
+- 检测到有 `@ResponseBody` 直接将 `save()` 方法的返回值作为响应体返回给请求方
+
+## bean加载控制
+
+![](assets/Pasted%20image%2020240217205257.png)
+
+controller、service 和 dao 这些类都需要被容器管理成 bean 对象，那么到底是该让 SpringMVC 加载还是让 Spring 加载呢?
+
+- SpringMVC 加载其相关 bean(表现层 bean),也就是 controller 包下的类
+- Spring 控制的 bean
+    - 业务 bean(Service)
+    - 功能 bean(DataSource,SqlSessionFactoryBean,MapperScannerConfigurer 等)
+        
+如何让 Spring 和 SpringMVC 分开加载各自的内容？
+
+---
+
+避免 Spring 错误加载到 SpringMVC 的 bean
+- 加载 Spring 控制的 bean 的时候**排除掉 SpringMVC 控制的 bean**
+	- 方式一：Spring 加载的 bean 设定扫描范围为精准范围，
+		- 例如 service 包、dao 包等
+	- 方式二：Spring 加载的 bean 设定扫描范围为 `com.itheima`，排除掉 controller 包中的 bean
+- 不区分 Spring 与 SpringMVC 的环境，加载到同一个环境中
+
+方式一：
+
+```java
+@Configuration
+@ComponentScan({"com.itheima.service","com.itheima.dao"})
+public class SpringConfig {}
+```
+
+方式二：
+
+```java
+@Configuration  
+@ComponentScan(value="com.itheima",  
+	excludeFilters=@ComponentScan.Filter(  
+		type = FilterType.ANNOTATION,  
+		classes = Controller.class  
+	)  
+)  
+public class SpringConfig {}
+```
+
+测试 controller 类已经被排除掉了
+- 方式二要把 SpringMvcConfig 配置类上的 `@ComponentScan` 注解去掉。因为 SpringMvcConfig 上有一个 `@Configuration` 注解，也会被 Spring 扫描到，此外还有一个 `@ComponentScan`，把 controller 类又给扫描进来了
+
+```java
+public class App{
+	public static void main (String[] args){
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
+        System.out.println(ctx.getBean(UserController.class));
+    }
+}
+```
+
+> SpringMvcConfig 和 SpringConfig 都在 config 包下，所以方式二还是扫描到了 SpringMvcConfig，解决方案是把 SpringMVC 的配置类移出 Spring 配置类的扫描范围即可。
+
+---
+tomcat 服务器启动后分别加载 SpringConfig（业务 bean）和 SpringMvcConfig（控制器）
+
+```java
+public class ServletContainersInitConfig extends AbstractDispatcherServletInitializer {
+    protected WebApplicationContext createServletApplicationContext() {
+        AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();
+        ctx.register(SpringMvcConfig.class);
+        return ctx;
+    }
+    
+    protected WebApplicationContext createRootApplicationContext() {
+      AnnotationConfigWebApplicationContext ctx = new AnnotationConfigWebApplicationContext();
+        ctx.register(SpringConfig.class);
+        return ctx;
+    }
+    
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+}
+```
+
+## 简化配置
+
+对于上述的配置方式，Spring 还提供了一种更简单的配置方式，可以不用再去创建 `AnnotationConfigWebApplicationContext` 对象，不用手动 `register` 对应的配置类
+
+```java
+public class ServletContainersInitConfig extends AbstractAnnotationConfigDispatcherServletInitializer {  
+     protected Class<?>[] getRootConfigClasses() {  
+         return new Class[]{SpringConfig.class};  
+     }  
+ ​  
+     protected Class<?>[] getServletConfigClasses() {  
+         return new Class[]{SpringMvcConfig.class};  
+     }  
+ ​  
+     protected String[] getServletMappings() {  
+         return new String[]{"/"};  
+     }  
+ }
+```
+
+![](assets/Pasted%20image%2020240217213403.png)
+
+# 请求与响应
+
+### 设置请求映射路径
+
+`@RequestMapping`
+- 类型：方法注解、类注解
+- 位置：控制器方法上、控制器类上
+- 作用：
+	- 设置当前控制器方法请求访问路径，
+	- 如果设置在类上统一设置当前控制器方法请求访问路径前缀
+- 属性：value（默认），请求访问路径，或访问路径前缀
+	- value 属性前面加不加 `/` 都可以
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+
+    @RequestMapping("/save")
+    @ResponseBody
+    public String save(){
+        System.out.println("user save ...");
+        return "{'module':'user save'}";
+    }
+    
+    @RequestMapping("/delete")
+    @ResponseBody
+    public String save(){
+        System.out.println("user delete ...");
+        return "{'module':'user delete'}";
+    }
+}
+
+@Controller
+@RequestMapping("/book")
+public class BookController {
+
+    @RequestMapping("/save")
+    @ResponseBody
+    public String save(){
+        System.out.println("book save ...");
+        return "{'module':'book save'}";
+    }
+}
+```
+
+## 请求参数传递（接收）
+
+|名称|@RequestParam|
+|---|---|
+|类型|形参注解|
+|位置|SpringMVC 控制器方法形参定义前面|
+|作用|绑定请求参数与处理器方法形参间的关系|
+|相关参数|required：是否为必传参数，defaultValue：参数默认值 |
+
+### 中文乱码
+
+1）Get 请求乱码
+
+> Tomcat 8 及之后的版本，处理 get 请求的编码默认为 UTF-8
+> 
+> Tomcat8.5 以后的版本已经处理了中文乱码的问题，但是 IDEA 中的 Tomcat 插件目前只到 Tomcat7，所以需要修改 pom.xml 来解决 GET 请求中文乱码问题
+
+```xml
+<build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <port>80</port><!--tomcat端口号-->
+          <path>/</path> <!--虚拟目录-->
+          <uriEncoding>UTF-8</uriEncoding><!--访问路径编解码字符集-->
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+2）Post 请求乱码
+
+配置过滤器
+
+```java
+public class ServletContainersInitConfig extends AbstractAnnotationConfigDispatcherServletInitializer {
+    protected Class<?>[] getRootConfigClasses() {
+        return new Class[0];
+    }
+
+    protected Class<?>[] getServletConfigClasses() {
+        return new Class[]{SpringMvcConfig.class};
+    }
+
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+
+    //乱码处理
+    @Override
+    protected Filter[] getServletFilters() {
+        CharacterEncodingFilter filter = new CharacterEncodingFilter();
+        filter.setEncoding("UTF-8");
+        return new Filter[]{filter};
+    }
+}
+```
+
+### 4 种类型参数传递
+
+在约定中
+- Get 请求：url 地址 传参
+- Post 请求：form 表单 传参
+
+> 并不是强制的
+
+表单传参：
+
+![](assets/Pasted%20image%2020240218144208.png)
+
+---
+1）普通参数：
+
+请求参数名 与 形参参数名
+- 相同：定义形参即可接收参数
+- 不同：使用 `@RequestParam` 注解
+
+> 写上 `@RequestParam` 注解框架就不需要自己去解析注入，能提升框架处理性能
+
+```http
+Get发送请求：
+localhost:81/user/commonParam?name=张三&age=11
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/commonParamDifferentName")
+	@ResponseBody
+	public String commonParamDifferentName(@RequestParam("name") String userName , int age){
+	    System.out.println("普通参数传递 userName ==> "+userName);
+	    System.out.println("普通参数传递 age ==> "+age);
+	    return "{'module':'common param different name'}";
+	}
+}
+```
+
+2）pojo/嵌套pojo 参数
+
+> GET 和 POST 发送请求数据的方式不变
+
+- 请求参数 key 的名称要和 **POJO 中属性的名称一致**，否则无法封装，定义 POJO 类型形参即可接收参数
+- 嵌套 POJO 参数：按照对象层次结构关系即可接收嵌套 POJO 属性参数
+
+```http
+Get 发送请求：
+localhost:81/user/pojoParam?name=张三&age=11&address.province=山东&address.city=烟台
+```
+
+```java
+@Data
+public class Address {
+    private String province;
+    private String city;
+}
+
+@Data
+public class User {
+    private String name;
+    private int age;
+    private Address address;
+}
+
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	// 
+	@RequestMapping("/pojoParam")  
+	@ResponseBody  
+	public String pojoParam(User user) {  
+	    System.out.println("pojo参数传递 user ==> " + user);  
+	    return "{'module':'pojo param'}";  
+	}
+}
+```
+
+3）数组 参数
+
+> GET 和 POST 发送请求数据的方式不变
+
+请求参数名 与 形参对象属性名 **相同** 且 请求参数为**多个**，定义数组类型即可接收参数
+
+```http
+Get 发送请求：
+localhost:81/user/arrayParam?likes=唱&likes=跳&likes=rap&likes=篮球
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/arrayParam")  
+	@ResponseBody  
+	public String arrayParam(String[] likes) {  
+	    System.out.println("数组参数传递 likes ==> " + Arrays.toString(likes));  
+	    return "{'module':'array param'}";  
+	}
+}
+```
+
+4）集合类型参数
+
+> GET 和 POST 发送请求数据的方式不变
+
+使用 `@RequestParam` 注解，请求参数名 与 形参集合对象名 **相同** 且 请求参数为**多个**，
+
+```http
+Get 发送请求：
+localhost:81/user/listParam?likes=唱&likes=跳&likes=rap&likes=篮球
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/listParam")  
+	@ResponseBody  
+	    public String listParam(@RequestParam List<String> likes) {  
+	    System.out.println("集合参数传递 likes ==> " + likes);  
+	    return "{'module':'list param'}";  
+	}
+}
+```
+
+> 不加 `@RequestParam` 运行会报错，原因是 SpringMVC 将 List 看做是一个 POJO 对象来处理，将其创建一个对象并准备把前端的数据封装到对象中，但是 List 是一个接口无法创建对象，所以报错。
+> 
+> ![](assets/Pasted%20image%2020240218172404.png)
+
+### json 数据参数传递
+
+
+| 名称 | `@RequestBody` |
+| ---- | ---- |
+| 类型 | 形参注解 |
+| 作用 | 将请求中请求体所包含的数据传递给请求参数，此注解一个处理器方法只能使用一次 |
+
+`@RequestBody` 与 `@RequestParam`
+- 区别
+    - `@RequestParam` 用于接收 url 地址传参，表单传参【application/x- www-form-urlencoded】
+    - `@RequestBody` 用于接收 json 数据【application/json】
+- 应用
+    - 后期开发中，发送 json 格式数据为主，`@RequestBody` 应用较广
+    - 如果发送非 json 格式数据，选用 `@RequestParam` 接收请求参数
+
+---
+一次性工作：
+- SpringMVC 默认使用的是 jackson 来处理 json 的转换，所以需要添加 jackson 依赖
+- SpringMVC 的配置类中添加 `@EnableWebMvc` 注解开启 SpringMVC 多项辅助功能，这里面**包含**了将 JSON 转换成对象的功能。
+
+```java
+<dependency>
+    <groupId>com.fasterxml.jackson.core</groupId>
+    <artifactId>jackson-databind</artifactId>
+    <version>2.9.0</version>
+</dependency>
+```
+
+```java
+@Configuration
+@ComponentScan("com.itheima.controller")
+// 开启json数据类型自动转换
+@EnableWebMvc
+public class SpringMvcConfig {}
+```
+
+---
+1）json 普通数组
+
+```json
+[
+    "唱",
+    "跳",
+    "rap",
+    "篮球"
+]
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/listParamForJson")  
+	@ResponseBody  
+	public String listParamForJson(@RequestBody List<String> likes) {  
+	    System.out.println("list common(json)参数传递 list ==> " + likes);  
+	    return "{'module':'list common for json param'}";  
+	}
+}
+```
+
+2）json 对象
+
+```java
+{
+    "name": "张三",
+    "age": "11",
+    "address": {
+        "province": "beijing",
+        "city": "beijing"
+    }
+}
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/pojoParamForJson")  
+	@ResponseBody  
+	public String pojoParamForJson(@RequestBody User user) {  
+	    System.out.println("pojo(json)参数传递 user ==> " + user);  
+	    return "{'module':'pojo for json param'}";  
+	}
+}
+```
+
+3）json 对象数组
+
+```java
+[
+    {
+        "name": "itcast",
+        "age": 15
+    },
+    {
+        "name": "itheima",
+        "age": 12
+    }
+]
+```
+
+```java
+@Controller
+@RequestMapping("/user")
+public class UserController {
+	@RequestMapping("/listPojoParamForJson")
+	@ResponseBody
+	public String listPojoParamForJson(@RequestBody List<User> list){
+	    System.out.println("list pojo(json)参数传递 list ==> "+list);
+	    return "{'module':'list pojo for json param'}";
+	}
+```
+
+### 日期类型参数传递
+
+> 日期类型比较特殊，因为对于日期的格式有N多中输入方式，比如:
+> - 2088-08-18
+> - 2088/08/18
+> - 08/18/2088
+> - ......
+
+| 名称 | `@DateTimeFormat` |
+| ---- | ---- |
+| 类型 | 形参注解 |
+| 作用 | 设定日期时间型数据格式 |
+| 相关属性 | pattern：指定日期时间格式字符串 |
+
+---
+把参数设置为日期类型，
+- SpringMVC 默认支持的字符串转日期的格式为 `yyyy/MM/dd`
+- `@DateTimeFormat` 自定义日期时间的格式
+
+```http
+localhost:81/user/dataParam?date=2088/08/08&date1=2088-08-08&date2=2088/08/08 8:08:08
+```
+
+```java
+@RequestMapping("/dataParam")
+@ResponseBody
+public String dataParam(Date date,
+						@DateTimeFormat(pattern = "yyyy-MM-dd") Date date1,
+						@DateTimeFormat(pattern = "yyyy/MM/dd HH:mm:ss") Date date2) {
+	System.out.println("参数传递 date ==> " + date);
+	System.out.println("参数传递 date1(yyyy-MM-dd) ==> " + date1);
+	System.out.println("参数传递 date2(yyyy/MM/dd HH:mm:ss) ==> " + date2);
+	return "{'module':'data param'}";
+}
+```
+
+## Converter
+
+> - 前端传递字符串，后端使用日期Date接收
+> - 前端传递JSON数据，后端使用对象接收
+> - 前端传递字符串，后端使用Integer接收
+> - 后台需要的数据类型有很多中
+> - 在数据的传递过程中存在很多类型的转换
+> 
+> 问：谁来做这个类型转换?
+
+SpringMVC 中提供了类型转换接口和实现类
+
+```java
+/**
+*	S: the source type
+*	T: the target type
+*/
+@FunctionalInterface
+public interface Converter<S, T> {
+    @Nullable
+    //该方法就是将从页面上接收的数据(S)转换成我们想要的数据类型(T)返回
+    T convert(S source);
+}
+```
+
+Converter 所属的包为 `org.springframework.core.convert.converter`
+
+Converter 接口的实现类，用来实现不同数据类型之间的转换，如
+- 请求参数年龄数据（String --> Integer）
+- 日期格式转换（String --> Date）
+
+![](assets/Pasted%20image%2020240218202444.png)
+
+## 响应
+
+响应主要包括：
+- 响应页面
+- 响应数据
+    - 文本数据
+    - json 数据
+
+> 因为异步调用是目前常用的主流方式，所以我们需要更关注的就是如何返回 JSON 数据，对于其他只需要认识了解即可。
+> 
+> 响应页面跳过了
+
+|名称|`@ResponseBody` |
+|---|---|
+|类型|方法\类注解|
+|位置|SpringMVC 控制器方法定义上方和控制类上|
+|作用|设置当前控制器返回值作为响应体, 写在类上，该类的所有方法都有该注解功能|
+|相关属性|pattern：指定日期时间格式字符串|
+- 方法的返回值为“字符串”，会将其作为**文本内容**直接响应给前端
+- 方法的返回值为“对象”，会将对象**转换成 JSON** 响应给前端
+
+###  响应纯文本数据
+
+```java
+@RequestMapping("/toText")
+@ResponseBody
+public String toText() {
+	System.out.println("返回纯文本数据");
+	return "response text";
+}
+```
+
+### 响应json数据
+
+> jackson 依赖要导入，`@EnableWebMvc` 注解要加上
+
+1）响应 pojo 对象
+
+```java
+@RequestMapping("/toJsonPOJO")
+@ResponseBody
+public User toJsonPOJO(){
+	System.out.println("返回json对象数据");
+	User user = new User();
+	user.setName("itcast");
+	user.setAge(15);
+	return user;
+} 
+```
+
+2）响应 POJO 集合对象
+
+```java
+@RequestMapping("/toJsonList")
+@ResponseBody
+public List<User> toJsonList() {
+	System.out.println("返回json集合数据");
+	User user1 = new User();
+	user1.setName("传智播客");
+	user1.setAge(15);
+
+	User user2 = new User();
+	user2.setName("黑马程序员");
+	user2.setAge(12);
+
+	List<User> userList = new ArrayList<>();
+	userList.add(user1);
+	userList.add(user2);
+
+	return userList;
+}
+```
+
+### HttpMessageConverter
+
+HttpMessageConverter 接口是实现对象与 JSON 之间的转换工作
+
+实现类如下：
+
+![](assets/Pasted%20image%2020240218214515.png)
+
+# Rest 风格
+
+## 简介
+
+*REST（Representational State Transfer）*，表现形式状态转换，它是一种软件架构风格
+    
+当我们想表示一个网络资源的时候，可以使用两种方式：
+
+* 传统风格资源描述形式
+	* `http://localhost/user/getById?id=1` 查询 id 为 1 的用户信息
+	* `http://localhost/user/saveUser` 保存用户信息
+* REST 风格描述形式
+	* `http://localhost/user/1` 
+	* `http://localhost/user`
+
+REST 的优点有：
+- 隐藏资源的访问行为，无法通过地址得知对资源是何种操作
+- 书写简化
+
+按照 REST 风格访问资源时使用**行为动作**区分对资源进行了何种操作
+
+* `http://localhost/users`	查询全部用户信息 GET（查询）
+* `http://localhost/users/1`  查询指定用户信息 GET（查询）
+* `http://localhost/users`    添加用户信息    POST（新增/保存）
+* `http://localhost/users`    修改用户信息    PUT（修改/更新）
+* `http://localhost/users/1`  删除用户信息    DELETE（删除）
+
+**描述模块的名称通常使用复数**，也就是加 s 的格式描述，表示此类资源，而非单个资源，例如：users、books、accounts......
+
+*RESTful*：根据 REST 风格对资源进行访问称为 RESTful。
+
+> 上述行为是约定方式，约定不是规范，可以打破，所以称 REST 风格，而不是 REST 规范
+
+## 基本使用
 
