@@ -282,7 +282,7 @@ public class BookServiceImpl implements BookService {
 
 # ---------- IOC and DI 相关内容
 
-## ----- IOC
+## ---------- IOC
 
 ## bean 基础配置
 
@@ -471,31 +471,12 @@ public class AppForInstanceUser {
 
 > 这种方式在 Spring 去**整合其他框架**的时候会被用到，重点掌握！
 
-创建一个 FactoryBean 接口的实现类，重写接口的方法
+- FactoryBean接口的类造出来的对象**不是当前类的对象**，而是**泛型类型的对象**
 
-```java
-public class UserDaoFactoryBean implements FactoryBean<UserDao> {
-    //代替原始实例工厂中创建对象的方法
-    public UserDao getObject() throws Exception {
-        return new UserDaoImpl();
-    }
-    //返回所创建类的Class对象
-    public Class<?> getObjectType() {
-        return UserDao.class;
-    }
-}
-```
-
-配置文件
-
-```java
-<bean id="userDao" class="com.itheima.factory.UserDaoFactoryBean"/>
-```
-
-运行类不用做任何修改
-
----
-查看源码会发现，FactoryBean 接口其实会有三个方法
+FactoryBean 接口有三个方法
+- `getObject()`，被重写后，在方法中进行对象的创建并返回
+- `getObjectType()`，被重写后，主要返回的是被创建类的 Class 对象
+- `isSingleton()`，已经给了默认值，设置对象是否为单例
 
 ```java
 T getObject() throws Exception;
@@ -507,9 +488,62 @@ default boolean isSingleton() {
 }
 ```
 
-- `getObject()`，被重写后，在方法中进行对象的创建并返回
-- `getObjectType()`，被重写后，主要返回的是被创建类的 Class 对象
-- `isSingleton()`，已经给了默认值，设置对象是否为单例
+---
+创建一个 FactoryBean 接口的实现类，重写接口的方法
+
+```java
+public class UserDaoFactoryBean implements FactoryBean<UserDao> {
+    //代替原始实例工厂中创建对象的方法
+    public UserDao getObject() throws Exception {
+        return new UserDaoImpl();
+    }
+    
+    //返回所创建类的Class对象
+    public Class<?> getObjectType() {
+        return UserDao.class;
+    }
+    
+    @Override
+    public boolean isSingleton() {
+        return true;
+    }
+}
+```
+
+```java
+<bean id="userDao" class="com.itheima.factory.UserDaoFactoryBean"/>
+```
+
+运行类不用做任何修改
+
+---
+> 通常实现了 FactoryBean 接口的类使用@Bean 的形式进行加载，当然也可以使用`@Component` 去声明 DogFactoryBean，只要被扫描加载到即可，但是这种格式加载总觉得怪怪的，指向性不是很明确。
+
+```java
+@ComponentScan({"com.itheima.bean","com.itheima.config"})
+public class SpringConfig3 {
+    @Bean
+    public DogFactoryBean dog(){
+        return new DogFactoryBean();
+    }
+}
+```
+
+> 有人说，注释中的代码写入 Dog 的构造方法不就行了吗？干嘛这么费劲转一圈，还写个类，还要实现接口，多麻烦啊。
+> 
+> 还真不一样，你可以理解为 Dog 是一个抽象后剥离的特别干净的模型，但是实际使用的时候必须进行一系列的初始化动作。只不过根据情况不同，初始化动作不同而已。如果写入 Dog，或许初始化动作 A 当前并不能满足你的需要，这个时候你就要做一个 DogB 的方案了。然后，就没有然后了，**你就要做两个 Dog 类。当时使用 FactoryBean 接口就可以完美解决这个问题。**
+
+```java
+public class DogFactoryBean implements FactoryBean<Dog> {
+    @Override
+    public Dog getObject() throws Exception {
+        Dog d = new Dog();
+        //.........
+        return d;
+    }
+    // ...
+}
+```
 
 ## bean 的生命周期
 
@@ -635,7 +669,7 @@ ctx.registerShutdownHook();
 //容器操作
 ```
 
-## 核心容器
+## 容器操作
 
 核心容器，可以简单地理解为 `ApplicationContext`
 - 如何创建容器? 
@@ -656,10 +690,12 @@ ApplicationContext ctx = new ClassPathXmlApplicationContext("applicationContext.
 ApplicationContext ctx = new FileSystemXmlApplicationContext("applicationContext.xml");
 ```
 
-加载多个配置文件
+- 加载多个配置文件
 ```java
 ApplicationContext ctx = new FileSystemXmlApplicationContext("bean1.xml", "bean2.xml"); 
 ```
+
+> AnnotationConfigApplicationContext 注解开发容器
 
 ### Bean 的获取
 
@@ -719,7 +755,7 @@ ApplicationContext 配置延迟加载
 <bean id="bookDao" class="com.itheima.dao.impl.BookDaoImpl"  lazy-init="true"/>
 ```
 
-## ----- DI 
+## ---------- DI 
 
 向一个类中传递数据的方式有几种?
 - 普通方法 (set 方法)
@@ -1158,7 +1194,9 @@ bean 相关
 
 注解开发定义 bean 用的是 2.5 版提供的注解，纯注解开发用的是 3.0 版提供的注解。
 
-## 注解开发定义 bean
+## 定义注册 bean
+
+### 配置文件+注解开发
 
 `@Component` 及其三个衍生注解
 
@@ -1243,16 +1281,17 @@ public class Main {
 }
 ```
 
-## 纯注解开发定义 Bean
+### 纯注解开发
 
 > 上面已经可以使用注解来配置bean,但是依然有用到配置文件，在配置文件中对包进行了扫描
 
 Spring3.0 开启了纯注解开发模式，使用 **Java 类替代配置文件**，开启了 Spring 快速开发赛道
 
 ---
-创建一个配置类，在配置类上添加 `@Configuration` 注解，将其标识为一个配置类，替换 `applicationContext.xml`
-
-在配置类上添加包扫描注解 `@ComponentScan` 替换 `<context:component-scan base-package=""/>`
+步骤
+- 创建一个配置类
+- 配置类上添加 `@Configuration` 注解标识为一个配置类，替换 `applicationContext.xml`
+- 配置类上添加包扫描注解 `@ComponentScan` 替换 `<context:component-scan base-package=""/>`
 
 ```java
 @Configuration
@@ -1275,6 +1314,30 @@ public class AppForAnnotation {
     }
 }
 ```
+
+### 编程形式注册 bean
+
+容器初始化完成后手动加载 bean
+
+```java
+@Data
+public class Cat {
+    private int age;
+}
+
+public class App5 {
+    public static void main(String[] args) {
+        AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig.class);
+        //上下文容器对象已经初始化完毕后，手工加载bean
+        ctx.registerBean("tom", Cat.class,0);
+        ctx.registerBean("tom", Cat.class,1);
+        ctx.registerBean("tom", Cat.class,2);
+        System.out.println(ctx.getBean(Cat.class));
+    }
+}
+```
+
+> 后面加载的 bean 会覆盖前面的
 
 ## bean 作用范围 与 生命周期管理
 
@@ -1310,6 +1373,38 @@ public class BookDaoImpl implements BookDao {
 ```
 
 ![](assets/Pasted%20image%2020240210211949.png)
+
+> 2024年2月24日19:35:23 #补充
+
+`@Configuration` 的 proxyBeanMethods 属性设置 bean 的作用范围
+- 默认 true，可以保障调用此方法得到的对象是从容器中获取的而不是重新创建的，即创建的 bean 唯一
+
+```java
+boolean proxyBeanMethods() default true;
+```
+
+```java
+@Configuration(proxyBeanMethods = true)
+public class SpringConfig33 {
+    @Bean
+    public Cat cat(){
+        return new Cat();
+    }
+}
+```
+
+```java
+public class App33 {
+    public static void main(String[] args) {
+        ApplicationContext ctx = new AnnotationConfigApplicationContext(SpringConfig33.class);
+  
+        SpringConfig33 springConfig33 = ctx.getBean("springConfig33", SpringConfig33.class);
+        System.out.println(springConfig33.cat());
+        System.out.println(springConfig33.cat());
+        System.out.println(springConfig33.cat());
+    }
+}
+```
 
 ## 依赖注入
 ### 自动装配（引用类型）
@@ -1464,9 +1559,16 @@ public class JdbcConfig {
 ```
 
 ---
-方式一：导入式（推荐），`@Import` 
-- 手动加入配置类到核心配置
+方式一：导入式（推荐），`@Import` 手动加入配置类到核心配置
 - 此注解只能添加一次，多个数据请用数组格式
+- 注册的 bean 的名字是**全类名**
+- JdbcConfig 类上是没有痕迹的
+- **被导入的 bean 无需使用注解声明为 bean**
+	- 普通 bean 不用 `@Component`
+	- 配置 bean 不用 `@Configuration`，且会把 `@bean` 创建的 bean 都加载
+	- 此形式可以**有效的降低源代码与 Spring 技术的耦合度**，在 **spring 技术底层及诸多框架的整合中大量使用**
+
+> 容器的 `getBeanDefinitionNames()` 获取 bean 的名字
 
 ```Java
 @Configuration
@@ -1491,7 +1593,7 @@ public class SpringConfig {}
 
 ### 为第三方 bean 注入资源
 
-简单数据类型注入使用 `@Value` 注解
+简单数据类型注入： `@Bean` + setter / 构造方法
 
 ```java
 @Configuration
@@ -1519,7 +1621,7 @@ public class JdbcConfig {
 }
 ```
 
-引用类型注入只需要为 bean 定义方法**设置形参即可**，容器会根据类型**自动装配**对象。
+引用类型注入：为 bean 定义方法**设置形参即可**，容器会根据类型**自动装配**对象。
 
 ```java
 @Bean
@@ -1535,7 +1637,58 @@ public DataSource dataSource(BookDao bookDao){
 }
 ```
 
-## 总结
+## 其他 bean 加载方式
+
+> 获取容器省略
+
+已有的 bean 加载方式
+- 配置文件（xml）+ bean 标签（xml）
+- 配置文件扫描（xml）+ 注解定义 bean
+- 注解扫描 + 注解定义 bean
+- `@Import` 注册 bean
+- 获取容器后，编程式注册 bean
+
+### ImportSelector
+
+加载 ImportSelector 类型的 bean
+- 导入 ImportSelector 接口的实现类
+- 对**导入源**编程式处理
+
+```java
+// 导入源
+@Configuration  
+@Import(MyImportSelector.class)  
+public class MyConfig {  
+}
+```
+
+```java
+public class MyImportSelector implements ImportSelector {
+    @Override
+    public String[] selectImports(AnnotationMetadata metadata) {
+        //各种条件的判定，判定完毕后，决定是否装载指定的bean
+        boolean flag = metadata.hasAnnotation("org.springframework.context.annotation.Configuration");
+        if(flag){
+            return new String[]{"com.itheima.bean.Dog"};
+        }
+        return new String[]{"com.itheima.bean.Cat"};
+    }
+}
+```
+
+### ImportBeanDefinitionRegistrar
+
+#todo 
+
+### BeanDefinitionRegistryPostProcessor
+
+#todo 
+
+
+
+
+
+## 对比：配置文件 & 注解方式
 
 ![](assets/Pasted%20image%2020240211183236.png)
 
@@ -3640,13 +3793,12 @@ public String dataParam(Date date,
 }
 ```
 
-## Converter
+### Converter
 
 > - 前端传递字符串，后端使用日期Date接收
 > - 前端传递JSON数据，后端使用对象接收
 > - 前端传递字符串，后端使用Integer接收
-> - 后台需要的数据类型有很多中
-> - 在数据的传递过程中存在很多类型的转换
+> - 后台需要的数据类型有很多中，在数据的传递过程中存在很多类型的转换
 > 
 > 问：谁来做这个类型转换?
 
@@ -3689,7 +3841,7 @@ Converter 接口的实现类，用来实现不同数据类型之间的转换，�
 |---|---|
 |类型|方法\类注解|
 |位置|SpringMVC 控制器方法定义上方和控制类上|
-|作用|设置当前控制器返回值作为响应体, 写在类上，该类的所有方法都有该注解功能|
+|作用|设置当前控制器返回值作为响应体, <br>写在类上，该类的所有方法都有该注解功能 |
 |相关属性|pattern：指定日期时间格式字符串|
 - 方法的返回值为“字符串”，会将其作为**文本内容**直接响应给前端
 - 方法的返回值为“对象”，会将对象**转换成 JSON** 响应给前端
@@ -3754,9 +3906,9 @@ HttpMessageConverter 接口是实现对象与 JSON 之间的转换工作
 
 ![](assets/Pasted%20image%2020240218214515.png)
 
-# Rest 风格
+## Rest 风格
 
-## 简介
+### 简介
 
 *REST（Representational State Transfer）*，表现形式状态转换，它是一种软件架构风格
     
@@ -3787,5 +3939,895 @@ REST 的优点有：
 
 > 上述行为是约定方式，约定不是规范，可以打破，所以称 REST 风格，而不是 REST 规范
 
+### 基本使用
+
+| 名称 | @PathVariable |
+| ---- | ---- |
+| 类型 | 形参注解 |
+| 作用 | 绑定路径参数与处理器方法形参间的关系，要求路径参数名与形参名一一对应 |
+
+1. 设定 http 请求动作：`@RequestMapping` 的 method 属性
+2. 设定请求参数（路径变量）
+
+```java
+@Controller
+@ResponseBody
+public class UserController {
+	// 添加操作
+    @RequestMapping(value = "/users",method = RequestMethod.POST)
+        public String save() {
+        System.out.println("user save...");
+        return "{'module':'user save'}";
+    }
+
+	//删除操作
+	@RequestMapping(value = "/users/{id}",method = RequestMethod.DELETE)
+    public String delete(@PathVariable Integer id) {
+        System.out.println("user delete..." + id);
+        return "{'module':'user delete'}";
+    }
+
+	//修改操作
+    @RequestMapping(value = "/users",method = RequestMethod.PUT)
+    public String update(@RequestBody User user) {
+        System.out.println("user update..." + user);
+        return "{'module':'user update'}";
+    }
+
+	//id查询操作
+    @RequestMapping(value = "/users/{id}" ,method = RequestMethod.GET)
+    public String getById(@PathVariable Integer id){
+        System.out.println("user getById..."+id);
+        return "{'module':'user getById'}";
+    }
+
+	//全部查询操作
+    @RequestMapping(value = "/users" ,method = RequestMethod.GET)
+    public String getAll() {
+        System.out.println("user getAll...");
+        return "{'module':'user getAll'}";
+    }
+}
+```
+
+> 修改操作大多都是用 json 数据传递，也不需要路径变量，形参获取参数的时候还是用 `@RequestBody`
+
+如果方法形参的名称和路径 `{}` 中的值不一致，该怎么办？
+
+![](assets/Pasted%20image%2020240219135832.png)
+
+### 快速开发
+
+|名称| `@RestController` |
+|---|---|
+|类型|类注解|
+|位置|基于 SpringMVC 的 RESTful 开发控制器类定义上方|
+|作用|设置当前控制器类为 RESTful 风格， 等同于 `@Controller` 与 `@ResponseBody` 两个注解组合功能 |
+
+|名称|`@GetMapping` `@PostMapping` `@PutMapping` `@DeleteMapping` |
+|---|---|
+|类型|方法注解|
+|位置|基于 SpringMVC 的 RESTful 开发控制器方法定义上方|
+|作用|设置当前控制器方法请求访问路径与请求动作，每种对应一个请求动作 |
+|相关属性|value（默认）：请求访问路径|
+
+1. 使用 `@RestController` 注解替换 `@Controller` 与 `@ResponseBody` 注解
+2. 使用 `@GetMapping` `@PostMapping` `@PutMapping` `@DeleteMapping` 同时定义请求方式和路径
+
+```java
+@RestController
+@RequestMapping("/books")
+public class BookController {
+
+    @PostMapping
+    public String save(@RequestBody Book book){
+        System.out.println("book save ==> "+ book);
+        return "{'module':'book save success'}";
+    }
+
+    @DeleteMapping("/{id}")
+    public String delete(@PathVariable Integer id){
+        System.out.println("book delete ==> "+ id);
+        return "{'module':'book delete success'}";
+    }
+
+    @PutMapping
+    public String update(@RequestBody Book book){
+        System.out.println("book update ==> "+ book);
+        return "{'module':'book update success'}";
+    }
+
+    @GetMapping("/{id}")
+    public String getById(@PathVariable Integer id){
+        System.out.println("book getById ==> "+ id);
+        return "{'module':'book getById success'}";
+    }
+
+ 	@GetMapping
+    public List<Book> getAll(){
+        System.out.println("book getAll is running ...");
+        List<Book> bookList = new ArrayList<>();
+        // ...
+        return bookList;
+    }
+}
+```
+
+### 页面数据交互案例
+
+> 跳过
+
+## 注解对比总结
+
+关于接收参数，我们学过三个注解 `@RequestBody`、`@RequestParam`、`@PathVariable`，这三个注解之间的区别和应用分别是什么？
+
+* 区别
+	* `@RequestParam` 用于接收 
+		* **url 地址** 传参
+		* **表单** 传参
+	* `@RequestBody` 用于接收 **json** 数据
+	* `@PathVariable` 用于接收 **路径** 参数，使用 `{参数名称}` 描述路径参数
+* 应用
+	* 后期开发中，发送请求参数超过 1 个时，以 json 格式为主，`@RequestBody` 应用较广
+	* 如果发送非 json 格式数据，选用 `@RequestParam` 接收请求参数
+	* 采用 RESTful 进行开发，当参数数量较少时，例如 1 个，可以采用 `@PathVariable` 接收请求路径变量，通常用于传递 id 值
+
+# SSM 整合
+
+## 整合配置
+
+整合思路：
+- **SpringConfig**
+    - 标识该类为配置类 `@Configuration`
+    - 扫描 Service 所在的包 `@ComponentScan`
+    - 在 Service 层要管理事务 `@EnableTransactionManagement`
+    - 读取外部的 properties 配置文件 `@PropertySource`
+    - 整合 Mybatis 需要引入 Mybatis 相关配置类 `@Import`
+        - 第三方数据源配置类 **JdbcConfig**
+            - 构建 DataSource 数据源，DruidDataSource，需要注入数据库连接四要素， `@Bean` `@Value`
+            - 构建平台事务管理器，DataSourceTransactionManager，`@Bean`
+        - Mybatis 配置类 **MybatisConfig**
+            - 构建 SqlSessionFactoryBean 并设置别名扫描与数据源，`@Bean`
+            - 构建 MapperScannerConfigurer 并设置 DAO 层的包扫描 
+- **SpringMvcConfig**
+    - 标识该类为配置类 `@Configuration`
+    - 扫描 Controller 所在的包 `@ComponentScan`
+    - 开启 SpringMVC 注解支持 `@EnableWebMvc`
+
+---
+导入坐标
+
+```xml
+  <packaging>war</packaging>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>5.2.10.RELEASE</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-jdbc</artifactId>
+      <version>5.2.10.RELEASE</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>5.2.10.RELEASE</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis</artifactId>
+      <version>3.5.6</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mybatis</groupId>
+      <artifactId>mybatis-spring</artifactId>
+      <version>1.3.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.1.47</version>
+    </dependency>
+
+    <dependency>
+      <groupId>com.alibaba</groupId>
+      <artifactId>druid</artifactId>
+      <version>1.1.16</version>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.12</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>3.1.0</version>
+      <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>2.9.0</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.tomcat.maven</groupId>
+        <artifactId>tomcat7-maven-plugin</artifactId>
+        <version>2.1</version>
+        <configuration>
+          <port>80</port>
+          <path>/</path>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+```
+
+JdbcConfig 配置类
+
+```java
+public class JdbcConfig {
+    @Value("${jdbc.driver}")
+    private String driver;
+    @Value("${jdbc.url}")
+    private String url;
+    @Value("${jdbc.username}")
+    private String username;
+    @Value("${jdbc.password}")
+    private String password;
+
+    @Bean
+    public DataSource dataSource(){
+        DruidDataSource dataSource = new DruidDataSource();
+        dataSource.setDriverClassName(driver);
+        dataSource.setUrl(url);
+        dataSource.setUsername(username);
+        dataSource.setPassword(password);
+        return dataSource;
+    }
+
+    @Bean
+    public PlatformTransactionManager transactionManager(DataSource dataSource){
+        DataSourceTransactionManager ds = new DataSourceTransactionManager();
+        ds.setDataSource(dataSource);
+        return ds;
+    }
+}
+```
+
+```properties
+jdbc.driver=com.mysql.jdbc.Driver
+jdbc.url=jdbc:mysql://localhost:3306/ssm_db
+jdbc.username=root
+jdbc.password=root
+```
+
+MyBatisConfig 配置类
+
+```java
+public class MyBatisConfig {
+    @Bean
+    public SqlSessionFactoryBean sqlSessionFactory(DataSource dataSource){
+        SqlSessionFactoryBean factoryBean = new SqlSessionFactoryBean();
+        factoryBean.setDataSource(dataSource);
+        factoryBean.setTypeAliasesPackage("com.itheima.domain");
+        return factoryBean;
+    }
+
+    @Bean
+    public MapperScannerConfigurer mapperScannerConfigurer(){
+        MapperScannerConfigurer msc = new MapperScannerConfigurer();
+        msc.setBasePackage("com.itheima.dao");
+        return msc;
+    }
+}
+```
+
+SpringConfig 配置类
+
+```java
+@Configuration
+@ComponentScan({"com.itheima.service"})
+@PropertySource("classpath:jdbc.properties")
+@Import({JdbcConfig.class, MyBatisConfig.class})
+@EnableTransactionManagement
+public class SpringConfig {
+}
+```
+
+SpringMvcConfig 配置类
+
+```java
+@Configuration
+@ComponentScan("com.itheima.controller")
+@EnableWebMvc
+public class SpringMvcConfig {
+}
+```
+
+web 项目入口配置
+
+```java
+public class ServletConfig extends AbstractAnnotationConfigDispatcherServletInitializer {
+    //加载Spring配置类
+    protected Class<?>[] getRootConfigClasses() {
+        return new Class[]{SpringConfig.class};
+    }
+    //加载SpringMVC配置类
+    protected Class<?>[] getServletConfigClasses() {
+        return new Class[]{SpringMvcConfig.class};
+    }
+    //设置SpringMVC请求地址拦截规则
+    protected String[] getServletMappings() {
+        return new String[]{"/"};
+    }
+    //设置post请求中文乱码过滤器
+    @Override
+    protected Filter[] getServletFilters() {
+        CharacterEncodingFilter filter = new CharacterEncodingFilter();
+        filter.setEncoding("utf-8");
+        return new Filter[]{filter};
+    }
+}
+```
+
+> 这里 SpringConfig 产生的容器是作为 SpringMvcConfig 产生的容器的子容器，即 SpringMvcConfig 能访问 SpringConfig，反之不行
+> 
+> 嫌麻烦可以都写在 SpringMvcConfig 中
+
+## 功能模块开发
+
+> 跳过
+
+## 表现层数据封装
+
+> 在 Controller 层返回给前端的数据类型可能是boolean、对象、集合对象等等，如果随着业务的增长，需要返回的数据类型会越来越多。对于前端开发人员在解析数据的时候就比较凌乱了，
+> 
+> 所以对于前端来说，如果后台能够返回一个**统一的数据结果**，前端在解析的时候就可以按照一种方式进行解析。开发就会变得更加简单。
+
+思路：
+- 封装返回的**结果数据**：创建结果模型类，封装数据到 **data 属性** 中
+- 封装返回的数据是**何种操作**及**是否操作成功**：封装操作结果到 **code 属性** 中
+- 操作失败封装返回的**错误信息**：封装特殊消息到 **message 属性** 中
+
+![](assets/Pasted%20image%2020240219165814.png)
+
+设置统一的数据返回结果类
+
+```java
+public class Result {
+    //描述统一格式中的数据
+    private Object data;
+    //描述统一格式中的编码，用于区分操作，可以简化配置0或1表示成功失败
+    private Integer code;
+    //描述统一格式中的消息，可选属性
+    private String msg;
+
+    public Result() {
+    }
+	//构造方法是方便对象的创建
+    public Result(Integer code,Object data) {
+        this.data = data;
+        this.code = code;
+    }
+	//构造方法是方便对象的创建
+    public Result(Integer code, Object data, String msg) {
+        this.data = data;
+        this.code = code;
+        this.msg = msg;
+    }
+	//setter...getter...省略
+}
+```
+
+定义返回码 Code类
+- 通常 1 结尾是成功，0 结尾是失败
+
+```java
+//状态码
+public class Code {
+    public static final Integer SAVE_OK = 20011;
+    public static final Integer DELETE_OK = 20021;
+    public static final Integer UPDATE_OK = 20031;
+    public static final Integer GET_OK = 20041;
+
+    public static final Integer SAVE_ERR = 20010;
+    public static final Integer DELETE_ERR = 20020;
+    public static final Integer UPDATE_ERR = 20030;
+    public static final Integer GET_ERR = 20040;
+}
+
+```
+
+修改 Controller 的返回值
+
+```java
+// 统一每一个控制器方法返回值
+@RestController
+@RequestMapping("/books")
+public class BookController {
+
+    @Autowired
+    private BookService bookService;
+
+    @PostMapping
+    public Result save(@RequestBody Book book) {
+        boolean flag = bookService.save(book);
+        return new Result(flag ? Code.SAVE_OK:Code.SAVE_ERR,flag);
+    }
+
+    @PutMapping
+    public Result update(@RequestBody Book book) {
+        boolean flag = bookService.update(book);
+        return new Result(flag ? Code.UPDATE_OK:Code.UPDATE_ERR,flag);
+    }
+
+    @DeleteMapping("/{id}")
+    public Result delete(@PathVariable Integer id) {
+        boolean flag = bookService.delete(id);
+        return new Result(flag ? Code.DELETE_OK:Code.DELETE_ERR,flag);
+    }
+
+    @GetMapping("/{id}")
+    public Result getById(@PathVariable Integer id) {
+        Book book = bookService.getById(id);
+        Integer code = book != null ? Code.GET_OK : Code.GET_ERR;
+        String msg = book != null ? "" : "数据查询失败，请重试！";
+        return new Result(code,book,msg);
+    }
+
+    @GetMapping
+    public Result getAll() {
+        List<Book> bookList = bookService.getAll();
+        Integer code = bookList != null ? Code.GET_OK : Code.GET_ERR;
+        String msg = bookList != null ? "" : "数据查询失败，请重试！";
+        return new Result(code,bookList,msg);
+    }
+}
+```
+
+# 统一异常处理
+
+> 当程序中出现了异常，直接会返回给前端异常信息，而不是我们封装好的数据，这样的返回信息显然是不友好的
+
+异常的种类及出现异常的原因:
+- 框架内部抛出的异常：因使用不合规导致
+- 数据层抛出的异常：因外部服务器故障导致（例如：服务器访问超时）
+- 业务层抛出的异常：因业务逻辑书写错误导致（例如：遍历业务书写操作，导致索引异常等）
+- 表现层抛出的异常：因数据收集、校验等规则导致（例如：不匹配的数据类型间导致异常）
+- 工具类抛出的异常：因工具类书写不严谨不够健壮导致（例如：必要释放的连接长期未释放等）
+
+思考：
+- 各个层级均出现异常，异常处理代码书写在哪一层?
+    - 所有的异常均抛出到“**表现层**”进行处理
+- 异常的种类很多，表现层如何将所有的异常都处理到呢?
+    - 异常分类
+- 表现层处理异常，每个方法中单独书写（try-catch），代码书写量巨大且意义不强，如何解决?
+    - **AOP**
+
+对于上面这些问题及解决方案，SpringMVC 已经为我们提供了一套解决方案:
+- *异常处理器*：集中的、统一的处理项目中出现的异常。
+
+项目中的异常处理方式：
+
+![](assets/Pasted%20image%2020240219204200.png)
+
 ## 基本使用
 
+|名称|`@RestControllerAdvice` |
+|---|---|
+|类型|类注解|
+|位置|Rest 风格开发的控制器增强类定义上方|
+|作用|为 Rest 风格开发的控制器类做增强|
+- 此注解自带 `@ResponseBody` 注解与 `@Component` 注解，具备对应的功能
+
+![](assets/Pasted%20image%2020240219175345.png)
+
+|名称|`@ExceptionHandler` |
+|---|---|
+|类型|方法注解|
+|位置|专用于异常处理的控制器方法上方|
+|作用|设置指定异常的处理方案，功能等同于控制器方法， 出现异常后终止原始控制器执行，并转入当前方法执行 |
+- 此类方法可以根据处理的异常不同，制作多个方法分别处理对应的异常
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.RUNTIME)
+@Documented
+public @interface ExceptionHandler {
+
+	/**
+	 * Exceptions handled by the annotated method. If empty, will default to any
+	 * exceptions listed in the method argument list.
+	 */
+	Class<? extends Throwable>[] value() default {};
+
+}
+```
+
+创建异常处理器类
+
+```java
+// @RestControllerAdvice用于标识当前类为REST风格对应的异常处理器
+@RestControllerAdvice
+public class ProjectExceptionAdvice {
+    // 除了自定义的异常处理器，保留对Exception类型的异常处理，用于处理非预期的异常
+    @ExceptionHandler(Exception.class)
+    public void doException(Exception ex){
+      	System.out.println("嘿嘿,异常你哪里跑！")
+    }
+}
+```
+
+## 异常分类
+
+> 因为异常的种类有很多，如果每一个异常都对应一个 `@ExceptionHandler`，那得写多少个方法来处理各自的异常，所以我们在处理异常之前，需要对异常进行一个分类
+
+- 业务异常（BusinessException）
+	- 用户行为产生的异常
+		- 规范的：例如用户未按照指定格式进行数据填写
+		- 不规范的：故意传递错误数据，如在地址栏传递错误的参数
+	- 解决方案：
+		- 发送对应消息传递给用户，提醒规范操作
+- 系统异常（SystemException）：
+	- 项目运行过程中可预计但无法避免的异常
+		- 比如数据库或服务器宕机
+	- 解决方案：
+		- 发送固定消息传递给用户，安抚用户
+		- 发送特定消息给运维人员，提醒维护
+		- 记录日志
+- 其他异常（Exception）：
+	- 编程人员未预期到的异常，
+		- 如用到的文件不存在 `FileNotFoundException`
+	- 解决方案：
+		- 发送固定消息传递给用户，安抚用户
+		- 发送特定消息给运维人员，提醒维护
+		- 记录日志
+
+## 具体实现
+
+思路:
+1. 先通过自定义异常，完成 BusinessException 和 SystemException 的定义
+2. 将其他异常包装成自定义异常类型
+3. 在异常处理器类中对不同的异常进行处理
+
+---
+自定义异常
+- 让自定义异常类**继承 `RuntimeException`** ，好处是后期在抛出自定义异常的时候，就不用显示处理了
+- 自定义异常类中添加`code`属性的原因是为了更好的区分异常是来自哪个业务的
+
+> RuntimeException 允许编译期不进行显示处理的
+> 
+> 如果继承的是 Throwable、Exception，那还要 try...catch 或 throws
+
+```java
+public class BusinessException extends RuntimeException {
+    private Integer code;
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public BusinessException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public BusinessException(Integer code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+    }
+}
+
+public class SystemException  extends RuntimeException{
+    private Integer code;
+
+    public Integer getCode() {
+        return code;
+    }
+
+    public void setCode(Integer code) {
+        this.code = code;
+    }
+
+    public SystemException(Integer code, String message) {
+        super(message);
+        this.code = code;
+    }
+
+    public SystemException(Integer code, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+    }
+}
+```
+
+```java
+// 状态码 
+public class Code {
+	// ...
+    public static final Integer SYSTEM_ERR = 50001;
+    public static final Integer SYSTEM_TIMEOUT_ERR = 50002;
+    public static final Integer SYSTEM_UNKNOW_ERR = 59999;
+
+    public static final Integer BUSINESS_ERR = 60002;
+}
+```
+
+将其他异常包装成自定义异常类型
+- 方式一：`try{}catch(){}` 在 catch 中重新 throw 我们自定义异常即可
+- 方式二：直接 throw 自定义异常即可
+
+```java
+@GetMapping("/{id}")
+public Result getById(@PathVariable Integer id) {
+	//模拟业务异常，包装成自定义异常
+	if (id == 1) {
+		throw new BusinessException(Code.BUSINESS_ERR, "请不要使用你的技术挑战我的耐性!");
+	}
+
+	if (id == 2) {
+		//模拟系统异常，将可能出现的异常进行包装，转换成自定义异常
+		try {
+			int i = 1 / 0;
+		} catch (Exception e) {
+			throw new SystemException(Code.SYSTEM_TIMEOUT_ERR, "服务器访问超时，请重试!", e);
+		}
+	}
+
+	// 模拟其他异常
+	if (id == 3) {
+		int i = 1 / 0;
+	}
+
+	Book book = new Book();
+	book.setId(1);
+	book.setName("hello world");
+	book.setDescription("a book");
+	return new Result(Code.GET_OK, book);
+}
+```
+
+异常处理器类中对不同的异常进行处理
+
+```java
+@RestControllerAdvice
+public class ProjectExceptionAdvice {
+    // @ExceptionHandler用于设置当前处理器类对应的异常类型
+    @ExceptionHandler(SystemException.class)
+    public Result doSystemException(SystemException ex) {
+        //记录日志
+        //发送消息给运维
+        //发送邮件给开发人员,ex对象发送给开发人员
+        return new Result(ex.getCode(), null, ex.getMessage());
+    }
+
+    @ExceptionHandler(BusinessException.class)
+    public Result doBusinessException(BusinessException ex) {
+        return new Result(ex.getCode(), null, ex.getMessage());
+    }
+
+    // 除了自定义的异常处理器，保留对Exception类型的异常处理，用于处理非预期的异常
+    @ExceptionHandler(Exception.class)
+    public Result doOtherException(Exception ex) {
+        //记录日志
+        //发送消息给运维
+        //发送邮件给开发人员,ex对象发送给开发人员
+        return new Result(Code.SYSTEM_UNKNOW_ERR, null, "其他异常：系统繁忙，请稍后再试！");
+    }
+}
+```
+
+
+# 拦截器
+
+## 概念
+
+> ![](assets/Pasted%20image%2020240219211448.png)
+> 
+> 1. 浏览器发送一个请求会先到 Tomcat 的 web 服务器
+> 2. Tomcat 服务器接收到请求以后，会去判断请求的是静态资源还是动态资源
+> 	1. 如果是静态资源，会直接到 Tomcat 的项目部署目录下去直接访问
+> 	2. 如果是动态资源，就需要交给项目的后台代码进行处理
+> 3. 在找到具体的方法之前，我们可以去**配置过滤器** (可以配置多个)，按照顺序进行执行
+> 4. 然后进入到到**中央处理器** (SpringMVC 中的内容)，SpringMVC 会根据配置的规则进行拦截
+> 	1. 如果满足规则，则进行处理，找到其对应的 controller 类中的方法进行执行,完成后返回结果
+> 	2. 如果不满足规则，则不进行处理
+> 5. 这个时候，如果我们需要在**每个 Controller 方法执行的前后添加业务**，具体该如何来实现？这个就是拦截器要做的事。
+
+拦截器（Interceptor）是一种动态拦截方法调用的机制，在 SpringMVC 中动态拦截控制器方法的执行
+- 作用:
+    - 在指定的方法调用前后执行预先设定的代码
+    - 阻止原始方法的执行
+    - 总结：拦截器就是用来做增强
+
+拦截器和过滤器之间的区别是什么?
+- 归属不同：Filter 属于 Servlet 技术，Interceptor 属于 SpringMVC 技术
+- 拦截内容不同：Filter 对所有访问进行增强，Interceptor 仅针对 SpringMVC 的访问进行增强
+
+![](assets/Pasted%20image%2020240219211912.png)
+
+## 基本使用
+
+
+自定义拦截器类实现HandlerInterceptor接口，重写接口中的三个方法。
+- 拦截器类要被 SpringMVC 容器扫描到。
+	- `@Component`
+	- SpringMvcConfig 类添加 `@ComponentScan`
+
+```java
+@Component
+public class ProjectInterceptor implements HandlerInterceptor {
+    @Override
+    //原始方法调用前执行的内容
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("preHandle...");
+        return true;
+    }
+
+    @Override
+    //原始方法调用后执行的内容
+    public void postHandle(HttpServletRequest request, HttpServletResponse response, Object handler, ModelAndView modelAndView) throws Exception {
+        System.out.println("postHandle...");
+    }
+
+    @Override
+    //原始方法调用完成后执行的内容
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        System.out.println("afterCompletion...");
+    }
+}
+```
+
+配置拦截器类
+- 修改拦截器拦截规则
+
+```java
+@Configuration
+public class SpringMvcSupport extends WebMvcConfigurationSupport {
+    @Autowired
+    private ProjectInterceptor projectInterceptor;
+
+	// 配置拦截器
+    @Override
+    protected void addInterceptors(InterceptorRegistry registry) {
+	    registry.addInterceptor(projectInterceptor)
+	    .addPathPatterns("/books", "/books/*");
+    }
+}
+```
+
+SpringMvcConfig 添加包扫描
+
+```java
+@Configuration
+@ComponentScan({"com.itheima.controller","com.itheima.config"})
+@EnableWebMvc
+public class SpringMvcConfig{}
+```
+
+拦截器执行顺序：
+- preHandle
+	- return true
+		- controller
+		- postHandle
+		- afterCompletion
+	- return false
+		- 结束
+
+## 拦截器参数
+
+`preHandle()`
+- request：请求对象
+- response：响应对象
+- handler：被调用的处理器对象，本质上是一个方法对象，对反射中的 Method 对象进行了再包装
+
+```java
+@Override
+    //原始方法调用前执行的内容
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        String contentType = request.getHeader("Host");
+        System.out.println("preHandle..." + contentType);
+
+        System.out.println("preHandle..." + handler.getClass()); // class org.springframework.web.method.HandlerMethod
+        HandlerMethod hm = (HandlerMethod) handler;
+        String methodName = hm.getMethod().getName(); // 可以获取方法的名称
+        System.out.println("preHandle..." + methodName); // delete
+        return true;
+    }
+```
+
+`afterCompletion()`
+- 前三个参数与上面的是一致的。
+- ex：如果处理器执行过程中出现异常对象，可以针对异常情况进行单独处理。因为我们现在已经有全局异常处理器类，所以该参数的使用率也不高。
+
+```java
+public void afterCompletion(HttpServletRequest request,
+                       HttpServletResponse response,
+                       Object handler,
+                       ModelAndView modelAndView) throws Exception {
+    System.out.println("postHandle");
+}
+```
+
+## 拦截器链
+
+配置多个拦截器
+
+```java
+@Configuration
+@ComponentScan({"com.itheima.controller"})
+@EnableWebMvc
+public class SpringMvcConfig implements WebMvcConfigurer {
+    @Autowired
+    private ProjectInterceptor projectInterceptor;
+    @Autowired
+    private ProjectInterceptor2 projectInterceptor2;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        // 配置多拦截器
+        registry.addInterceptor(projectInterceptor)
+        .addPathPatterns("/books","/books/*");
+        
+        registry.addInterceptor(projectInterceptor2)
+        .addPathPatterns("/books","/books/*");
+    }
+}
+```
+
+拦截器执行的顺序是和配置顺序有关：**先进后出**
+- 当配置多个拦截器时，形成拦截器链，拦截器链的**运行顺序**参照拦截器**添加顺序**为准
+- 当拦截器中出现对原始处理器的拦截，后面的拦截器均终止运行
+- 当拦截器运行中断，仅运行配置在前面的拦截器的 **afterCompletion** 操作
+
+![](assets/Pasted%20image%2020240220135520.png)
+
+- preHandle：与配置顺序相同，必定运行
+- postHandle：与配置顺序相反，可能不运行
+- afterCompletion：与配置顺序相反，可能不运行
+
+# 简化 SpringMvcSupport
+
+SpringMvcConfig 实现 WebMvcConfigurer 接口可以简化开发，但具有一定的侵入性
+
+```java
+@Configuration
+@ComponentScan("com.boer.controller")
+@EnableWebMvc
+public class SpringMvcConfig implements WebMvcConfigurer {
+    @Autowired
+    private ProjectInterceptor projectInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(projectInterceptor)
+                .addPathPatterns("/books", "/books/*");
+    }
+
+    @Override
+    public void addResourceHandlers(ResourceHandlerRegistry registry) {
+        registry.addResourceHandler("/pages/**").addResourceLocations("/pages/");
+    }
+}
+```
