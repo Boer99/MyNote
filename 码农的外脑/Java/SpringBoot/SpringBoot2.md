@@ -1567,5 +1567,79 @@ public class App {}
 	- 开放**设置集 B**的配置覆盖接口，由开发者根据自身需要决定是否覆盖默认配置
 
 
+原理：
+- springboot 启动时先加载 `spring.factories` 文件（`spring-boot-autoconfigure-2.5.4.jar` 包下）中的 `org.springframework.boot.autoconfigure.EnableAutoConfiguration` 配置项，将其中配置的所有的类都加载成 bean
+	- 在加载 bean 的时候，bean 对应的类定义上都设置有加载条件（`@ConditionalOnXxx`），因此有可能加载成功，也可能条件检测失败不加载 bean
+- 对于可以正常加载成 bean 的类，通常会通过 `@EnableConfigurationProperties` 注解初始化对应的配置属性类并加载对应的配置
+	- 配置属性类上通常会通过 `@ConfigurationProperties` 加载指定前缀的配置，当然这些配置通常都有默认值。如果没有默认值，就强制你必须配置后使用了
+
+如何让 springboot 启动的时候去加载自定义的类呢？
+- springboot 为我们开放了一个配置入口，在配置目录中**创建 META-INF 目录**，并**创建 spring.factories 文件**，在其中**添加设置**，说明哪些类要启动自动配置就可以了
+
+```properties
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+com.itheima.bean.CartoonCatAndMouse
+```
+
+其实这个文件就做了一件事，通过这种配置的方式加载了指定的类。转了一圈，就是个普通的 bean 的加载，和最初使用 xml 格式加载 bean 几乎没有区别，格式变了而已。
+
+自动配置的核心究竟是什么呢？自动配置其实是一个小的生态，可以按照如下思想理解：
+
+1. 自动配置从根本上来说就是**一个 bean 的加载**
+2. 通过 bean 加载条件的控制给开发者一种感觉，自动配置是自适应的，可以根据情况自己判定，但实际上就是最**普通的分支语句的应用**，这是蒙蔽我们双眼的第一层面纱
+3. 使用 bean 的时候，如果不设置属性，就有默认值，如果不想用默认值，就可以自己设置，也就是可以修改部分或者全部参数，感觉这个过程好屌，也是一种自适应的形式，其实还是需要使用**分支语句**来做判断的，这是蒙蔽我们双眼的第二层面纱
+4. springboot 技术提前将大量开发者有可能使用的技术提前做好了，条件也写好了，用的时候你**导入了一个坐标，对应技术就可以使用了**，其实就是**提前帮我们把 `spring.factories` 文件写好了**，这是蒙蔽我们双眼的第三层面纱
+
+> 现在 springboot 程序启动时，在后台偷偷的做了这么多次检测，这么多种情况判定，不用问了，效率一定是非常低的，毕竟它要检测 100 余种技术是否在你程序中使用。
+
+## 变更自动配置
+
+启用自动配置只需要满足自动配置条件即可（导入坐标），可以根据需求开发自定义自动配置项
+
+1）通过配置文件 exclude 属性排除指定的自动配置类
+
+```yml
+spring:
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.task.TaskExecutionAutoConfiguration
+```
+
+2）通过注解 `@EnableAutoConfiguration` 属性排除自动配置项
+- `@SpringBootApplication` 继承了这个属性
+
+```java
+@SpringBootApplication(excludeName = "org.springframework.boot.autoconfigure.context.LifecycleAutoConfiguration")
+```
+
+3）排除坐标（应用面较窄）
+
+如果**当前自动配置中包含有更多的自动配置功能**，也就是一个套娃的效果。此时可以通过检测条件的控制来管理自动配置是否启动。
+
+例如 **web 程序启动时会自动启动 tomcat 服务器**，可以通过排除坐标的方式，让加载 tomcat 服务器的条件失效。不过需要提醒一点，你把 tomcat 排除掉，记得再加一种可以运行的服务器。
+
+```xml
+ <dependencies>  
+     <dependency>  
+         <groupId>org.springframework.boot</groupId>  
+         <artifactId>spring-boot-starter-web</artifactId>  
+         <!--web起步依赖环境中，排除Tomcat起步依赖，匹配自动配置条件-->  
+         <exclusions>  
+             <exclusion>  
+                 <groupId>org.springframework.boot</groupId>  
+                 <artifactId>spring-boot-starter-tomcat</artifactId>  
+             </exclusion>  
+         </exclusions>  
+     </dependency>  
+     <!--添加Jetty起步依赖，匹配自动配置条件-->  
+     <dependency>  
+         <groupId>org.springframework.boot</groupId>  
+         <artifactId>spring-boot-starter-jetty</artifactId>  
+     </dependency>  
+ </dependencies
+```
+
+# ---------- 自定义 starter 开发
 
 
