@@ -1,5 +1,5 @@
 
-# HTML 简介
+# ---------- HTML 简介
 
 全称：HyperText Markup Language（超文本标记语言）。
 - 超文本：是一种组织信息的方式，通过超链接将不同空间的文字、图片等各种信息组织在一起，能从当前阅读的内容，跳转到超链接所指向的内容。
@@ -12,7 +12,7 @@
 
 > WSC：World Wide Web Consortium（万维网联盟），创建于1994年，是目前Web技术领域，最具影响力的技术标准机构。共计发布了200多项技术标准和实施指南，对互联网技术的发展和应用起到了基础性和根本性的支撑作用，官网：https://www.w3.org
 
-# HTML 入门
+# ---------- HTML 入门
 
 ## 标签
 
@@ -141,7 +141,7 @@ HTML 标签属性
 </html>
 ```
 
-# HTML 基础
+# ---------- HTML 基础
 
 开发者文档
 - W3C官网： www.w3c.org
@@ -744,24 +744,850 @@ HTML 标签属性
 
 配置字符编码
 
+```html
+<meta charset="utf-8">
+```
+
 针对 IE 浏览器的兼容性配置。
+
+```html
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+```
 
 针对移动端的配置（移动端课程中会详细讲解）
 
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+```
+
 配置网页关键字
+```html
+<meta name="keywords" content="8-12个以英文逗号隔开的单词/词语">
+```
 
 配置网页描述信息
+```html
+<meta name="description" content="80字以内的一段话，与网站内容相关">
+```
 
 针对搜索引擎爬虫配置：
+```html
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+```
+
+![](assets/Pasted%20image%2020240228161216.png)
 
 配置网页作者：
+```html
+<meta name="author" content="tony">
+```
 
 配置网页生成工具
+```html
+<meta name="generator" content="Visual Studio Code">
+```
 
 配置定义网页版权信息：
+```html
+<meta name="copyright" content="2023-2027©版权所有">
+```
 
 配置网页自动刷新
+```html
+<meta http-equiv="refresh" content="10;url=http://www.baidu.com">
+```
 
-# CSS
+# ---------- CSS 基础
+
+## 简介
+
+![](assets/Pasted%20image%2020240228162035.png)
+
+CSS 的全称为：*层叠样式表 ( Cascading Style Sheets )* 。
+
+CSS 也是一种**标记语言**，用于给 HTML 结构设置样式，例如：文字大小、颜色、元素宽高等等。
+
+简单理解： CSS 可以美化 HTML , 让 HTML 更漂亮。
+
+核心思想： HTML 搭建结构， CSS 添加样式，实现了：**结构与样式的分离**
+
+## 编写位置
+
+### 行内样式
+
+> 又称：内联样式
+
+- 位置：写在标签的 `[style]` 中
+- 特点：**只能控制当前标签的样式**，对其他标签无效。
+- 语法：
+	-  `[style]` 的值要符合 CSS 语法规范，是 `名:值;` 的形式。
+
+```html
+<h1 style="color:red;font-size:60px;">欢迎来到尚硅谷学习</h1>
+```
+
+- 适用场景：只有**对当前元素添加简单样式**时，才偶尔使用。
+- 缺点：
+	- 书写繁琐、样式**不能复用**
+	- 并且没有体现出：结构与样式分离 的思想，
+
+### 内部样式
+
+- 位置：写在 html 页面内部的 `<style>` 标签中。
+	- `<style>` 理论上可以放在 HTML 文档的任何地方，但**一般都放在 `<head>` 中**
+- 语法：
+
+```html
+<style>
+	h1 {
+		color: red;
+		font-size: 40px;
+	}
+</style>
+```
+
+- 优点：
+	- **样式可以复用**
+	- 代码结构清晰
+- 缺点：
+	- 并没有实现：结构与样式完全分离
+	- **多个 HTML 页面无法复用样式**
+
+### 外部样式
+
+- 位置：写在单独的 `.css` 文件中，随后在 HTML 文件中通过 `<link>` **引入使用**
+- 语法：
+	- `<link>` 要写在 `<head>` 中
+		- `[href]` ：引入的文档**来自于哪里**
+		- `[rel]` ：( relation ：关系）说明“引入的文档”与“当前文档”之间的**关系**
+- 优势：
+	- 样式可以复用、
+	- 结构清晰、
+	- 可触发浏览器的缓存机制，提高访问速度 ，
+	- 实现了结构与样式的**完全分离**。
+- 实际开发中，几乎都使用外部样式，这是**最推荐的使用方式！**
+
+`.css` 文件的书写
+
+```css
+h1{
+	color: red;
+	font-size: 40px;
+}
+```
+
+HTML 文件中引入 `.css` 文件
+
+```html
+
+<link rel="stylesheet" href="./xxx.css">
+```
+
+### 优先级
+
+优先级规则：行内样式 > 内部样式 = 外部样式
+- 行内样式无关顺序，就是最高
+- 内部样式、外部样式，优先级和编写顺序有关，**后面的 会覆盖 前面的**
+- 同一个样式表中，优先级也和编写顺序有关， **后面的 会覆盖 前面的**
+
+```css
+h1{
+  color: blue;
+}
+```
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    h1 {
+      color: red;
+    }
+  </style>
+  <link rel="stylesheet" href="./color.css">
+</head>
+
+<body>
+  <!-- 外部样式覆盖内部样式，蓝色 -->
+  <h1>hello</h1>
+</body>
+```
+
+## 语法规范
+
+CSS 语法规范由两部分构成：
+- *选择器*：**找到**要添加样式的**元素**。
+- *声明块*：设置具体的样式（声明块是由一个或多个声明组成的），
+	- 声明的格式为： `属性名:属性值;`
+	- 最好写上：
+		- 最后一个声明后的 `;`
+		- 选择器与声明块之间，属性名与属性值之间，均有一个**空格**
+
+![](assets/Pasted%20image%2020240228182528.png)
+
+CSS 中的注释：`/* */`
+
+## 代码风格
+
+展开风格 —— 开发时推荐，便于维护和调试。
+
+```css
+h1 {
+	color: red;
+	font-size: 40px;
+}
+```
+
+紧凑风格 —— 项目上线时推荐，可减小文件体积。
+
+```css
+h1{color:red;font-size:40px;}
+```
+
+> 项目上线时，我们会通过工具将【展开风格】的代码，变成【紧凑风格】，这样可以减小文件体积，节约网络流量，同时也能让用户打开网页时速度更快
+
+# ---------- CSS 选择器
+
+## 基本选择器
+
+### 通配选择器
+
+作用：可以选中**所有的 HTML 元素**
+
+```css
+* {
+	属性名: 属性值;
+}
+```
+
+> 清除样式时，会对我们有很大帮助
+
+### 元素选择器
+
+作用：为页面中 **某种元素** **统一**设置样式
+
+```css
+标签名 {
+	属性名: 属性值;
+}
+
+/* 选中所有h1元素 */
+h1 {
+	color: orange;
+	font-size: 40px;
+}
+/* 选中所有p元素 */
+p {
+	color: blue;
+	font-size: 60px;
+}
+```
+
+### 类选择器
+
+作用：根据**元素的 `[class]` 值**，来选中**某些**元素。
+
+```css
+.类名 {
+	属性名: 属性值;
+}
+
+/* 选中所有class值为speak的元素 */
+.speak {
+	color: red;
+}
+/* 选中所有class值为answer的元素 */
+.answer {
+	color: blue;
+}
+```
+
+- `[class]` 值的标准：
+	- 不要使用纯数字、不要使用中文、尽量使用英文与数字的组合，
+	- 若由多个单词组成，使用 `-` 做连接，例如：`left-menu` ，
+	- 且命名要有意义，做到 “见名知意”。
+- 一个元素不能写多个 `[class]`
+- 一个元素的 `[class]` 能写多个值，要用**空格**隔开
+
+```html
+<h1 class="speak big">你好啊</h1>
+```
+
+### ID 选择器
+
+作用：根据**元素的 `[id]` 值**，来精准的选中**某个**元素。
+
+```css
+#id值 {
+	属性名: 属性值;
+}
+
+/* 选中id值为earthy的那个元素 */
+#earthy {
+	color: red;
+	font-size: 60px;
+}
+```
+
+- `[id]` 值：
+	- 尽量由字母、数字、 `_` 、`-` 组成，
+	- 最好以字母开头、
+	- 不要包含空格、
+	- 区分大小写
+- 一个元素**只能拥有一个 `[id]`**，多个元素的 `[id]` 值不能相同。
+- 一个元素可以**同时拥有 `[id]` 和 `[class]`** 
+
+## 复合选择器
+
+复合选择器建立在基本选择器之上，由多个基础选择器，通过**不同的方式组合**而成。
+
+### 交集选择器
+
+作用：选中**同时符合**多个条件的元素
+
+```css
+选择器1选择器2选择器3...选择器n {
+
+}
+
+/* 选中：类名为beauty的p元素，为此种写法用的非常多！！！！ */
+p.beauty {
+	color: blue;
+}
+
+/* 选中：类名包含rich和beauty的元素 */
+.rich.beauty {
+	color: green;
+}
+```
+
+注意：
+- 有标签名，**标签名必须写在前面。**
+- **“id 选择器”、“通配选择器”**，实际应用中**几乎不用** —— 因为没有意义
+	- id已经唯一了，不需要交集了
+- 交集选择器中**不可能出现两个元素选择器**
+	- 例如：一个元素，不可能即是 p 元素又是 span 元素
+- 用的最多：**“元素选择器”配合“类名选择器”**，
+	- 例如： `p.beauty`
+
+### 并集选择器
+
+> 又称：分组选择器。
+
+作用：选中**多个选择器**对应的元素
+
+```css
+选择器1, 选择器2, 选择器3, ... 选择器n {
+
+}
+
+/* 选中id为peiqi，或类名为rich，或类名为beauty的元素 */
+#peiqi,
+.rich,
+.beauty {
+	font-size: 40px;
+	background-color: skyblue;
+	width: 200px;
+}
+```
+
+注意：
+- 一般竖着写（多种复合选择器组合的时候方便区分）
+- **任何形式的选择器**，都可以作为并集选择器的一部分 。
+- 并集选择器，通常用于**集体声明**，可以缩小样式表体积。
+
+### 结构选择器
+
+#### HTML 元素间的关系
+
+- 父元素：直接包裹某个元素的元素，就是该元素的父元素。
+- 子元素：被父元素直接包含的元素（简记：儿子元素）。
+- 祖先元素：父亲的父亲......，一直往外找，都是祖先
+	- 父元素，也算是祖先元素的一种
+- 后代元素：儿子的儿子......，一直往里找，都是后代
+	- 子元素，也算是后代元素的一种。
+- 兄弟元素：具有相同父元素的元素，互为兄弟元素
+
+#### 后代选择器
+
+作用：选中指定元素中，符合要求的**后代元素**
+
+注意：
+- 结构一定要符合之前讲的 HTML 嵌套要求
+	- 例如：不能 p 中写 `<h1>` ~ `<h6>` 
+
+```css
+/* 
+空格隔开
+先写祖先，再写后代
+*/
+选择器1 选择器2 选择器3 ...... 选择器n {
+
+}
+
+/* 选中ul中所有li中的a */
+ul li a {
+	color: orange;
+}
+
+/* 选中类名为subject元素中的所有类名为front-end的li */
+.subject li.front-end {
+	color: blue;
+}
+```
+
+#### 子代选择器
+
+作用：选中指定元素中，符合要求的**子元素**
+
+```css
+选择器1 > 选择器2 > 选择器3 > ...... 选择器n {
+
+}
+
+/* div中的子代a元素 */
+div>a {
+	color: red;
+}
+
+/* 类名为persons的元素中的子代a元素 */
+.persons>a{
+	color: red;
+}
+```
+
+区别后代和子代！
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div>a {
+      color: red;
+      font-size: 30px;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <a href="#">儿子</a>
+    <p>
+      <a href="#">孙子</a>
+    </p>
+  </div>
+</body>
+```
+
+#### 兄弟选择器
+
+1）相邻兄弟选择器
+- 作用：选中指定元素后，符合条件的**紧挨着的下一个兄弟**元素。
+
+```css
+选择器1+选择器2 {
+
+}
+
+/* 选中div后相邻的兄弟p元素 */
+div+p {
+	color:red;
+}
+```
+
+2）通用兄弟选择器：
+- 作用：选中指定元素后，符合条件的**下面的所有**兄弟元素。
+
+```css
+选择器1~选择器2 {
+
+}
+
+/* 选中div后的所有的兄弟p元素 */
+div~p {
+	color:red;
+}
+```
+
+---
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    /* li+li也行 */
+    li~li {
+      color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <ul>
+    <li>black</li>
+    <li>blue</li>
+    <li>blue</li>
+    <li>blue</li>
+  </ul>
+</body>
+```
+
+### 属性选择器
+
+作用：选中**属性值符合一定要求**的元素
+
+语法：
+- `[属性名]` 选中**具有**某个属性的元素。
+- `[属性名="值"]` 选中包含某个属性，且属性值**等于**指定值的元素。
+- `[属性名^="值"]` 选中包含某个属性，且属性值以指定的值**开头**的元素。
+- `[属性名$="值"]` 选中包含某个属性，且属性值以指定的值**结尾**的元素。
+- `[属性名*=“值”]` 选择包含某个属性，属性值**包含**指定值的元素。
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    [title]{
+      color: red;
+    }
+    [title="python"]{
+      color: blue;
+    }
+    [title^="s"]{
+      color: green;
+    }
+    [title$="t"]{
+      color: pink;
+    }
+    [title*="script"]{
+      color: yellow;
+    }
+  </style>
+</head>
+
+<body>
+  <div title="java">red</div>
+  <div title="python">blue</div>
+  <div title="spring">green</div>
+  <div title="springboot">pink</div>
+  <div title="javascript">yellow</div>
+</body>
+```
+
+### 伪类选择器
+
+作用：选中**特殊状态**的元素。
+
+#### 动态伪类
+
+常用：
+- `:link` “超链接”**未被访问**的状态。
+- `:visited` “超链接”**访问过**的状态。
+- `:hover` “鼠标”**悬停**在元素上的状态。
+- `:active` “元素”**激活**的状态。
+
+- `:focus` 获取焦点的元素。
+	- 表单类元素才能使用
+
+前四个遵循 **LVHA** 的顺序！
+
+> 激活：按下鼠标不松开
+> 
+> 用户 点击元素、触摸元素、或通过键盘的 “ tab ” 键等方式，选择元素时，就是获得焦点。
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    a:link {
+      color: blue;
+    }
+
+    a:visited {
+      color: pink;
+    }
+
+    a:hover {
+      color: orange;
+    }
+
+    a:active {
+      color: green;
+    }
+
+    input:focus,
+    select:focus {
+      background-color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#1">hello</a>
+  <a href="#2">hello</a>
+  <a href="#3">hello</a>
+
+  <input type="text">
+  <select>
+    <option>1</option>
+    <option>2</option>
+  </select>
+</body>
+```
+
+#### 结构伪类
+
+常用：
+- `:first-child` 所有“兄弟元素”中的**第一个**元素
+- `:last-child` 所有“兄弟元素”中的**最后一个**元素
+- `:nth-child(n)` 所有“兄弟元素”中的**第 n 个**元素
+
+- `:first-of-type` 所有“**同类型**兄弟元素”中的**第一个**元素
+- `:last-of-type` 所有“**同类型**兄弟元素”中的**最后一个**元素
+- `:nth-of-type(n)` 所有“**同类型**兄弟元素”中的 **第 n 个** 元素
+
+n的值：
+- `0 或 不写` ：什么都选不中 —— 几乎不用。
+- `n` ：选中所有子元素 —— 几乎不用。
+- `1 ~ 正无穷的整数` ：选中对应序号的子元素。
+- `2n 或 even` ：选中序号为偶数的子元素。
+- `2n+1 或 odd` ：选中序号为奇数的子元素。
+- `-n+i` ：选中的是前 i 个。
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    /* 结构1，2 */
+    /* div的儿子p元素，且是第一个儿子！（不是第一个p儿子） */
+    div.c12>p:first-child {
+      color: blue;
+    }
+
+    /* 结构3 */
+    /* div的后代p元素，且p是父亲元素的第一个儿子 */
+    div.c3 p:first-child {
+      color: red;
+    }
+
+    /* 结构4 */
+    /* p元素，且是父亲元素的第一个儿子 */
+    p:first-child {
+      color: pink;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- red：父级body的第一个儿子 -->
+  <p>结构4</p>
+  <div>
+    <!-- red：父级div的第一个儿子 -->
+    <p>结构4</p>
+    <marquee>
+      <!-- red：父级marquee的第一个儿子 -->
+      <p>结构4</p>
+      <p>结构4</p>
+    </marquee>
+    <marquee>
+      <span>结构4</span>
+      <p>结构4</p>
+    </marquee>
+    <p>结构4</p>
+  </div>
+  <hr>
+
+  <div class="c12">
+    <!-- red -->
+    <p>结构1，2</p>
+    <p>结构1，2</p>
+  </div>
+  <hr>
+  <div>
+    <!-- black：div的第一个儿子，但不是p -->
+    <span>结构1，2</span>
+    <!-- black：div的第二个儿子 -->
+    <p>结构1，2</p>
+  </div>
+  <hr>
+
+  <div class="c3">
+    <!-- red：父级div的第一个儿子 -->
+    <p>结构3</p>
+    <marquee>
+      <!-- red：父级marquee的第一个儿子 -->
+      <p>结构3</p>
+      <p>结构3</p>
+    </marquee>
+    <marquee>
+      <span>结构3</span>
+      <p>结构3</p>
+    </marquee>
+    <p>结构3</p>
+  </div>
+</body>
+```
+
+了解：
+- `:nth-last-child(n)` 所有兄弟元素中的倒数第 n 个
+- `:nth-last-of-type(n)` 所有同类型兄弟元素中的 倒数第n个 
+- `:only-child` 选择没有兄弟的元素（独生子女）
+- `:only-of-type` 选择没有同类型兄弟的元素
+- `:root` 根元素
+- `:empty` 内容为空元素（空格也算内容）
+
+#### 否定伪类
+
+`:not(选择器)`：排除满足括号中条件的元素。
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    /* :not(属性选择器) */
+    div>p:not([title^=a]){
+      color: red;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <p>hello</p>
+    <p title="a">hello</p>
+    <p title="aa">hello</p>
+  </div>
+</body>
+```
+
+#### UI伪类
+
+- `:checked` 被**选中**的“复选框”或“单选按钮”
+- `:enable` 没有 `[disabled]` 的“表单”元素
+- `:disabled` 有 `[disabled]` 的“表单”元素
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    input:checked{
+      width: 100px;
+      height: 100px;
+    }
+    input:disabled{
+      background-color: gray;
+    }
+    input:enabled{
+      background-color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    <input type="checkbox">
+    <input type="radio" name="a">
+    <input type="radio" name="a">
+
+    <input type="text">
+    <input type="text" disabled>
+  </div>
+</body>
+```
+
+#### 目标伪类（了解）
+
+`:target` 选中**锚点**指向的元素
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div{
+      height: 300px;
+      background-color: gray;
+    }
+    div:target{
+      background-color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <a href="#1">1</a>
+  <a href="#2">2</a>
+
+  <div id="1"></div>
+  <br>
+  <div id="2"></div>
+</body>
+```
+
+#### 语言伪类（了解）
+
+`:lang()` 根据指定的语言选择元素（本质是看 `lang` 属性的值）
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div:lang(en){
+      color:red;
+    }
+    :lang(zh-CN){
+      color: blue;
+    }
+  </style>
+</head>
+
+<body>
+  <div>hello</div>
+  <p lang="zh-CN">你好</p>
+  <span>你好呀</span>
+</body>
+
+</html>
+```
+
+### 伪元素选择器
+
+作用：选中**元素**中的一些**特殊位置**
+
+常用：
+- `::first-letter` 选中元素中的**第一个文字**
+- `::first-line` 选中元素中的**第一行文字**
+- `::selection` 选中被**鼠标选中**的内容
+- `::placeholder` 选中**输入框的提示文字**
+- `::before` 在元素**最开始**的位置，创建一个子元素（必须用 `[content]` 指定内容）
+- `::after` 在元素**最后**的位置，创建一个子元素（必须用 `[content]` 指定内容）
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
