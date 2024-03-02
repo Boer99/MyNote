@@ -1642,4 +1642,216 @@ spring:
 
 # ---------- 自定义 starter 开发
 
+## 实现一个 starter
+
+创建 SpringBoot 工程，工程的规范命名：`xxx-spring-boot-starter`
+
+定义封装参数的属性类 `XxxProperties`，读取配置参数
+
+```java
+@ConfigurationProperties(prefix = "")
+public class XxxProperties {
+}
+```
+
+创建自动配置类 `XxxAutoConfiguration`
+
+```java
+@EnableConfigurationProperties(XxxProperties.class)
+public class XxxAutoConfiguration {
+}
+```
+
+在 resources 包下创建 `META-INF/spring.factories` 文件，指明自动配置类
+
+```properties
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.itcast.autoconfig.XxxAutoConfiguration
+```
+
+最后，新建工程引入 `xxx-spring-boot-starter`
+
+## ip-spring-boot-starter 案例
+
+需求：**统计网站独立 IP 访问次数**的功能，并将**访问信息在后台持续输出**。
+- 在后台指定时间间隔输出监控信息（格式：IP+访问次数）
+- 即插即用，导入坐标直接生效（拦截器）
+
+---
+定义封装参数的属性类 `IpProperties`，读取配置参数
+
+```java
+@Data
+@Component("ipProperties")
+@ConfigurationProperties(prefix = "tools.ip")
+public class IpProperties {
+    /**
+     * 日志显示周期
+     */
+    private Long cycle = 5L;
+
+    /**
+     * 是否周期内重置数据
+     */
+    private Boolean cycleReset = false;
+
+    /**
+     * 日志输出模式  detail：详细模式  simple：极简模式
+     */
+    private String model = LogModel.DETAIL.value;
+
+    public enum LogModel{
+        DETAIL("detail"),
+        SIMPLE("simple");
+        private String value;
+        LogModel(String value) {
+            this.value = value;
+        }
+        public String getValue() {
+            return value;
+        }
+    }
+}
+```
+
+手动配置示例：
+
+```yml
+tools:
+  ip:
+    cycle: 5
+    cycleReset: false
+    model: "detail"
+```
+
+开发业务类
+
+```java
+public class IpCountService {
+
+    // 记录访问ip
+    private Map<String,Integer> ipCountMap = new HashMap<String,Integer>();
+
+    @Autowired
+    //当前的request对象的注入工作由使用当前starter的工程提供自动装配
+    private HttpServletRequest httpServletRequest;
+
+    public void count(){
+        //每次调用当前操作，就记录当前访问的IP，然后累加访问次数
+        //1.获取当前操作的IP地址
+        String ip = httpServletRequest.getRemoteAddr();
+        //2.根据IP地址从Map取值，并递增
+        Integer count = ipCountMap.get(ip);
+        if(count == null){
+            ipCountMap.put(ip,1);
+        }else{
+            ipCountMap.put(ip,count + 1);
+        }
+    }
+
+    @Autowired
+    private IpProperties ipProperties;
+
+    // 定时任务
+	// @Scheduled(cron = "0/${tools.ip.cycle:5} * * * * ?")
+	// @Scheduled(cron = "0/#{ipProperties.cycle} * * * * ?")
+    @Scheduled(cron = "0/#{ipProperties.cycle} * * * * ?")
+    public void print(){
+
+        if(ipProperties.getModel().equals(IpProperties.LogModel.DETAIL.getValue())){
+            System.out.println("         IP访问监控");
+            System.out.println("+-----ip-address-----+--num--+");
+            for (Map.Entry<String, Integer> entry : ipCountMap.entrySet()) {
+                String key = entry.getKey();
+                Integer value = entry.getValue();
+                System.out.println(String.format("|%18s  |%5d  |",key,value));
+            }
+            System.out.println("+--------------------+-------+");
+        }else if(ipProperties.getModel().equals(IpProperties.LogModel.SIMPLE.getValue())){
+            System.out.println("     IP访问监控");
+            System.out.println("+-----ip-address-----+");
+            for (String key: ipCountMap.keySet()) {
+                System.out.println(String.format("|%18s  |",key));
+            }
+            System.out.println("+--------------------+");
+        }
+
+        if(ipProperties.getCycleReset()){
+            ipCountMap.clear();
+        }
+    }
+}
+```
+
+开发拦截器、配置拦截器
+
+```java
+public class IpCountInterceptor implements HandlerInterceptor {
+
+    @Autowired
+    private IpCountService ipCountService;
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        System.out.println("IpCountInterceptor...preHandle");
+        ipCountService.count();
+        return true;
+    }
+}
+```
+
+```java
+@Configuration
+public class SpringMvcConfig implements WebMvcConfigurer {
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(ipCountInterceptor()).addPathPatterns("/**");
+    }
+
+    @Bean
+    public IpCountInterceptor ipCountInterceptor(){
+        return new IpCountInterceptor();
+    }
+}
+```
+
+要实现导入坐标功能直接生效，就得让项目启动后，拦截器直接生效，所以自动配置类上还要导入 `SpringMvcConfig`
+
+```java
+// 开启定时任务
+@EnableScheduling
+//@EnableConfigurationProperties(IpProperties.class)
+@Import({IpProperties.class, SpringMvcConfig.class})
+public class IpAutoConfiguration {
+    @Bean
+    public IpCountService ipCountService(){
+        return new IpCountService();
+    }
+}
+```
+
+`META-INF/spring.factories` 文件指明自动配置类
+
+```properties
+# Auto Configure
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+cn.itcast.autoconfig.IpAutoConfiguration
+```
+
+最后，新建 web 工程导入我们的 starter 即可
+
+## yml 提示功能
+
+#todo
+
+# ---------- SpringBoot 程序启动流程解析
+
+#todo
+
+
+
+
+
+
 

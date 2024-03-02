@@ -4671,9 +4671,6 @@ public class ProjectExceptionAdvice {
 
 
 自定义拦截器类实现HandlerInterceptor接口，重写接口中的三个方法。
-- 拦截器类要被 SpringMVC 容器扫描到。
-	- `@Component`
-	- SpringMvcConfig 类添加 `@ComponentScan`
 
 ```java
 @Component
@@ -4700,6 +4697,11 @@ public class ProjectInterceptor implements HandlerInterceptor {
 ```
 
 配置拦截器类
+- 添加拦截器，拦截器类要被 SpringMVC 容器扫描到。
+	- 第一种：
+		- 拦截器添加 `@Component`
+		- SpringMvcConfig 类添加 `@ComponentScan`
+	- 第二种：SpringMvcConfig 类 `@Bean`
 - 修改拦截器拦截规则
 
 ```java
@@ -4807,9 +4809,13 @@ public class SpringMvcConfig implements WebMvcConfigurer {
 - postHandle：与配置顺序相反，可能不运行
 - afterCompletion：与配置顺序相反，可能不运行
 
-# 简化 SpringMvcSupport
+# WebMvcConfigurer
 
-SpringMvcConfig 实现 WebMvcConfigurer 接口可以简化开发，但具有一定的侵入性
+> #todo 太浅了
+
+> #csdn 支持在一个应用中同时存在多个 WebMvcConfigurer 的实现类（不同 jar 包中）
+
+SpringMvcConfig 实现 WebMvcConfigurer 接口可以**简化开发**，但具有一定的侵入性
 
 ```java
 @Configuration

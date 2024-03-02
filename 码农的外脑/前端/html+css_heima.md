@@ -143,10 +143,10 @@ HTML 标签属性
 
 # ---------- HTML 基础
 
-开发者文档
-- W3C官网： www.w3c.org
-- W3School： www.w3school.com.cn
-- MDN： [MDN Web Docs (mozilla.org)](https://developer.mozilla.org/zh-CN/) —— 火狐团队，平时用的最多。
+> 开发者文档
+> - W3C官网： www.w3c.org
+> - W3School： www.w3school.com.cn
+> - MDN： [MDN Web Docs (mozilla.org)](https://developer.mozilla.org/zh-CN/) —— 火狐团队，平时用的最多。
 
 ## 排版标签
 
@@ -156,7 +156,7 @@ HTML 标签属性
 	- `<h1>`~`<h6>` 不能互相嵌套（不强制）
 - `<p>`
 	- 语义：段落
-	- 很特殊！它里面不能有： `<h1>`~`<h6>` 、`<p>` 、 `<div>`
+	- 很特殊！它里面**不能有**： `<h1>`~`<h6>`、`<p>`、`<div>`
 - `<div>`
 	- 语义：没有任何含义，用于整体布局（生活中的包装袋）。
 
@@ -190,14 +190,15 @@ HTML 标签属性
 ## 文本标签
 
 - 用于包裹：词汇、短语等。
-- 通常写在排版标签里面。
+- 通常写在**排版标签里面**。
 - 排版标签更宏观（大段的文字），文本标签更微观（词汇、短语）
 
-| 常用的文本标签名 | 标签语义 | 单 / 双 标签 |
-| ---- | ---- | ---- |
-| em | 要着重阅读的内容 | 双 |
-| strong | 十分重要的内容（语气比em要强） | 双 |
-| span | 没有语义，用于包裹短语的通用容器 | 双 |
+| 常用的文本标签名 | 标签语义             | 单 / 双 标签 |
+| -------- | ---------------- | -------- |
+| em       | 要着重阅读的内容         | 双        |
+| strong   | 十分重要的内容（语气比em要强） | 双        |
+| span     | 没有语义，用于包裹短语的通用容器 | 双        |
+
 
 不常用的文本标签
 
@@ -1562,6 +1563,8 @@ n的值：
 
 ### 伪元素选择器
 
+> 选中的不是元素
+
 作用：选中**元素**中的一些**特殊位置**
 
 常用：
@@ -1572,19 +1575,882 @@ n的值：
 - `::before` 在元素**最开始**的位置，创建一个子元素（必须用 `[content]` 指定内容）
 - `::after` 在元素**最后**的位置，创建一个子元素（必须用 `[content]` 指定内容）
 
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div::first-line {
+      background-color: yellow;
+    }
+    p::before{
+      content: "￥";
+    }
+    p::after{
+      content: ".00";
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    老天爷如果擦亮双眼仔细观看，还会看到未来的宗教精神导师马丁·路德正在威顿堡大学慷慨激昂地鼓吹他自己的宗教思想。如果他专心于中国，则会看到广西柳州的农民起义被血腥镇压，看到山东曹州的农民正在掀起抗暴的烽火，还能看到已上任三年的皇帝朱厚照（明武宗）正在紫禁城里不眠不休地纵欲。
+  </div>
+
+  <p>199</p>
+  <p>299</p>
+  <p>399</p>
+</body>
+```
+
+## 选择器的优先级
+
+通过不同的选择器，选中相同的元素 ，并且为**相同的样式名设置不同的值**时，就发生了**样式的冲突**。到底应用哪个样式，此时就需要看优先级了。
+
+> 样式不一样就没有冲突了
+
+基本选择器：**行内样式 > ID 选择器 > 类选择器 > 元素选择器 > 通配选择器**
+
+> 不是同类型的选择器，就不能“后来者居上”
+> 
+> 越精准优先级越高
+> 
+> 元素在食物链的底层
+
+复合选择器：
+- 计算方式：每个选择器，都可计算出一组**权重**，格式为： `(a,b,c)`
+	- a : **ID** 选择器的个数。
+	- b : **类、伪类、属性** 选择器的个数。
+	- c : **元素、伪元素** 选择器的个数。
+		- `ul>li` `(0,0,2)`
+		- `div ul>li p a span` `(0,0,6)`
+		- `#atguigu .slogan` `(1,1,0)`
+		- `#atguigu .slogan a` `(1,1,1)`
+		- `#atguigu .slogan a:hover` `(1,2,1)`
+- 比较规则：按照从左到右的顺序，依次比较大小，当前位胜出后，后面的不再对比
+	- `(1,0,0) > (0,2,2)`
+	- `(1,1,0) > (1,0,3)`
+	- `(1,1,3) > (1,1,2)`
+- 特殊规则：
+	- **行内样式**权重大于所有选择器
+	- `!important` 的权重，大于行内样式，大于所有选择器，**权重最高！**
+
+> 并集选择器的每一个部分是分开算的！
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div {
+      color: red !important;
+    }
+
+    .aa {
+      color: blue;
+    }
+
+    #aa {
+      color: green;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="aa" class="aa" style="color: gray;">
+    hello
+  </div>
+</body>
+```
+
+# ---------- CSS 三大特性
+
+## 层叠性
+
+概念：如果发生了**样式冲突**，那就会根据一定的规则（选择器优先级），进行样式的层叠（**覆盖**）
+
+> 样式冲突：元素的同一个样式名，被设置了不同的值
+
+## 继承性
+
+概念：元素会自动拥有其父元素、或其**祖先元素**上所设置的**某些样式**
+
+规则：优先继承**离得近**的。
+
+常见的可继承属性：`text-??`，` font-??`， `line-??`、`color` ......
+
+## 优先级
+
+`!important` > 行内样式 > ID 选择器 > 类选择器 > 元素选择器 > `*` > **继承的样式**
+
+见[选择器的优先级](#选择器的优先级)
+
+# ---------- CSS 常用属性
+
+## 像素
+
+概念：我们的电脑屏幕是，是由一个一个“小点”组成的，每个“小点”，就是一个像素（px）
+
+规律：像素点**越小**，呈现的内容就**越清晰、越细腻**
+
+![](assets/Pasted%20image%2020240301020410.png)
+
+> 注意点：如果电脑设置中开启了缩放，那么就会**影响一些工具的测量结果**，但这无所谓，因
+> 为我们工作中都是参考详细的设计稿，去给元素设置宽高。
+
+## 颜色的表示
+
+### 颜色名
+
+编写方式：直接使用颜色对应的英文单词，编写比较简单，例如：
+1. 红色：red
+2. 绿色：green
+3. 蓝色：blue
+4. 紫色：purple
+5. 橙色：orange
+6. 灰色：gray
+
+> 颜色名这种方式，表达的颜色比较单一，所以用的并不多。
+
+### rgb 或 rgba
+
+编写方式：使用 红、黄、蓝 这三种光的三原色进行组合。
+- 若三种颜色值相同，呈现的是灰色，值越大，灰色越浅
+- `rgb(0, 0, 0)` 是黑色， `rgb(255, 255,255)` 是白色
+- 对于 rbga 来说，前三位的 **rgb 形式要保持一致**，要么都是 0~255 的数字，要么都是百分比 
+
+```css
+/* 使用 0~255 之间的数字表示一种颜色 */
+color: rgb(255, 0, 0);/* 红色 */
+color: rgb(0, 255, 0);/* 绿色 */
+color: rgb(0, 0, 255);/* 蓝色 */
+color: rgb(0, 0, 0);/* 黑色 */
+color: rgb(255, 255, 255);/* 白色 */
+
+/* 混合出任意一种颜色 */
+color:rgb(138, 43, 226) /* 紫罗兰色 */
+color:rgba(255, 0, 0, 0.5);/* 半透明的红色 */
+
+/* 也可以使用百分比表示一种颜色（用的少） */
+color: rgb(100%, 0%, 0%);/* 红色 */
+color: rgba(100%, 0%, 0%,50%);/* 半透明的红色 */
+```
+
+### HEX 或 HEXA
+
+HEX 的原理同与 rgb 一样，依然是通过：红、绿、蓝色 进行组合，只不过要用 6 位（分成 3 组） 来表达
+
+格式为：`#rrggbb`
+- 每一位数字的取值范围是： `0 ~ f` ，即：`（ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f ）`
+- 所以每一种光的最小值是： `00` ，最大值是： `ff`
+
+```css
+color: #ff0000;/* 红色 */
+color: #00ff00;/* 绿色 */
+color: #0000ff;/* 蓝色 */
+color: #000000;/* 黑色 */
+color: #ffffff;/* 白色 */
+
+/* 如果每种颜色的两位都是相同的，就可以简写*/
+color: #ff9988;/* 可简为：#f98 */
+
+/* 但要注意前三位简写了，那么透明度就也要简写 */
+color: #ff998866;/* 可简为：#f986 */
+```
+
+> 注意点： IE 浏览器不支持 HEXA ，但支持 HEX 
+
+### HSL 或 HSLA
+
+HSL 是通过：色相、饱和度、亮度，来表示一个颜色的，格式为： `hsl(色相,饱和度,亮度)`
+- *色相*：取值范围是 `0~360` 度，具体度数对应的颜色如下图：
+- *饱和度*：取值范围是 `0%~100%`（向色相中对应颜色中添加灰色，`0%` 全灰，`100%` 没有灰）
+- *亮度*：取值范围是 `0%~100%`（`0%` 亮度没了，所以就是黑色。`100%` 亮度太强，所以就是白色了）
+
+HSLA 其实就是在 HSL 的基础上，添加了**透明度**
+
+![](assets/Pasted%20image%2020240301131631.png)
+
+## 字体属性
+
+### 字体大小
+
+`[font-size]` 控制字体大小
+
+语法：
+
+```css
+div {
+	font-size: 40px;
+}
+```
+
+- Chrome 浏览器支持的最小文字为 12px ，默认的文字大小为 16px ，并且 **0px 会自动消失**
+- **不同浏览器默认的字体大小可能不一致**，所以**最好给一个明确的值，不要用默认大小**
+	- 通常可以给 **`<body>` 设置 `[font-size]`**，这样 body 中的其他元素就都可以继承了
+
+### 字体族
+
+`[font-family]` 控制字体类型
+- 使用字体的英文名字兼容性会更好
+- 如果字体名**包含空格**，必须使用**引号包裹**起来。
+- 可以设置多个字体，按照从左到右的顺序逐个查找，找到就用，没有找到就使用后面的，
+	- 且通常在最后写上 `serif` （衬线字体）或 `sans-serif` （非衬线字体）
+- **windows** 系统中，**默认**的字体就是**微软雅黑**
+
+```css
+div {
+	font-family: "STCaiyun","Microsoft YaHei",sans-serif
+}
+```
+
+> - 衬线字体：有边角装饰的字体，例如 宋体
+> - 非衬线字体：没有有边角装饰的字体，例如 微软雅黑
+
+### 字体风格
+
+`[font-style]` 控制字体是否为斜体
+- 常用值：
+	- `normal` ：正常（默认值）
+	- `italic` ：斜体（使用字体自带的斜体效果）
+	- `oblique` ：斜体（强制倾斜产生的斜体效果）
+
+语法：
+
+```css
+div {
+	font-style: italic;
+}
+```
+
+> `<em>` 包裹的字体也能倾斜，语义更重要，样式交给 CSS 就好
+
+### 字体粗细
+
+`[font-weight]` 控制字体的粗细
+- 常用值
+	- 关键词：
+		- `lighter` ：细
+		- `normal` ： 正常
+		- `bold` ：粗
+		- `bolder` ：很粗 （多数字体不支持）
+	- 数值：`100~1000` 且无单位，数值越大，字体越粗 （或一样粗，具体得看字体设计时的精确程度）
+		- `100~300` 等同于 lighter ，
+		- ` 400~500` 等同于 normal ， 
+		- `>=600` 等同于 bold 
+
+```css
+div {
+	font-weight: bold;
+}
+
+div {
+	font-weight: 600;
+}
+```
+
+### 字体复合写法
+
+`[font]` 可以把上述字体样式合并成一个属性
+- 编写规则：
+	- **“字体大小”和“字体族”必须都写上**
+		- “字体族”必须是**最后一位**
+		- “字体大小”必须是**倒数第二位**
+	- 各个属性间用空格隔开
+- 实际开发中更**推荐**复合写法
+	- 但不是绝对的，比如只想设置字体大小，那就直接用 `font-size` 属性
+
+```css
+div {
+	font: bold italic 50px "STCaiyun", "STHupo", sans-serif;
+}
+```
+
+## 文本属性
+
+> - 字体属性：`font` 开头的属性
+> - 文本属性：`text` 开头的属性
+>   
+>   不绝对，可以这么计
+
+### 文本颜色
+
+> [颜色的表示](#颜色的表示)
+
+`[color]` 控制文字的颜色
+
+可选值：
+- 颜色名
+- `rgb` 或 `rgba`
+- `HEX` 或 `HEXA` （十六进制）
+- `HSL` 或 `HSLA`
+
+开发中常用的是： `rgb/rgba` 或 `HEX/HEXA` （十六进制）
+
+```css
+div {
+	color: rgb(112,45,78);
+}
+```
+
+### 文本间距
+
+- 字母间距：`letter-spacing`
+- 单词间距：`word-spacing` （通过**空格**识别词）
+
+属性值为 `px` ，正值让间距增大，负值让间距缩小
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    .aa1 {
+      letter-spacing: 10px;
+    }
+
+    .aa2 {
+      word-spacing: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <div>You got a dream,you gotta protect it.尚硅谷1</div>
+  <div class="aa1">You got a dream,you gotta protect it.尚硅谷1</div>
+  <div class="aa2">You got a dream,you gotta protect it.尚硅谷1</div>
+</body>
+```
+
+### 文本修饰
+
+`[text-decoration]` 控制文本的各种装饰线。
+- 可选值：
+	- `none` ： 无装饰线（常用）
+	- `underline` ：下划线（常用）
+	- `overline` ： 上划线
+	- `line-through` ： 删除线
+- 可**搭配**如下值使用：
+	- `dotted` ：虚线
+	- `wavy` ：波浪线
+	- 也可以指定颜色
+
+> 不同于 `font` ，搭配没有顺序要求
+> 
+> `dotted` 和 `wavy` 不能一块写
+
+```css
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    .aa1 {
+      text-decoration: underline dotted wavy red;
+    }
+  </style>
+</head>
+
+<body>
+  <div>You got a dream,you gotta protect it.尚硅谷1</div>
+  <div class="aa1">You got a dream,you gotta protect it.尚硅谷1</div>
+</body>
+```
+
+### 文本缩进
+
+`[text-indent]` 控制文本首字母的缩进
+- 属性值： css 中的长度单位，例如： `px`
+
+```css
+div {
+	text-indent:40px;
+}
+```
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div{
+      font-size: 60px;
+      /* 首行缩进两个字 */
+      text-indent: 120px;
+    }
+  </style>
+</head>
+
+<body>
+  <div>在 Java 中，volatile 关键字可以保证变量的可见性，如果我们将变量声明为 volatile ，这就指示 JVM，这个变量是共享且不稳定的，每次使用它都到主存中进行读取。</div>
+</body>
+```
+
+### 文本对齐_水平
+
+`[text-align]` 控制文本的水平对齐方式
+- 常用值：
+	- `left` ：左对齐（默认值）
+	- `right` ：右对齐
+	- `center` ：居中对齐
+
+```css
+div {
+	text-align: center;
+}
+```
+
+````html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div {
+      font-size: 60px;
+      background-color: orange;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div>hello</div>
+</body>
+````
+
+### 细说 font-size
+
+- 由于字体设计原因，**文字最终呈现的大小，并不一定与 `[font-size]` 一致**，可能大，也可能小
+- 通常情况下，文字**相对字体设计框**，并不是垂直居中的，**通常都靠下一些**
+
+![](assets/Pasted%20image%2020240302121540.png)
+
+![](assets/Pasted%20image%2020240302121140.png)
+
+![](assets/Pasted%20image%2020240302121259.png)
+
+> font-size 设置的是字体框高度，宽度自适应调节
+> 
+> 通过 `x` 看基线
+
+### 行高
+
+`[line-height]` 控制一行文字的高度
+- 可选值：
+	- `normal` ：由浏览器根据文字大小决定的一个默认值。
+		- 即没设置 `[line-height]`，**默认 `line-height：normal`**
+	- `px` 
+	- 数字：参考自身 font-size 的**倍数**（**很常用**）
+	- 百分比：参考自身 font-size 的**百分比**
+- 注意：
+	- 多行文字，行和行间没有缝隙的
+	- line-height **过小**：文字产生重叠
+		- 最小值是 0 ，不能为负数。
+	- line-height **可以继承**
+		- 且为了能更好的呈现文字，最好**写数值**。
+	- line-height 和 height 关系：
+		- 设置 height：高度就是 height
+		- 不设置 height：会根据 **line-height 计算高度**
+- 应用场景：
+	- 对于多行文字：控制行与行之间的距离。
+	- 对于单行文字：让 **height 等于 line-height** ，可以实现文字**垂直居中**
+
+> 备注：由于**字体设计原因**，靠上述办法实现的居中，并**不是绝对的垂直居中**，但如果一行中都是文字，不会太影响观感。
+
+```css
+div {
+	line-height: 60px;
+	line-height: 1.5;
+	line-height: 150%;
+}
+```
+
+```html
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    div {
+      font-size: 40px;
+      background-color: orange;
+      line-height: 1.5;
+    }
+    span{
+      color: red;
+      font-size: 200px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- div的高度：40*1.5 + 40*1.5 + 200*1.5 -->
+  <div>
+    xxx由于字体设计原因，靠上述办法实现的居中，并不是绝对的垂直居中，但x
+    <span>x如果</span>
+    一行中都是文字，不会太影响观感。
+  </div>
+</body>
+```
+
+### 文本对齐_垂直方向
+
+- 顶部：无需任何属性，在垂直方向上，默认就是顶部对齐。
+- 居中：对于**单行文字**，让 `height = line-height` 即可。
+- 底部：对于单行文字，目前一个临时的方式： `line-height` = `( height × 2 ) - font-size - x`
+	- `x` 是根据字体族，动态决定的一个值
+
+> 多行文字垂直居中、垂直方向上的底部对齐，“定位”是更好的解决方案
+
+### vertical-align
+
+- 属性名：`vertical-align`
+- 作用：指定 **行内元素** 或 **表格单元格元素** 的 **垂直对齐方式**
+- 常用值：
+	- baseline （**默认值**）：使**元素的基线**与**父元素的基线**对齐。
+	- top ：使元素的**顶部**与其**所在行**的顶部对齐。
+	- middle ：使元素的**中部**与父元素的基线加上父元素字母 x 的一半对齐。
+	- bottom ：使元素的**底部**与其**所在行**的底部对齐。
+- 注意：
+	- vertical-align **不能控制块元素**
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>10_vertical-align</title>
+    <style>
+        div {
+            font-size: 100px;
+            height: 300px;
+            background-color: skyblue;
+        }
+
+        span {
+            font-size: 40px;
+            background-color: orange;
+            vertical-align: middle;
+        }
+
+        img {
+            height: 30px;
+            vertical-align: top;
+        }
+
+        .san {
+            vertical-align: bottom;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- span元素 -->
+    <div>
+        atguigu尚硅谷x<span>x前端</span>
+    </div>
+    <hr>
+
+    <!-- 图片元素 -->
+    <div>
+        atguigu尚硅谷x<img src="../images/我的自拍.jpg">
+    </div>
+    <hr>
+
+    <!-- 表格单元格元素 -->
+    <table border="1" cellspacing="0">
+        <caption>人员信息</caption>
+        <thead>
+            <tr>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>性别</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr height="200">
+                <td class="san">张三</td>
+                <td>18</td>
+                <td>男</td>
+            </tr>
+            <tr>
+                <td>李四</td>
+                <td>20</td>
+                <td>女</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+```
+
+> #Boer 为啥是文本属性？
+
+## 列表属性
+
+- list-style-type 
+	- 功能：设置列表**符号**
+	- 常用值：
+		- none ：不显示前面的标识（很常用！）
+		- square ：实心方块
+		- disc ：圆形
+		- decimal ：数字
+		- lower-roman ：小写罗马字
+		- upper-roman ：大写罗马字
+		- lower-alpha ：小写字母
+		- upper-alpha ：大写字母
+- list-style-position 
+	- 功能：设置列表符号的位置 
+	- 属性值：
+		- inside ：在 li 的里面
+		- outside ：在 li 的外边
+- list-style-image 
+	- 功能：**自定义**列表符号 
+	- 属性值：`url(图片地址)`
+- list-style 
+	- 功能：复合属性 
+	- 属性值：没有数量、顺序的要求
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>列表相关属性</title>
+    <style>
+        ul {
+            /* 列表符号 */
+            list-style-type: decimal;
+            /* 列表符号的位置 */
+            list-style-position: inside;
+            /* 自定义列表符号 */
+            list-style-image: url("../images/video.gif");
+            /* 复合属性 */
+            list-style: decimal url("../images/video.gif") inside;
+        }
+
+        li {
+            background-color: skyblue;
+        }
+    </style>
+</head>
+
+<body>
+    <ul>
+        <li>《震惊！两男子竟然在教室做出这种事》</li>
+        <li>《一夜暴富指南》</li>
+        <li>《给成功男人的五条建议》</li>
+    </ul>
+</body>
+```
+
+## 表格属性
+
+### 边框相关属性（通用）
+
+> 其他元也可以用
+
+- border-width 
+	- 功能：边框宽度 
+	- 属性值：CSS 中可用的长度值
+- border-color
+	- 功能：边框颜色
+	- 属性值：CSS 中可用的颜色值
+- border-style
+	- 功能：边框风格
+	- 属性值：
+		- none 默认值
+		- solid 实线
+		- dashed 虚线
+		- dotted 点线
+		- double 双实线
+- border
+	- 功能：边框复合属性
+	- 属性值：没有数量、顺序的要求
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>01_边框相关属性</title>
+    <style>
+        table {
+            /* border-width: 2px; */
+            /* border-color: green; */
+            /* border-style: solid; */
+            border: 2px green solid;
+        }
+
+        /* 单元格 */
+        td,
+        th {
+            border: 2px orange solid;
+        }
+
+        h2 {
+            border: 3px red solid;
+        }
+
+        span {
+            border: 3px purple dashed;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>边框相关的属性，不仅仅是表格能用，其他元素也能用</h2>
+    <span>你要加油呀！</span>
+    <table>
+        <caption>人员信息</caption>
+        <thead>
+            <tr>
+                <th>序号</th>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>性别</th>
+                <th>政治面貌</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>张三</td>
+                <td>18</td>
+                <td>男</td>
+                <td>党员</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>李四</td>
+                <td>19</td>
+                <td>女</td>
+                <td>团员</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>王五</td>
+                <td>20</td>
+                <td>男</td>
+                <td>群众</td>
+            </tr>
+            <tr>
+                <td>4</td>
+                <td>赵六</td>
+                <td>21</td>
+                <td>女</td>
+                <td>党员</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+```
+
+### 表格独有属性
+
+- table-layout
+	- 功能：设置列宽度
+	- 属性值：
+		- auto ：自动，列宽根据内容计算（默认值）
+		- fixed ：固定列宽，平均分
+
+- border-spacing
+	- 功能：单元格间距 
+	- 属性值：CSS 中可用的长度值
+	- 生效的前提：单元格**边框不能合并**
+
+- border-collapse
+	- 功能：合并单元格边框
+	- 属性值：
+		- collapse ：合并
+		- separate ：不合并
+
+- empty-cells
+	- 功能：隐藏没有内容的单元格
+		- 没有内容：`<td></td>`
+	- 属性值：
+		- show ：显示，默认
+		- hide ：隐藏
+	- 生效前提：**单元格不能合并**
+
+- caption-side
+	- 功能：设置表格标题位置
+	- 属性值：
+		- top ：上面（默认值）
+		- bottom ：在表格下面
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>02_表格独有属性</title>
+    <style>
+        table {
+            border: 2px green solid;
+            width: 500px;
+            /* 控制表格的列宽 */
+            table-layout: fixed;
+            /* 控制单元格间距（生效的前提是：不能合并边框） */
+            border-spacing: 20px;
+            /* 合并相邻的单元格的边框 */
+            /* border-collapse: collapse; */
+            /* 隐藏没有内容的单元格（生效的前提是：不能合并边框） */
+            empty-cells: hide;
+            /* 设置表格标题的位置 */
+            caption-side: bottom;
+        }
+
+        td,
+        th {
+            border: 2px orange dashed;
+        }
+
+        .number {
+            width: 50px;
+            height: 50px;
+        }
+    </style>
+</head>
+
+<body>
+    <table>
+        <caption>人员信息</caption>
+        <thead>
+            <tr>
+                <th class="number">序号</th>
+                <th>姓名</th>
+                <th>年龄</th>
+                <th>性别</th>
+                <th>政治面貌</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>张三</td>
+                <td>18</td>
+                <td>男</td>
+                <td>党员</td>
+            </tr>
+            <tr>
+                <td>2</td>
+                <td>李四</td>
+                <td>19</td>
+                <td></td>
+                <td>团员</td>
+            </tr>
+        </tbody>
+    </table>
+</body>
+```
+
+## 背景属性
 
 
 
 
 
+## 鼠标属性
+
+# ---------- 盒子模型
+
+# ---------- 浮动
 
 
+# ---------- 定位
 
-
-
-
-
-
+# ---------- 布局
 
 
 
