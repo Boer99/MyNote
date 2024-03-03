@@ -1773,9 +1773,9 @@ HSLA 其实就是在 HSL 的基础上，添加了**透明度**
 
 ## 字体属性
 
-### 字体大小
+### font-size
 
-`[font-size]` 控制字体大小
+功能：控制字体大小
 
 语法：
 
@@ -1789,10 +1789,12 @@ div {
 - **不同浏览器默认的字体大小可能不一致**，所以**最好给一个明确的值，不要用默认大小**
 	- 通常可以给 **`<body>` 设置 `[font-size]`**，这样 body 中的其他元素就都可以继承了
 
-### 字体族
+### font-family
 
-`[font-family]` 控制字体类型
-- 使用字体的英文名字兼容性会更好
+功能：控制字体类型（字体族）
+
+注意点：
+- 使用字体的**英文名**字兼容性会更好
 - 如果字体名**包含空格**，必须使用**引号包裹**起来。
 - 可以设置多个字体，按照从左到右的顺序逐个查找，找到就用，没有找到就使用后面的，
 	- 且通常在最后写上 `serif` （衬线字体）或 `sans-serif` （非衬线字体）
@@ -1807,13 +1809,14 @@ div {
 > - 衬线字体：有边角装饰的字体，例如 宋体
 > - 非衬线字体：没有有边角装饰的字体，例如 微软雅黑
 
-### 字体风格
+### font-style
 
-`[font-style]` 控制字体是否为斜体
-- 常用值：
-	- `normal` ：正常（默认值）
-	- `italic` ：斜体（使用字体自带的斜体效果）
-	- `oblique` ：斜体（强制倾斜产生的斜体效果）
+功能：控制字体是否为斜体
+
+常用值：
+- `normal` ：正常（默认值）
+- `italic` ：斜体（使用字体自带的斜体效果）
+- `oblique` ：斜体（强制倾斜产生的斜体效果）
 
 语法：
 
@@ -1825,19 +1828,20 @@ div {
 
 > `<em>` 包裹的字体也能倾斜，语义更重要，样式交给 CSS 就好
 
-### 字体粗细
+### font-weight
 
-`[font-weight]` 控制字体的粗细
-- 常用值
-	- 关键词：
-		- `lighter` ：细
-		- `normal` ： 正常
-		- `bold` ：粗
-		- `bolder` ：很粗 （多数字体不支持）
-	- 数值：`100~1000` 且无单位，数值越大，字体越粗 （或一样粗，具体得看字体设计时的精确程度）
-		- `100~300` 等同于 lighter ，
-		- ` 400~500` 等同于 normal ， 
-		- `>=600` 等同于 bold 
+功能：控制字体的粗细
+
+常用值：
+- 关键词：
+	- `lighter` ：细
+	- `normal` ： 正常
+	- `bold` ：粗
+	- `bolder` ：很粗 （多数字体不支持）
+- 数值：`100~1000` 且无单位，数值越大，字体越粗 （或一样粗，具体得看字体设计时的精确程度）
+	- `100~300` 等同于 lighter ，
+	- ` 400~500` 等同于 normal ， 
+	- `>=600` 等同于 bold 
 
 ```css
 div {
@@ -1849,16 +1853,17 @@ div {
 }
 ```
 
-### 字体复合写法
+### font 复合写法
 
-`[font]` 可以把上述字体样式合并成一个属性
-- 编写规则：
-	- **“字体大小”和“字体族”必须都写上**
-		- “字体族”必须是**最后一位**
-		- “字体大小”必须是**倒数第二位**
-	- 各个属性间用空格隔开
-- 实际开发中更**推荐**复合写法
-	- 但不是绝对的，比如只想设置字体大小，那就直接用 `font-size` 属性
+功能：可以把上述字体样式合并成一个属性
+
+编写规则：
+- 必须有：字体大小、字体族
+- 最后一位：字体族
+- 倒数第二位：字体大小
+
+**推荐**复合写法
+- 不绝对，比如：只设置字体大小，直接用 `font-size` 属性
 
 ```css
 div {
@@ -1984,6 +1989,18 @@ div {
   <div>在 Java 中，volatile 关键字可以保证变量的可见性，如果我们将变量声明为 volatile ，这就指示 JVM，这个变量是共享且不稳定的，每次使用它都到主存中进行读取。</div>
 </body>
 ```
+
+灵活的文本缩进！
+
+```css
+.test {
+	font-size: 20px;
+	/* 当前元素font-size的两倍 2*20px */
+	text-indent: 2em;
+	background-color: yellowgreen;
+}
+```
+
 
 ### 文本对齐_水平
 
@@ -2437,16 +2454,554 @@ div {
 
 ## 背景属性
 
+background-color
+- 功能：设置背景颜色
+- 属性值：
+	- 符合 CSS 中颜色规范的值
+	- 默认：transparent（透明）
 
+background-image
+- 功能：设置背景图片
+- 属性值：`url(图片的地址)`
 
+background-repeat
+- 功能：设置背景重复方式
+- 属性值：
+	- （默认）repeat：重复，铺满整个元素
+	- repeat-x ：只在水平方向重复
+	- repeat-y ：只在垂直方向重复
+	- no-repeat ：不重复
 
+background-position
+- 功能：设置**背景图**位置
+- 属性值：
+	- 1）关键字
+		- 水平： left 、 center 、 right
+		- 垂直: top 、 center 、 bottom
+	- 2）x 坐标和 y 坐标
+		- 为坐标原点：元素左上角
+	- 1）2）只写一个，另一个取 center
+
+background
+- 功能：复合属性
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>背景相关属性</title>
+    <style>
+        body {
+            background-color: gray;
+        }
+
+        div {
+            width: 400px;
+            height: 400px;
+            border: 5px black solid;
+            font-size: 20px;
+
+            /* 设置背景颜色，默认值是transparent */
+            background-color: skyblue;
+            /* 设置背景图片 */
+            background-image: url(../images/bg.gif);
+            /* 设置背景图片的重复方式 */
+            background-repeat: repeat;
+            /* 控制背景图片的位置——第一种写法：用关键词 */
+            background-position: center;
+            /* 控制背景图片的位置——第二种写法：用具体的像素值 */
+            background-position: 100px 200px;
+            /* 复合属性 */
+            /* background: url(../images/悟空.jpg) no-repeat 100px 200px; */
+        }
+    </style>
+</head>
+
+<body>
+    <div>你好啊！</div>
+</body>
+```
 
 ## 鼠标属性
 
+cursor
+- 功能：设置鼠标**光标**的样式
+- 属性值：
+	- pointer ：小手
+	- move ：移动图标
+	- text ：文字选择器
+	- crosshair ：十字架
+	- wait ：等待
+	- help ：帮助
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>鼠标相关属性</title>
+    <style>
+        div {
+            width: 400px;
+            height: 400px;
+            background-color: skyblue;
+            cursor: url("../images/arrow.png"), pointer;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        input {
+            cursor: move;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        把鼠标放进来看一看
+        <input type="text"><br>
+
+        <a href="#">百度</a><br>
+        
+        <button>点我</button>
+    </div>
+</body>
+
+```
+
 # ---------- 盒子模型
 
-# ---------- 浮动
+## CSS 长度单位
 
+- px ：像素。
+- em ：相对于 当前元素 或 父元素 font-size 的倍数。
+- rem ：相对于 根元素（html）的 font-size 的倍数
+	- root em
+- % ：相对 父元素 计算。
+
+> CSS 中设置长度，必须加单位，否则样式无效！
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>01_CSS中常用的长度单位</title>
+    <style>
+        html {
+            font-size: 40px;
+        }
+
+        body {
+            font-size: 100px;
+        }
+
+        #d1 {
+            /* 第一种长度单位：px（像素） */
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+            background-color: rgb(111, 121, 125);
+        }
+
+        #d2 {
+            /* 第二种长度单位：em（相对于当前元素或其父元素的font-size的倍数） */
+            width: 10em;
+            height: 10em;
+            font-size: 20px;
+            background-color: orange;
+        }
+
+        #d3 {
+            /* 第三种长度单位：rem（相对于根元素的font-size的倍数） */
+            /* 4*40px */
+            width: 4rem;
+            height: 4rem;
+            font-size: 20px;
+            background-color: green;
+        }
+
+        #d4 {
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+            background-color: gray;
+        }
+
+        .inside {
+            /* 第四种长度单位：%（相对其父元素的百分比） */
+            /* 200px*0.5 */
+            width: 50%;
+            height: 25%;
+            /* 20px*1.5 */
+            font-size: 150%;
+            background-color: orange;
+        }
+
+        .test {
+            font-size: 20px;
+            /* 首行缩进 2*20px */
+            text-indent: 2em;
+            background-color: yellowgreen;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="d1">1</div>
+    <hr>
+    <div id="d2">2</div>
+    <hr>
+    <div id="d3">3</div>
+    <hr>
+
+    <div id="d4">
+        <div class="inside">4</div>
+    </div>
+    <hr>
+
+    <div class="test">好好学习，天天向上</div>
+</body>
+```
+
+## 元素的显示模式
+
+1）块元素 block
+- 特点：
+	- **独占一行**；从上到下排列
+	- 默认 宽：**撑满** **父**元素
+	- 默认 高：由**内容**撑开
+	- 可通过 CSS 设置宽高
+
+```html
+1. 主体结构标签：<html>、<body>
+2. 排版标签：<h1>~<h6>、<hr> 、<p> 、<pre> 、<div>
+3. 列表标签：<ul> 、<ol> 、<li> 、<dl> 、<dt> 、<dd>
+4. 表格相关标签：<table> 、<tbody> 、<thead> 、<tfoot> 、<tr> 、<caption>
+5. 表单相关标签：<form> 与 <option>
+```
+
+> 浏览器默认给body加了样式，所以视觉上没有完全撑满
+> 
+> ![](assets/Pasted%20image%2020240303144519.png)
+
+2）行内元素 inline（内联元素）
+- 特点：
+	- **不独占一行**；从左到右排列
+		- 一行中容纳不下，会在下一行
+	- 默认 宽高：由**内容**撑开
+	- **无法**通过 CSS 设置宽高
+
+```html
+1. 文本标签：<span>、<br> 、<em> 、<strong> 、<sup> 、<sub> 、<del> 、<ins>
+2. <a> 与 <label>
+```
+
+3）行内块元素 inline-block（内联块元素）
+- 特点：
+	- **不独占一行**；从左到右排列
+		- 一行中容纳不下，会在下一行
+	- 默认 宽高：由**内容**撑开
+	- **无法**通过 CSS 设置宽高
+
+```html
+1. 图片：<img>
+2. 单元格：<td> 、<th>
+3. 表单控件：<input> 、<textarea> 、<select> 、<button>
+4. 框架标签：<iframe>
+```
+
+> 元素早期只分为：行内元素、块级元素，区分条件也只有一条："是否独占一行"，如果按照这种分类方式，行内块元素应该算作行内元素
+
+---
+为什么无论有没有 br，span 都独占一行？
+- 因为 div 独占一行，span 没人理他了，只能独占一行
+- br 的出现刚好把 span 这行后面的占满了
+
+```html
+<span id="s1">123</span>
+<br>
+<div id="d2">456</div>
+```
+
+---
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>02_元素的显示模式</title>
+    <style>
+        div {
+            width: 300px;
+            height: 100px;
+        }
+
+        #d1 {
+            background-color: skyblue;
+        }
+
+        #d2 {
+            background-color: orange;
+        }
+
+        #d3 {
+            background-color: green;
+        }
+
+        .one {
+            background-color: skyblue;
+        }
+
+        .two {
+            background-color: orange;
+        }
+
+        span {
+            width: 200px;
+            height: 200px;
+        }
+
+        img {
+            width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="d1">山回路转不见君</div>
+    <div id="d2">雪上空留马行处</div>
+    <div id="d3">风里雨里我在尚硅谷等你</div>
+
+    <hr>
+
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+    <span class="one">人之初</span>
+    <span class="two">性本善</span>
+
+    <hr>
+
+    <img src="../images/悟空.jpg" alt="悟空">
+    <img src="../images/悟空.jpg" alt="悟空">
+    <img src="../images/悟空.jpg" alt="悟空">
+    <img src="../images/悟空.jpg" alt="悟空">
+</body>
+```
+
+### 修改显示模式
+
+display 属性：修改元素的默认显示模式，常用值如下：
+- none：隐藏
+- block：块级元素
+- inline：内联元素
+- inline-block：行内块元素
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>04_修改元素的显示模式</title>
+    <style>
+        div {
+            width: 200px;
+            height: 100px;
+            font-size: 20px;
+            display: inline-block;
+        }
+        #d1 {
+            background-color: skyblue;
+        }
+        #d2 {
+            background-color: orange;
+        }
+        a {
+            width: 200px;
+            height: 100px;
+            font-size: 20px;
+            display: block;
+        }
+        #s1 {
+            background-color: skyblue;
+        }
+        #s2 {
+            background-color: orange;
+        }
+        #s3 {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div id="d1">你好1</div>
+    <div id="d2">你好2</div>
+    <hr>
+    <a id="s1" href="https://www.baidu.com">去百度</a>
+    <a id="s2" href="https://www.jd.com">去京东</a>
+    <a id="s3" href="https://www.toutiao.com">去百头条</a>
+</body>
+```
+
+## 盒子模型的组成
+
+CSS 把所有的 HTML 元素都看成一个盒子，所有的样式都基于这个盒子
+- margin（外边距）： 盒子与外界的距离
+- border（边框）： 盒子的边框
+- padding（内边距）： 紧贴内容的补白区域
+- content（内容）：元素中的文本或后代元素都是它的内容。
+
+**盒子的大小** = content + 左右 padding + 左右 border 
+
+**margin 不影响盒子的大小，但影响盒子的位置**
+
+![|300](assets/Pasted%20image%2020240303153104.png)
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>05_盒子模型的组成部分</title>
+    <style>
+        div {
+            /* 内容区的宽 */
+            width: 400px;
+            /* 内容区的高 */
+            height: 400px;
+            /* 内边距，设置的背景颜色会填充内边距区域 */
+            padding: 20px;
+            /* 边框，设置的背景颜色会填充边框区域 */
+            border: 10px dashed black;
+            /* 外边距 */
+            margin: 50px;
+
+            font-size: 20px;
+            background-color: gray;
+        }
+    </style>
+</head>
+<body>
+    <div>你好啊</div>
+</body>
+```
+
+### content
+
+> 属性值都是长度
+
+content 属性：
+- width：宽度
+- max-width：最大宽度
+- min-width：最小宽度
+- height：高度
+- max-height：最大高度
+- min-height：最小高度
+
+注意：max-width 、 min-width 一般不与 width 一起使用；高度同理
+
+> 窗口比 min 还小的时候，会出现滚动条
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>06_盒子的内容区_content</title>
+    <style>
+        div {
+            width: 800px;
+            /* min-width: 600px; */
+            /* max-width: 1000px; */
+
+            height: 200px;
+            /* min-height: 50px; */
+            /* max-height: 400px; */
+            background-color: skyblue;
+        }
+    </style>
+</head>
+
+<body>
+    <div>
+        逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。逝者如斯夫！不舍昼夜。
+    </div>
+</body>
+```
+
+### 默认宽度
+
+即不设置 width 属性时，元素呈现出的宽度
+
+- 总宽度 = `父的 content — 自身的左右 margin`
+- content 宽度 = `父的 content — 自身的左右 margin — 自身的左右 border — 自身的左右padding `
+
+### padding
+
+> 属性值都是长度
+
+- adding-top：上内边距
+- padding-right：右内边距
+- padding-bottom：下内边距
+- padding-left：左内边距
+- padding：复合属性
+	- 1 个值: 四个方向
+	- 2 个值: 上下、左右
+	- 3 个值: 上、左右、下
+	- 4 个值: 上、右、下、左
+
+注意：
+- padding 不能为负
+- **行内元素** 的 **上下**内边距不能完美设置
+	- 不占位，和上下元素重叠
+
+![](assets/Pasted%20image%2020240303170601.png)
+
+> 块级元素、行内块元素，四个方向内边距都可以完美设置
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>08_盒子的内边距_padding</title>
+    <style>
+        #d1 {
+            width: 400px;
+            height: 100px;
+
+            /* 复合属性，写四个值，含义：上、右、下、左 */
+            padding: 10px 20px 30px 40px;
+
+            font-size: 20px;
+            background-color: skyblue;
+        }
+        span {
+            background-color: orange;
+            font-size: 20px;
+
+            padding-left: 20px;
+            padding-right: 20px;
+
+            padding-top: 20px;
+            padding-bottom: 20px;
+        }
+        img {
+            width: 200px;
+            padding: 50px;
+        }
+    </style>
+</head>
+<body>
+    <div id="d1">你好啊</div>
+    <hr>
+    <span>我很好</span>
+    <div>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Sunt, sint.</div>
+    <hr>
+    <img src="../images/小姐姐.gif" alt="">
+    <div>小姐姐很想你呀</div>
+</body>
+```
+
+# ---------- 浮动
 
 # ---------- 定位
 

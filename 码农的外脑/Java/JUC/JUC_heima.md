@@ -29,7 +29,8 @@
 
 注意：**同步在多线程中还有另外一层意思，是让多个线程步调一致**
 
-多线程可以让方法执行变为异步的（即不要巴巴干等着）、比如说读取磁盘文件时，假设读取操作花费了 5 秒钟，如果没有线程调度机制，这 5 秒 cpu 什么都做不了，其它代码都得暂停...
+多线程可以让方法执行变为异步的（即不要巴巴干等着）
+- 比如说读取磁盘文件时，假设读取操作花费了 5 秒钟，如果没有线程调度机制，这 5 秒 cpu 什么都做不了，其它代码都得暂停...
 - 比如在项目中，视频文件需要转换格式等操作比较费时，这时开一个新线程处理视频转换，避免阻塞主线程
 - tomcat 的异步 servlet 也是类似的目的，让用户线程处理耗时较长的操作，避免阻塞 tomcat 的工作线程
 - ui 程序中，开线程进行其他操作，避免阻塞 ui 线程
@@ -46,7 +47,7 @@
 
 ### 方式一：Thread
 
-方法一：继承 Thread
+方法一：继承 Thread，重写 run()
 
 ```java
 @Slf4j
@@ -247,7 +248,7 @@ JVM 中由堆、栈、方法区所组成，每个线程启动后，虚拟机就�
 
 ### 线程上下文切换
 
-*Thread Context Switch*
+> Thread Context Switch
 
 因为以下一些原因导致 cpu 不再执行当前的线程，转而执行另一个线程的代码
 
@@ -287,17 +288,25 @@ JVM 中由堆、栈、方法区所组成，每个线程启动后，虚拟机就�
 
 ### start() 与 run()
 
-start()
+```java
+public synchronized void start()
+```
+
 - 功能：启动一个**新线程**，在新的线程运行 run 方法中的代码
 - 注意点：
-	- start 方法只是让线程进入**就绪**，里面代码不一定立刻运行（CPU 的时间片还没分给它）。
-	- 每个线程对象的 start 方法**只能调用一次**，如果调用了多次会出现 `IllegalThreadStateException`
+	- 当前线程状态：`Running` `-->` **就绪状态**
+		- 里面代码**不一定立刻运行**（CPU 的时间片还没分给它）
+	- 每个线程对象只能调用一次
+		- 调用多次会出现 `IllegalThreadStateException`
 
-run()
-- 功能：新线程启动后会调用的方法
+```java
+public void run()
+```
+
+- 功能：新线程**启动后**会调用的方法
 - 注意点：
-	- 如果在构造 Thread 对象时传递了 Runnable 参数，则线程启动后会**调用 Runnable 中的 run 方法**，否则默认不执行任何操作。
-	- 可以创建 Thread 的**子类对象，来覆盖默认行为**
+	- 如果在构造 Thread 对象时传递了 Runnable 参数，则线程启动后会**调用 Runnable 中的 run 方法**，否则默认不执行任何操作
+	- 可以创建 Thread 的**子类对象，重写 `run()`，来覆盖默认行为**
 
 两者对比
 - 直接调用 run 是在主线程中执行了 run，**没有启动新的线程**
@@ -305,19 +314,241 @@ run()
 
 ### sleep() 与 yield()
 
-`sleep()`
+#### sleep
+
+```java
+public static native void sleep(long millis) throws InterruptedException;
+```
+
 - **static**
 - 功能：让当前执行的线程休眠 n 毫秒，休眠时让出 cpu 的时间片给其它线程
 - 注意点：
-	- 调用 sleep 会让当前线程从 `Running` 进入 **`Timed Waiting` 状态（阻塞）**
+	- 当前线程状态：`Running` `-->` **`Timed Waiting` （阻塞）**
 	- 其它线程可以使用 `interrupt()` 方法**打断正在睡眠的线程**，这时 sleep 方法会抛出 `InterruptedException`
 	- 睡眠结束后的线程未必会立刻得到执行
-	- **建议用 `TimeUnit` 的 `sleep()`** 代替 Thread 的 `sleep()` 来获得更好的可读性
+	- **更推荐用 `TimeUnit` 的 `sleep()`**，来获得更好的可读性
+		- 还是调用的 sleep()，做了单位的换算优化
 
-`yield()`
+观察线程状态
+
+```java
+public static void main(String[] args) throws InterruptedException {
+	Thread t1 = new Thread("t1") {
+		@Override
+		public void run() {
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+	};
+
+	t1.start();
+	// t1 还没执行，RUNNABLE状态
+	log.debug("t1 state: {}", t1.getState());
+	// 23:25:00.483 [main] DEBUG com.boer.java线程.SleepDemo - t1 state: RUNNABLE
+
+	Thread.sleep(500);
+
+	log.debug("t1 state: {}", t1.getState());
+	// 23:25:01.014 [main] DEBUG com.boer.java线程.SleepDemo - t1 state: TIMED_WAITING
+}
+```
+
+打断正在睡眠的线程
+
+```java
+public static void main(String[] args) throws InterruptedException {  
+    Thread t1 = new Thread("t1") {  
+        @Override  
+        public void run() {  
+            try {  
+                Thread.sleep(2000);  
+            } catch (InterruptedException e) {  
+                log.debug("wake up...");  
+            }  
+            log.debug("t1 state: {}", Thread.currentThread().getState());  
+        }  
+    };  
+  
+    t1.start();  
+  
+    Thread.sleep(500);  
+  
+    log.debug("interrupt");  
+    t1.interrupt();  
+  
+    //23:41:59.658 [main] DEBUG com.boer.java线程.SleepDemo2 - interrupt  
+    //23:41:59.667 [t1] DEBUG com.boer.java线程.SleepDemo2 - wake up...  
+    //23:41:59.667 [t1] DEBUG com.boer.java线程.SleepDemo2 - t1 state: RUNNABLE  
+}
+```
+
+#### yield    
+
+```java
+public static native void yield();
+```
+
 - **static**
 - 功能：提示线程调度器让出当前线程对 CPU 的使用
 - 注意：
-	- 调用 yield 会让当前线程从 `Running` 进入 **`Runnable` 状态（就绪）**，然后调度执行其它线程
+	- 当前线程状态： `Running` `-->` **`Runnable`** （就绪），然后调度执行**其它**线程
 	- 具体的实现依赖于操作系统的任务调度器
+
+---
+两者区别：
+- Runnable 状态下线程还是有可能再次被再次调度（yield）
+- yield 没有等待时间
+
+#### 案例——防止CPU占用100%
+
+在没有利用 cpu 来计算时，**不要让 `while(true)` 空转浪费 cpu**，这时可以使用 yield 或 sleep 来让出 cpu 的使用权给其他程序
+
+```java
+public static void main(String[] args) throws InterruptedException {  
+    new Thread(() -> {  
+        while (true) {  
+            try {  
+                Thread.sleep(50);  
+            } catch (InterruptedException e) {  
+                e.printStackTrace();  
+            }  
+        }  
+    }).start();  
+}
+```
+
+- 可以用 wait 或 条件变量 达到类似的效果。
+	- 不同的是，后两种都需要加锁，并且需要相应的唤醒操作，一般适用于要进行**同步的场景**
+- sleep 适用于**无需锁同步**的场景
+
+### 线程优先级
+
+> Java 提供一个线程调度器来监控程序中启动后进入**就绪**状态的所有线程
+
+- 线程优先级会提示（hint）调度器优先调度该线程，但它仅仅是一个提示，调度器**可以忽略**它
+- cpu **忙**，优先级高的线程会获得更多的时间片
+- cpu 闲，优先级几乎没作用
+
+线程的优先级用数字表示，范围从 1~10，Thread 定义了的线程优先级如下：
+
+```java
+public final static int MIN_PRIORITY = 1;
+
+/**
+ * The default priority that is assigned to a thread.
+ */
+public final static int NORM_PRIORITY = 5;
+
+/**
+ * The maximum priority that a thread can have.
+ */
+public final static int MAX_PRIORITY = 10;
+```
+
+设置线程的优先级
+
+```java
+public final void setPriority(int newPriority){}
+```
+
+```java
+public class PriorityDemo {
+    public static void main(String[] args) {
+        Runnable task1 = () -> {
+            int count = 0;
+            for (; ; ) {
+                System.out.println("----->1 " + count++);
+            }
+        };
+
+        Runnable task2 = () -> {
+            int count = 0;
+            for (; ; ) {
+                System.out.println("     ----->2 " + count++);
+            }
+        };
+
+        Thread t1 = new Thread(task1, "t1");
+        Thread t2 = new Thread(task2, "t2");
+
+        t1.setPriority(Thread.MIN_PRIORITY);
+        t2.setPriority(Thread.MAX_PRIORITY);
+        t1.start();
+        t2.start();
+    }
+}
+```
+
+### join()
+
+#### 引入
+
+打印 r 是什么？
+
+```java
+public class JoinDemo {
+    static int r = 0;
+
+    public static void main(String[] args) {
+        log.debug("开始");
+        Thread t1 = new Thread(() -> {
+            log.debug("开始");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+            log.debug("结束");
+            r = 10;
+        });
+        t1.start();
+        // 解决方案：t1.join()
+        log.debug("结果为:{}", r);
+        log.debug("结束");
+
+        //01:04:16.056 [main] DEBUG com.boer.java线程.JoinDemo - 开始
+        //01:04:16.095 [Thread-0] DEBUG com.boer.java线程.JoinDemo - 开始
+        //01:04:16.095 [main] DEBUG com.boer.java线程.JoinDemo - 结果为:0
+        //01:04:16.096 [main] DEBUG com.boer.java线程.JoinDemo - 结束
+        //01:04:17.104 [Thread-0] DEBUG com.boer.java线程.JoinDemo - 结束
+    }
+}
+```
+
+分析：因为主线程和线程 t1 是并行执行的，t1 线程需要 1 秒之后才能算出 r=10。而主线程一开始就要打印 r 的结果，所以只能打印出 r=0
+
+解决方法：
+- `sleep()` 加在 `t1.start()` 行不行？
+	- 主线程不知道 t1 要 sleep 多久
+- `join()` 加在 `t1.start()` 之后即可
+
+#### 线程同步
+
+- 需要等待结果返回，才能继续运行就是同步
+- 不需要等待结果返回，就能继续运行就是异步
+
+
+
+
+
+
+
+
+
+
+
+```java
+public final synchronized void join(long millis) 
+	throws InterruptedException
+
+public final synchronized void join(long millis, int nanos)
+    throws InterruptedException
+
+public final void join() throws InterruptedException
+```
+
+- 功能：等待线程运行结束
 
