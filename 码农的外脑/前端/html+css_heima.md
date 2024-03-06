@@ -1114,6 +1114,8 @@ p.beauty {
 
 作用：选中指定元素中，符合要求的**后代元素**
 
+分割符：空格
+
 注意：
 - 结构一定要符合之前讲的 HTML 嵌套要求
 	- 例如：不能 p 中写 `<h1>` ~ `<h6>` 
@@ -1693,7 +1695,7 @@ n的值：
 
 规律：像素点**越小**，呈现的内容就**越清晰、越细腻**
 
-![](assets/Pasted%20image%2020240301020410.png)
+![|400](assets/Pasted%20image%2020240301020410.png)
 
 > 注意点：如果电脑设置中开启了缩放，那么就会**影响一些工具的测量结果**，但这无所谓，因
 > 为我们工作中都是参考详细的设计稿，去给元素设置宽高。
@@ -2002,9 +2004,10 @@ div {
 ```
 
 
-### 文本对齐_水平
+### 文本对齐_水平方向
 
-`[text-align]` 控制文本的水平对齐方式
+`[text-align]`
+- 功能：控制文本的水平对齐方式
 - 常用值：
 	- `left` ：左对齐（默认值）
 	- `right` ：右对齐
@@ -2118,22 +2121,20 @@ div {
 
 > 多行文字垂直居中、垂直方向上的底部对齐，“定位”是更好的解决方案
 
+> #Bo 居中是不是对行内没用呢？行内压根不能调样式
+
 ### vertical-align
 
-- 属性名：`vertical-align`
-- 作用：指定 **行内元素** 或 **表格单元格元素** 的 **垂直对齐方式**
+- 功能：指定 **行内**元素 或 表格**单元格**元素 的 **垂直对齐方式**
 - 常用值：
-	- baseline （**默认值**）：使**元素的基线**与**父元素的基线**对齐。
-	- top ：使元素的**顶部**与其**所在行**的顶部对齐。
-	- middle ：使元素的**中部**与父元素的基线加上父元素字母 x 的一半对齐。
-	- bottom ：使元素的**底部**与其**所在行**的底部对齐。
-- 注意：
-	- vertical-align **不能控制块元素**
+	- baseline（默认值）：基线 与 **父元素基线** 对齐
+	- top：顶部 与 **所在行**的顶部 对齐
+	- middle：中部 与 父元素基线加上父元素字母 x 的一半对齐
+	- bottom：底部 与 **所在行**的底部 对齐
+
+> 注意：不能控制块元素
 
 ```html
-<head>
-    <meta charset="UTF-8">
-    <title>10_vertical-align</title>
     <style>
         div {
             font-size: 100px;
@@ -2156,7 +2157,6 @@ div {
             vertical-align: bottom;
         }
     </style>
-</head>
 
 <body>
     <!-- span元素 -->
@@ -2197,7 +2197,7 @@ div {
 </body>
 ```
 
-> #Boer 为啥是文本属性？
+> #Bo 为啥是文本属性？
 
 ## 列表属性
 
@@ -2576,7 +2576,7 @@ cursor
 - em ：相对于 当前元素 或 父元素 font-size 的倍数。
 - rem ：相对于 根元素（html）的 font-size 的倍数
 	- root em
-- % ：相对 父元素 计算。
+- % ：相对 父元素 计算
 
 > CSS 中设置长度，必须加单位，否则样式无效！
 
@@ -3001,14 +3001,1572 @@ content 属性：
 </body>
 ```
 
+### border
+
+border-style
+- 功能：边框线风格，**复合**了四个方向
+- 属性值：
+	- none ： 默认值
+	- solid ： 实线
+	- dashed ： 虚线
+	- dotted ： 点线
+	- double ： 双实线
+
+border-width
+- 功能：边框线宽度，**复合**了四个方向
+- 属性值：长度，默认 px
+
+border-color
+- 功能：边框线颜色，**复合**了四个方向
+- 属性值：颜色，默认黑色
+
+border
+- 功能：复合属性
+
+分别设置各个方向
+- border-方位
+- border-方位-style
+- border-方位-width
+- border-方位-color
+
+### margin
+
+margin-方位
+- 功能：方位-边距
+- 属性值：
+	- 单位：长度
+	- **auto**：能离多远就多远
+		- **块级**元素设置**左右** margin 为 auto ，会在父元素中**水平居中**
+	- 可以是负值
+
+margin
+- 功能：复合属性
+
+注意事项：
+- **父亲的 content** 中承装着的子元素的 margin
+- 对周边元素**位置**的影响
+	- 上 margin 影响 自己、下面
+	- 下 margin 影响 下面
+	- 左 margin 影响 自己、右边
+	- 右 margin 影响 右边
+- **行内元素**，左右 margin 可以完美设置，**上下** margin 设置**无效**
+	- 块级元素、行内块元素 可以完美设置
+
+> 演示：父子盒子
+
+```html
+    <style>
+        .outer {
+            width: 400px;
+            height: 400px;
+            padding: 50px;
+            background-color: gray;
+        }
+        .inner {
+            width: 100px;
+            height: 100px;
+            margin: 100px;
+            background-color: orange;
+        }
+    </style>
+
+<body>
+    <!-- 子元素的margin是参考父元素的content计算的。 -->
+    <div class="outer">
+        <div class="inner"></div>
+    </div>
+</body>
+```
+
+> 演示：对周边元素位置的影响
+
+```html
+    <style>
+        .box {
+            width: 200px;
+            height: 200px;
+        }
+        .box1 {
+            background-color: skyblue;
+        }
+        .box2 {
+            background-color: orange;
+            margin-top: 50px;
+            margin-bottom: 50px;
+        }
+        .box3 {
+            background-color: green;
+        }
+        .second {
+            margin-left: 50px;
+            margin-right: 50px;
+        }
+    </style>
+
+<body>
+    <!-- 上margin、左margin会影响自身的位置，下margin、右margin会影响兄弟元素的位置 -->
+    <div class="box box1">1</div>
+    <div class="box box2">2</div>
+    <div class="box box3">3</div>
+    <hr>
+    <img src="../images/悟空.jpg" alt="">
+    <img class="second" src="../images/悟空.jpg" alt="">
+    <img src="../images/悟空.jpg" alt="">
+</body>
+```
+
+> 演示：行内元素 上下 margin 设置无效
+
+```html
+    <style>
+        #d1 {
+            width: 400px;
+            height: 400px;
+            margin: 50px;
+            
+        }
+        div{
+            background-color: orange;
+        }
+        img {
+            margin: 50px;
+        }
+        .one {
+            background-color: skyblue;
+        }
+        .two {
+            background-color: orange;
+            margin-left: 50px;
+            margin-right: 50px;
+            margin-top: 3000px;
+            margin-bottom: 3000px;
+        }
+        .three {
+            background-color: green;
+        }
+    </style>
+
+<body>
+    <div id="d1">我是一个块级元素</div>
+    <div>我是一个块级元素</div>
+    <hr>
+    <img src="../images/悟空.jpg" alt="悟空">
+    <div>我是一个块级元素</div>
+    <hr>
+    <span class="one">行内元素</span>
+    <span class="two">行内元素</span>
+    <span class="three">行内元素</span>
+    <div>我是一个块级元素</div>
+</body>
+```
+
+> 演示：margin 值为 auto
+
+```html
+    <style>
+        div {
+            width: 400px;
+            height: 100px;
+            /* margin-left: auto; */
+            /* margin-right: auto; */
+            margin: 100px auto;
+            background-color: deepskyblue;
+        }
+        span {
+            background-color: orange;
+            margin: 0 auto;
+        }
+    </style>
+
+<body>
+    <div>div</div>
+    <span>span</span>
+</body>
+```
+
+### margin 塌陷问题
+
+> 历史遗留问题，以前是好的设计，现在反而成了问题
+
+- **第一个**子元素的**上 margin** 会作用在父元素上
+- **最后一个**子元素的**下 margin** 会作用在父元素上
+
+如何解决？
+- 方案一： 给父元素设置 `!=0` 的 padding-top（包括复合）
+	- 会影响父元素大小
+- 方案二： 给父元素设置 `!=0` 的 border-top（包括复合）
+	- 会影响父元素大小
+- 方案三：给父元素设置 css 样式 `overflow:hidden`
+
+> 演示：上下的塌陷
+
+```html
+    <title>16_margin塌陷问题</title>
+    <style>
+        .outer {
+            width: 400px;
+            /* height: 400px; */
+            background-color: gray;
+            /* border-top: 10px solid transparent; */
+            /* padding-top: 10px; */
+            /* overflow: hidden; */
+        }
+        .inner1 {
+            width: 100px;
+            height: 100px;
+            background-color: orange;
+            /* 下面这行代码是有问题的 */
+            margin-top: 50px;
+        }
+        .inner2 {
+            width: 100px;
+            height: 100px;
+            background-color: green;
+            margin-bottom: 50px;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="inner1">inner1</div>
+        <div class="inner2">inner2</div>
+    </div>
+    <div>下方的div</div>
+</body>
+```
+
+### margin 合并问题
+
+上面兄弟元素的**下 margin** 和下面兄弟元素的**上 margin** 会**合并**，取一个**最大的值**，而不是相加
+
+如何解决？
+- 无需解决，布局的时候上下的兄弟元素，**只给一个设置**上下 margin 就可以了
+
+> 演示：合并问题
+
+```html
+    <meta charset="UTF-8">
+    <title>17_margin合并问题</title>
+    <style>
+        .box {
+            width: 200px;
+            height: 200px;
+        }
+        .box1 {
+            background-color: deepskyblue;
+            margin-bottom: 50px;
+        }
+        .box2 {
+            background-color: orange;
+            margin-top: 70px;
+        }
+    </style>
+
+<body>
+    <div class="box box1">1</div>
+    <div class="box box2">2</div>
+</body>
+```
+
+## 处理内容溢出
+
+overflow 
+- 功能：溢出内容的处理方式
+- 属性值：
+	- visible ：显示，默认值
+	- hidden ：隐藏
+	- scroll ：显示滚动条，不论内容是否溢出
+	- auto ：自动显示滚动条，内容不溢出不显示
+
+overflow-x
+- 功能：**水平**方向溢出内容的处理方式
+- 属性值：同 overflow
+
+overflow-y
+- 功能：**垂直**方向溢出内容的处理方式
+- 属性值：同 overflow
+
+> 演示：处理内容溢出
+
+```html
+    <style>
+        #d1 {
+            width: 400px;
+            height: 200px;
+            background-color: skyblue;
+            overflow: auto;
+            /* overflow-x: visible; */
+            /* overflow-y: hidden; */
+        }
+        #d2 {
+            width: 1000px;
+            background-color: orange;
+        }
+    </style>
+
+<body>
+    <div id="d1">
+        Lorem ipsum dolor sit amet consectetur adipisicing elit. Quo accusantium veritatis reiciendis id
+        molestiae magnam aspernatur esse blanditiis est. Maiores reprehenderit porro dignissimos, perspiciatis suscipit
+        <div id="d2">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Consectetur alias provident quia, reiciendis incidunt rerum, perspiciatis quam nobis omnis quae maxime in esse architecto doloremque numquam tenetur eum quasi velit excepturi ut id inventore. Consequuntur, ad iure velit maiores obcaecati voluptatibus expedita molestiae natus sit mollitia veritatis vero aliquid adipisci?</div>
+        ullam perferendis nam inventore sapiente earum voluptatem dolores ut quae fuga. Itaque delectus cum et illum
+        enim dicta similique nemo pariatur, recusandae molestias. Repellendus ratione recusandae minima ea quis eligendi
+        quae amet. Animi, nulla. Perferendis libero nihil eligendi ea! Accusantium molestias numquam reprehenderit
+        quibusdam delectus, repellat impedit ratione. Iste nam autem vero magni facilis at ex ullam, officiis, corrupti
+        voluptate tempora. Quibusdam, aperiam eveniet illo quidem excepturi, neque, repellat totam beatae in quas
+        provident natus!
+    </div>
+</body>
+```
+
+## 隐藏元素的办法
+
+`visibility:hidden`
+- 注意：元素看不见了，还**占位**（元素的大小依然保持）。
+
+`display:none`
+- 注意：彻底地隐藏，**不占位**
+
+>演示：隐藏元素
+
+```html
+
+    <style>
+        .box {
+            width: 200px;
+            height: 200px;
+        }
+        .box1 {
+            background-color: skyblue;
+            /* display: none; */
+            visibility: hidden;
+        }
+        .box2 {
+            background-color: orange;
+        }
+    </style>
+
+<body>
+    <div class="box box1">1</div>
+    <div class="box box2">2</div>
+</body>
+```
+
+## 样式的继承
+
+> CSS的继承性：没有的样式，会从父元素开始一级一级继承（优先继承离得近的祖先元素）
+
+可继承属性：
+- 字体属性
+- 文本属性（除了 vertical-align）
+- 文字颜色 
+- 等
+
+不可继承属性：
+- 边框
+- 背景
+- 内边距
+- 外边距
+- 宽高
+- 溢出方式 
+- 等
+
+一个规律：能继承的属性，都是**不影响布局**的，都是和盒子模型没关系的！
+
+## 默认样式
+
+元素一般都些默认的样式，例如：
+- `<a>`：下划线、字体颜色、鼠标小手。
+- `<h1>` ~ `<h6>`： 文字加粗、文字大小、上下外边距。
+- `<p>`：上下外边距
+- `<ul>`、`<ol>`：左内边距
+- `<body>`： 8px 外边距（4 个方向）
+- ......
+
+
+优先级：**默认样式 > 继承**
+重置默认样式：选择器要**直接选中**
+
+> 默认样式优先级演示
+
+![|700](assets/Pasted%20image%2020240304202257.png)
+
+```html
+    <style>
+        body {
+            margin: 0;
+        }
+        #d1 {
+            font-size: 50px;
+            color: orange;
+            background-color: gray;
+        }
+        a {
+            color: skyblue;
+            text-decoration: none;
+            cursor: default;
+        }
+    </style>
+
+<body>
+    <div id="d1">
+        <a href="https://www.baidu.com">去百度</a>
+        <span>你好啊</span>
+    </div>
+</body>
+```
+
+## 布局小技巧
+
+行内、行内块元素在父元素中可以被当成文本处理
+- 即可以像处理**文本对齐**一样，处理 **行内**、**行内块**在父元素中的对齐
+- 例如： `text-align` 、 `line-height` 、 `text-indent` 等
+
+块元素 在父亲中
+- 水平居中：父元素设置 `margin:0 auto;`
+- 垂直居中：设置 `margin-top:(父元素content－子元素盒子总高) / 2`
+
+> 块元素居中 margin 都能搞定
+
+行内、行内块元素 在父亲中
+- 水平居中：父元素设置 `text-align:center`
+- 垂直居中：
+	- 父元素设置 `height = line-height` 
+	- **每个**子元素设置 `vertical-align:middle;` 
+	- 补充：要**绝对**垂直居中，父元素 `font-size:0`
+
+> 演示：块元素居中
+
+```html
+    <style>
+        .outer {
+            width: 400px;
+            height: 400px;
+            background-color: gray;
+            /* 防止margin塌陷 */
+            overflow: hidden; 
+        }
+        .inner {
+            width: 200px;
+            height: 100px;
+            background-color: orange;
+
+            margin: 0 auto;
+            /* 垂直居中 */
+            margin-top: 150px;
+            /* 水平居中 */
+            text-align: center;
+            /* 文本垂直居中 */
+            line-height: 100px;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="inner">inner</div>
+    </div>
+</body>
+```
+
+> 演示：行内、行内块元素的居中
+
+![|200](assets/Pasted%20image%2020240304234612.png)
+
+```html
+    <style>
+        .outer {
+            width: 400px;
+            height: 400px;
+            background-color: gray;
+            
+            /* 水平居中 */
+            text-align: center;
+            /* 垂直居中 */
+            line-height: 400px;
+            /* 绝对垂直居中 */
+            font-size: 0px;
+            /* 首行缩进 */
+            /*text-indent: 50px;*/
+        }
+        img {
+            /* 垂直居中 */
+            vertical-align: middle;
+        }
+        span {
+            font-size: 40px;
+            /* 垂直居中 */
+            vertical-align: middle;
+            background-color: orange;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <span>出来玩啊？</span>
+        <img src="../images/悟空.jpg" alt="">
+    </div>
+</body>
+```
+
+## 行内/行内块间的空白
+
+**行内、行内块**元素，彼此之间的**换行**，会被浏览器解析为一个**空白字符**
+
+解决方案：
+- 去掉换行和空格（×）
+- 父元素设置 `font-size:0`，再给子元素单独设置字体大小（√）
+
+> 由字造成的问题，90%以上都可以通过把字调没解决
+
+> 演示：元素间空白解决
+
+```html
+    <style>
+        div {
+            height: 200px;
+            background-color: gray;
+            font-size: 0px;
+        }
+        .s1 {
+            background-color: skyblue;
+        }
+        .s2 {
+            background-color: orange;
+        }
+        .s3 {
+            background-color: green;
+        }
+        span {
+            font-size: 20px;
+        }
+    </style>
+
+<body>
+    <div>
+        <span class="s1">人之初</span>
+        <span class="s2">性本善</span>
+        <span class="s3">性相近</span>
+        <hr>
+        <img src="../images/悟空.jpg" alt="">
+        <img src="../images/悟空.jpg" alt="">
+        <img src="../images/悟空.jpg" alt="">
+    </div>
+</body>
+```
+
+## 行内块的幽灵空白
+
+**行内块**元素与文本的基线对齐，而文本的**基线**与文本**最底端**之间是有一定距离的
+
+> #Bo 这个问题的前提是父元素高度不设置吗？
+> - 首个解决方案：给父元素设置高度
+
+![|300](assets/Pasted%20image%2020240305103628.png)
+
+解决方案：
+- 行内块元素设置 **`vertical-align`**，值不为默认的 `baseline` 即可
+- 若父元素中只有**一张图片**（没有文字），图片设置 **`display:block`**
+	- 备注：块元素独占一行，有字就换行了
+- 不需要字：`font-size: 0` #Bo 
+
+> #Bo 课件中提到的第三点是有问题的：给父元素设置 `font-size: 0` 。如果该行内块内部还有文本，则需单独设置 `font-size` 
+
+> 演示：幽灵空白问题解决
+
+```html
+    <style>
+        div {
+            width: 600px;
+            /* height根据img自适应 */
+            /* height: 200px; */
+            background-color: skyblue;
+        }
+        img {
+            height: 200px;
+            vertical-align: bottom;
+            /* display: block; */
+        }
+        /* span{
+            font-size: 50px;
+        } */
+    </style>
+
+<body>
+    <div>
+        <img src="../images/我的自拍.jpg" alt="悟空">xg
+    </div>
+</body>
+```
+
 # ---------- 浮动
+
+## 简介
+
+最初，浮动是用来实现**文字环绕图片**效果的，现在浮动是**主流的页面布局方式**之一。
+
+> 浮动演示
+
+```html
+    <style>
+        div {
+            width: 600px;
+            height: 400px;
+            background-color: skyblue;
+        }
+        img {
+            width: 200px;
+            float: left;
+            margin-right: 0.5em;
+        }
+        .test::first-letter {
+            font-size: 80px;
+            float: left;
+        }
+    </style>
+
+<body>
+    <div>
+        <img src="../images/我的自拍.jpg" alt="">
+        orem ipsum dolor sit amet consectetur adipisicing elit. Sint, minus magnam accusamus eum laborum ducimus possimus beatae fugit illum molestias odit et asperiores adipisci sunt dolorem qui autem enim excepturi alias ab unde temporibus. Sapiente labore a magnam commodi itaque architecto quos doloribus voluptates perferendis rem, earum consectetur. Tempora inventore ducimus veritatis voluptatem deleniti rem laboriosam. Officiis, impedit explicabo! Impedit labore ea et vero rerum nihil in cum qui, itaque blanditiis eius nemo est? Tempora explicabo voluptates consectetur officia aperiam eos impedit veritatis necessitatibus quidem deleniti ea, in odit cum ex harum voluptas, quos eveniet quae voluptate aspernatur quod! Nostrum?
+    </div>
+    <hr>
+    <div class="test">
+        Lorem ipsum dolor sit amet consectetur, adipisicing elit. Quaerat voluptate impedit provident, debitis nostrum cumque iste ab ipsum tempora dicta neque aliquid error in dolorum qui iure. Quibusdam eligendi ea id! Accusamus praesentium vitae quidem iusto placeat provident alias tempore quasi quos, nesciunt rem, molestias quisquam? Quisquam laborum nulla ea veniam, nesciunt, dolores modi officia animi laboriosam minima exercitationem. Reiciendis enim sint at nisi quae obcaecati, vel iusto non libero officia possimus explicabo quis harum inventore sapiente accusantium id quidem cupiditate et expedita maiores perferendis! Reiciendis, distinctio doloribus! Quia harum iste doloremque pariatur obcaecati doloribus quasi iusto minima magnam iure!
+    </div>
+</body>
+```
+
+## 浮动相关属性
+
+float 
+- 功能：设置浮动
+- 属性值：
+	- left：设置左浮动
+	- right：设置右浮动
+	- none（默认）：不浮动
+
+clear
+- 功能：**清除**前面兄弟元素浮动元素的响应
+- 属性值：
+	- left : 清除前面左浮动的影响
+	- right : 清除前面右浮动的影响
+	- both ：清除前面左右浮动的影响
+
+## 元素浮动后的特点
+
+- 脱离文档流
+- 不管浮动前是什么元素，浮动后：默认**宽与高都是被内容撑开**（尽可能小），而且**可以设置宽高**
+- **不会独占一行**
+	- 可以与其他元素共用一行
+- **不会 margin 合并 和 塌陷**，
+	- 能够完美的设置四个方向的 margin 和 padding 
+- 不会像行内块一样被当做文本处理
+	- 没有行内块的空白问题
+
+> #Bo 
+> 
+> 浮动后，具有行内块的特点，且没有行内块的毛病。对它的位置的设置都失效了
+> 
+> 文档流当成地面，浮动以后在天上
+
+> 演示：浮动元素特点
+
+```html
+    <style>
+        .outer {
+            width: 800px;
+            height: 400px;
+            padding: 10px;
+            background-color: gray;
+            text-align: center;
+        }
+        .box {
+            font-size: 20px;
+            padding: 10px;
+        }
+        .box1 {
+            background-color: skyblue;
+        }
+        .box2 {
+            background-color: orange;
+            float: left;
+            width: 100px;
+            height: 100px;
+            /* margin-left: 20px; */
+            /* margin-right: 20px; */
+            /* margin-top: 20px; */
+            /* margin-bottom: 20px; */
+        }
+        .box3 {
+            background-color: green;
+            float: left;
+        }
+    </style>
+
+<body>
+    <div class="outer" style="width: 500px;">
+        <div class="box box1">盒子1</div>
+        <div class="box box2">盒子2</div>
+        <div class="box box3">盒子3</div>
+        <span>xxx</span>
+    </div>
+</body>
+```
+
+## 5个浮动练习
+
+盒子 1 右浮动
+
+![|400](assets/Pasted%20image%2020240305124023.png)
+
+```html
+    <title>03_浮动的小练习</title>
+    <style>
+        .outer {
+            width: 500px;
+            background-color: gray;
+            border: 1px solid black;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            background-color: skyblue;
+            border: 1px solid black;
+            margin: 10px;
+        }
+        .box1 {
+            float: right;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+---
+盒子 1 左浮动
+
+![|400](assets/Pasted%20image%2020240305124031.png)
+
+![|200](assets/Pasted%20image%2020240305130744.png)
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: gray;
+            border: 1px solid black;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            background-color: skyblue;
+            border: 1px solid black;
+            margin: 10px;
+        }
+        .box1 {
+            float: left;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+---
+所有盒子都浮动
+
+![|400](assets/Pasted%20image%2020240305124043.png)
+
+```html
+    <style>
+        .outer {
+            background-color: gray;
+            border: 1px solid black;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            background-color: skyblue;
+            border: 1px solid black;
+            margin: 10px;
+            float: left;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+---
+所有盒子浮动后，盒子3落下来（父元素宽度不够了）
+
+![|400](assets/Pasted%20image%2020240305124055.png)
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: gray;
+            border: 1px solid black;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            background-color: skyblue;
+            border: 1px solid black;
+            margin: 10px;
+            float: left;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+---
+所有盒子浮动后，**盒子 3 卡住了**（盒子 1 太高了）
+
+![|400](assets/Pasted%20image%2020240305132058.png)
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: gray;
+            border: 1px solid black;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            background-color: skyblue;
+            border: 1px solid black;
+            margin: 10px;
+            float: left;
+        }
+        .box1 {
+            height: 300px;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+## 解决浮动后的影响（位置）
+
+### 影响
+
+- 对兄弟元素： 
+	- **后面**的兄弟元素，**会占据浮动元素之前的位置**，在浮动元素的**下面**；
+		- #Bo 后面的是行内（块），不会
+	- 对前面的兄弟无影响
+- 对父元素： 
+	- 不能撑起父元素的高度，导致父元素**高度塌陷**
+	- 但父元素的**宽度依然束缚**浮动的元素
+
+> 123浮动，撑不开高度
+> 
+> ![|400](assets/Pasted%20image%2020240305135318.png)
+
+### 解决
+
+解决高度塌陷
+- 父元素指定 高度
+- 父元素也设置浮动，带来其他影响
+- 父元素设置 `overflow:hidden` 
+
+全部解决
+- 在所有浮动元素的**最后面**，添加一个**块级**元素，并给其设置 `clear:both`
+	-  该块元素可以没宽没高没内容
+	- `clear:both` = `clear:left` + `clear:right`，清楚左右浮动带来的影响
+- √ 给浮动元素的**父元素**，设置**伪元素**，通过伪元素清除浮动
+	- 原理与方案四相同
+
+```css
+/* 设置伪元素 */
+.parent::after {
+	content: "";
+	display: block;
+	clear:both;
+}
+```
+
+布局中的一个原则：设置浮动的时候，**兄弟元素要么全都浮动，要么全都不浮动**
+
+## 浮动布局练习
+
+
+![|600](assets/Pasted%20image%2020240305154721.png)
+
+```html
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .leftfix {
+            float: left;
+        }
+        .rightfix {
+            float: right;
+        }
+        .clearfix::after {
+            content: '';
+            display: block;
+            clear: both;
+        }
+        .container {
+            width: 960px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        .logo {
+            width: 200px;
+        }
+        .banner1 {
+            width: 540px;
+            margin: 0 10px;
+        }
+        .banner2 {
+            width: 200px;
+        }
+        .logo,.banner1,.banner2 {
+            height: 80px;
+            line-height: 80px;
+            background-color: #ccc;
+        }
+        .menu {
+            height: 30px;
+            background-color: #ccc;
+            margin-top: 10px;
+            line-height: 30px;
+        }
+        .item1,.item2 {
+            width: 368px;
+            height: 198px;
+            line-height: 198px;
+            border: 1px solid black;
+            margin-right: 10px;
+        }
+        .content {
+            margin-top: 10px;
+        }
+        .item3,.item4,.item5,.item6 {
+            width: 178px;
+            height: 198px;
+            line-height: 198px;
+            border: 1px solid black;
+            margin-right: 10px;
+        }
+        .bottom {
+            margin-top: 10px;
+        }
+        .item7,.item8,.item9 {
+            width: 198px;
+            height: 128px;
+            line-height: 128px;
+            border: 1px solid black;
+        }
+        .item8 {
+            margin: 10px 0;
+        }
+        .footer {
+            height: 60px;
+            background-color: #ccc;
+            margin-top: 10px;
+            line-height: 60px;
+        }
+    </style>
+
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="page-header clearfix">
+            <div class="logo leftfix">logo</div>
+            <div class="banner1 leftfix">banner1</div>
+            <div class="banner2 leftfix">banner2</div>
+        </div>
+        <!-- 菜单 -->
+        <div class="menu">菜单</div>
+        <!-- 内容区 -->
+        <div class="content clearfix">
+            <!-- 左侧 -->
+            <div class="left leftfix">
+                <!-- 上 -->
+                <div class="top clearfix">
+                    <div class="item1 leftfix">栏目一</div>
+                    <div class="item2 leftfix">栏目二</div>
+                </div>
+                <!-- 下 -->
+                <div class="bottom clearfix">
+                    <div class="item3 leftfix">栏目三</div>
+                    <div class="item4 leftfix">栏目四</div>
+                    <div class="item5 leftfix">栏目五</div>
+                    <div class="item6 leftfix">栏目六</div>
+                </div>
+            </div>
+            <!-- 右侧 -->
+            <div class="right rightfix">
+                <div class="item7">栏目七</div>
+                <div class="item8">栏目八</div>
+                <div class="item9">栏目九</div>
+            </div>
+        </div>
+        <!-- 页脚 -->
+        <div class="footer">页脚</div>
+    </div>
+</body>
+```
 
 # ---------- 定位
 
-# ---------- 布局
+定位元素的**显示层级比普通元素高**，无论什么定位，显示层级都是一样的
 
+默认规则是：
+- 定位的元素会**覆盖**在普通元素之上
+- 都发生定位的两个元素，后写的元素会**覆盖**
 
+## 相对定位
 
+相对定位的参考点：自己原来的位置
 
+如何设置：
+- 1）`position:relative`
+- 2）`left`、`right`、`top`、`bottom` 四个属性调整位置
+	- left 和 right、top 和 bottom 不能一起设置
+	- 同时写：left 和 top 生效
+
+特点：
+- **不会**脱离文档流
+- **不会**对其他元素产生任何影响
+- 相对定位的元素，
+	- 也能浮动，**不推荐！**
+	- 也能通过 margin 调整位置，**不推荐！**
+
+> 浮动、margin、定位糊一块，摇头！
+
+注意：绝大多数情况下，“相对定位”会与“绝对定位”**配合使用**
+
+> 演示：相对定位
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: skyblue;
+            border: 1px solid black;
+            padding: 20px;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+        }
+        .box1 {
+            background-color: #888;
+        }
+        .box2 {
+            background-color: orange;
+            position: relative;
+            top: 20px;
+            left: 20px;
+            /* margin-left: 50px; */
+            /* float: right; */
+        }
+        .box3 {
+            background-color: green;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+## 绝对定位
+
+> 绝+相：对浮动布局的辅助
+
+参考点：它的包含块
+- 对于**没有脱离**文档流的元素：包含块就是**父元素**；
+- 对于**脱离**文档流的元素：包含块是第一个**开启定位**的祖先元素
+	- 如果所有祖先**都没定位**，那包含块就是整个页面
+
+> 子绝父相
+
+如何设置：
+- 1）设置 `position: absolute`
+- 2）同相对定位
+
+特点：
+- **脱离**文档流，会对后面的兄弟元素、父元素有影响
+- 绝对定位、浮动**不能**同时设置
+	- 同时设置：浮动失效，以**定位为主**
+- 绝对定位的元素，也能通过 margin 调整位置，**不推荐！**
+- 所有元素设置为绝对定位之后，都变成了【**定位元素**】
+
+定位元素：默认宽、高都被内容所撑开，且能自由设置宽高
+
+> 演示：绝对定位
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: skyblue;
+            border: 1px solid black;
+            padding: 20px;
+            /* 父元素设置相对定位 */
+            position: relative;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+        }
+        .box1 {
+            background-color: #888;
+        }
+        .box2 {
+            background-color: orange;
+            position: absolute;
+            top: 200px;
+            left: 50px;
+        }
+        .box3 {
+            background-color: green;
+        }
+        /* 后代选择器 */
+        .outer:hover .box2 {
+            left:220px;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+    </div>
+</body>
+```
+
+## 固定定位
+
+参考点：视口
+- 对于 PC 浏览器来说，就是就是当前网页窗口
+
+如何设置？
+- 1）元素设置 `position: fixed`
+- 2）同相对定位
+
+特点：
+- **脱离文档流**，会对后面的兄弟元素、父元素有影响。
+- 固定定位和浮动**不能**同时设置
+	- 同时设置：浮动失效，以固定定位为主
+- 能通过 margin 调整位置，**不推荐！**
+- 所有元素设置固定定位之后，都变成了**定位**元素
+
+> 演示固定定位
+
+```html
+<head>
+    <meta charset="UTF-8">
+    <title>03_固定定位</title>
+    <style>
+        .outer {
+            width: 500px;
+            background-color: skyblue;
+            border: 1px solid black;
+            padding: 20px;
+            /* position: relative; */
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+        }
+        .box1 {
+            background-color: #888;
+        }
+        /* 看这里！ */
+        .box2 {
+            background-color: orange;
+            /* position: fixed; */
+            bottom: 0;
+            right: 0;
+            /* margin-right: 100px; */
+            /* margin-bottom: 100px; */
+        }
+        .box3 {
+            background-color: green;
+        }
+    </style>
+</head>
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <span class="box box2">哥哥需要视频聊天吗？点我哦，即可开始</span>
+        <div class="box box3">3</div>
+    </div>
+    <div>很长的文字，让整个窗口滚动起来</div>
+</body>
+```
+
+## 粘性定位
+
+> 一种专门用于**窗口滚动**时的新的定位方式
+
+参考点：离它最近的一个拥有**滚动机制**的**祖先**元素，即使不是真实可滚动的
+- 祖先：
+	- #Bo 得有高度才能滚吧
+	- #Bo 要设置 `overflow: auto;` 或者 `overflow: scroll;` 才有滚动条吧
+
+如何设置？
+- 1）元素设置 `position: fixed`
+- 2）同相对定位，**top** 最常用
+
+特点：
+- **不会**脱离文档流
+- #Bo 什么时候粘不住？包含粘性定位的父容器被滚没了的时候
+- 可以 和 【浮动】【margin】 **同时**设置，**不推荐！**
+- 粘性定位和相对定位的特点**基本一致**，不同的是：粘性定位可以在元素到达某个位置时将其固定。
+
+> 这里没说会变成定位元素！
+
+> 演示：粘性定位
+
+```html
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            height: 2000px;
+        }
+        .page-header {
+            background-color: orange;
+            font-size: 20px;
+            /* 中心对齐 */
+            height: 100px;
+            text-align: center;
+            line-height: 100px;
+        }
+        /* 具有滚动机制 */
+        .content { 
+            height:500px;
+            overflow: auto;
+            overflow: scroll;
+        } 
+        .item {
+            background-color: gray;
+        }
+        .first {
+            background-color: skyblue;
+            font-size: 40px;
+
+            /* 粘性定位 */
+            position: sticky;
+            top: 0px;
+
+            /* 不建议 */
+            /* float: right; */
+            /* margin-right: 100px; */
+        }
+    </style>
+
+<body>
+    <!-- 头部 -->
+    <div class="page-header">头部</div>
+    <!-- 内容区 -->
+    <div class="content">
+        <!-- 每一项 -->
+        <div class="item">
+            <div class="first">A</div>
+            <h2>A1</h2>
+            <h2>A2</h2>
+            <h2>A3</h2>
+            <h2>A4</h2>
+            <h2>A5</h2>
+            <h2>A6</h2>
+            <h2>A7</h2>
+            <h2>A8</h2>
+        </div>
+        <div class="item">
+            <div class="first">B</div>
+            <h2>B1</h2>
+            <h2>B2</h2>
+            <h2>B3</h2>
+            <h2>B4</h2>
+            <h2>B5</h2>
+            <h2>B6</h2>
+            <h2>B7</h2>
+            <h2>B8</h2>
+        </div>
+        <div class="item">
+            <div class="first">C</div>
+            <h2>C1</h2>
+            <h2>C2</h2>
+            <h2>C3</h2>
+            <h2>C4</h2>
+            <h2>C5</h2>
+            <h2>C6</h2>
+            <h2>C7</h2>
+            <h2>C8</h2>
+        </div>
+    </div>
+</body>
+```
+
+## 定位的层级
+
+- 定位元素，显示层级比【普通元素】**高**
+- 所有定位，显示层级都**一样**
+- 位置重叠，**默认**：**后面**的元素，会显示在前面元素之上
+	- 可以设置 `z-index` 调整元素的显示层级
+		- 属性值：数字，没有单位，值越大显示层级越高
+		- 只有定位元素设置才**有效**
+	- 如果 z-index 值大的元素，没有覆盖掉值小的元素，请检查其**包含块的层级**。
+
+> 演示：定位元素层级
+
+```html
+    <style>
+        .outer {
+            width: 500px;
+            background-color: skyblue;
+            border: 1px solid black;
+            padding: 20px;
+            position: relative;
+            z-index: 11;
+        }
+        .box {
+            width: 200px;
+            height: 200px;
+            font-size: 20px;
+        }
+        .box1 {
+            background-color: #888;
+        }
+        .box2 {
+            background-color: orange;
+            position: relative;
+            top: -150px;
+            left: 50px;
+        }
+        .box3 {
+            background-color: green;
+            position: absolute;
+            top: 130px;
+            left: 130px;
+        }
+        .box4 {
+            background-color: red;
+            position: fixed;
+            top: 200px;
+            left: 200px;
+            z-index: 50;
+        }
+        .box5 {
+            background-color: purple;
+            position: fixed;
+            top: 300px;
+            left: 300px;
+            z-index: 20;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="box box1">1</div>
+        <div class="box box2">2</div>
+        <div class="box box3">3</div>
+        <div class="box box4">4</div>
+    </div>
+    <div class="box box5">5</div>
+</body>
+```
+
+## 定位越过 padding
+
+> #Bo 定位的参考点是从盒子的 padding 开始的，而不是 content
+
+`left:0`、`top:0` 的情况下定位元素越过了父盒子的 padding
+
+![|600](assets/Pasted%20image%2020240306143623.png)
+
+```html
+    <style>
+        .outer {
+            width: 800px;
+            height: 600px;
+            padding: 20px;
+            background-color: #888;
+            
+            position: relative;
+        }
+        .inner {
+            width: 200px;
+            height: 200px;
+            background-color: orange;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="inner"></div>
+    </div>
+</body>
+```
+
+## 特殊应用
+
+> 发生固定定位、绝对定位后，元素都变成了定位元素，默认宽高被内容撑开，且依然可以设置宽高。
+> 
+> 发生相对定位后，元素依然是之前的显示模式。
+> 
+> 以下所说的特殊应用，只针对 **绝对定位** 和 **固定定位** 的元素，不包括相对定位的元素。
+
+### 定位元素的宽高充满包含块
+
+- 宽与包含块一致：`left：0; right：0;`
+- 高与包含块一致：`top：0; buttom：0;`
+
+> 前提：子元素没有设置宽高
+> 
+> 定位元素设置 `width:100%` ？
+> - `%` 单位是相对于父元素的 width，width 设置的是 content 宽度
+> - 定位元素没有 border、padding 可以
+> - 如果有，就内容溢出了
+
+```html
+    <style>
+        .outer {
+            height: 400px;
+            background-color: #888;
+            position: relative;
+        }
+        .inner {
+            background-color: orange;
+            font-size: 20px;
+            text-align: center;
+
+            padding: 20px;
+            border: 10px solid black;
+
+            position: absolute;
+
+            /* 错误的方式 */
+            /* width: 100%; */
+            
+            /* 水平垂直撑满 */
+            left: 0;
+            right: 0;
+            top: 0;
+            bottom: 0;
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="inner">你好啊</div>
+    </div>
+</body>
+```
+
+### 定位元素在包含块中居中
+
+前提：该定位的元素必须设置宽高！
+
+1）√
+
+```css
+left:0;
+right:0;
+top:0;
+bottom:0;
+margin:auto;
+```
+
+2）不推荐
+
+```css
+left: 50%;
+top: 50%;
+margin-left: 负的宽度一半;
+margin-top: 负的高度一半;
+```
+
+> 演示：定位元素居中
+
+```html
+    <style>
+        .outer {
+            width: 800px;
+            height: 400px;
+            background-color: #888;
+            position: relative;
+        }
+        .inner {
+            width: 400px;
+            height: 100px;
+            background-color: orange;
+            font-size: 20px;
+            position: absolute;
+            /* 方案一 */
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: auto;
+
+            /* 方案二 不推荐 */
+            /* left: 50%;
+            top: 50%;
+            margin-left: -200px;
+            margin-top: -50px; */
+        }
+    </style>
+
+<body>
+    <div class="outer">
+        <div class="inner">你好啊</div>
+    </div>
+</body>
+```
 
 
