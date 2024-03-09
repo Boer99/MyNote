@@ -1372,6 +1372,284 @@ class Outer {
 }
 ```
 
+# 异常
+## 基本概念
+将程序执行过程中发生的不正常情况称为“异常”<br />执行过程中发生的异常事件可分为两类
+
+1. `Error`：java虚拟机无法解决的严重问题，如JVM系统内部错误、资源耗尽等严重情况。比如`StackOverflow`（栈溢出）和`OOM`（out of memory，内存不足），Error是严重错误，程序会崩溃
+2. `Exception`：因编程错误或偶然的外在因素导致的一般性问题，可以使用针对性的代码处理。如空指针访问、试图读取不存在的文件、网络连接中断，分为两大类，运行时异常和编译时异常
+## 异常体系结构
+
+java.lang. `Throwable`：Java 语言中所有错误和异常的超类。只有类的实例(或它的一个子类)的对象才会被 Java 虚拟机抛出，或者可以被 Java throw 语句抛出。
+
+java.lang. `Error`：一般不编写针对性的代码进行处理。 
+- `OutOfMemoryError`
+- `StackOverflowError`
+- java.lang. `Exception`：程序本身可以处理的异常，可以通过 `catch` 来进行捕获 
+
+编译时异常(checked)：**必须处理**，否则编译不能通过 
+  - `SQLException`：操作数据库时，查询表可能发生异常
+  - `IOException`：操作文件时发生的异常 
+	 - `FileNotFoundException`：操作一个不存在的文件
+  - `ClassNotFoundException`：加载类，而该类不存在
+  - `EOFException`：操作文件，到文件末尾发生异常
+
+运行时异常(unchecked，RuntimeException)：可以**不处理**
+  - `NullPointerException`：空指针异常，当应用程序试图在需要对象的地方使用 null
+  - `ArrayIndexOutOfBoundsException`：数组脚标越界异常，非法索引访问数组
+  - `ClassCastException`：类型转换异常，试图将对象强制转换为不是实例的子例时
+  - `InputMismatchException`：输入类型不匹配
+  - `ArithmeticException`：算术异常，出现异常的运算条件
+  - `IllegalArgumentException`：参数异常 
+	 - `NumberFormatException`：数字格式化异常，试图将字符串转换成一种数值类型，但该子字符串不能转换为适当格式
+
+## 运行时异常
+
+特点：不要求强制处理
+
+```java
+// ArithmeticException
+public void test6() {
+    int a = 10;
+    int b = 0;
+    System.out.println(a / b);
+}
+
+// InputMismatchException
+public void test5() {
+    Scanner scanner = new Scanner(System.in);
+    int score = scanner.nextInt();
+    System.out.println(score);
+    scanner.close();
+}
+
+// NumberFormatException
+public void test4() {
+    String str = "123";
+    str = "中文";
+    int num = Integer.parseInt(str);
+}
+
+// ClassCastException
+public void test3() {
+    Object obj = new Date();
+    String str = (String) obj;
+}
+
+// IndexOutOfBoundsException
+public void test2() {
+    // ArrayIndexOutOfBoundsException
+		// int[] arr = new int[10];
+		// System.out.println(arr[10]);
+    // StringIndexOutOfBoundsException
+    String str = "abc";
+    System.out.println(str.charAt(3));
+}
+
+// NullPointerException
+public void test1() {
+		// int[] arr = null;
+		// System.out.println(arr[3]);
+    String str = "abc";
+    str = null;
+    System.out.println(str.charAt(0));
+}
+```
+
+## 异常处理
+### try-catch-finally
+
+程序员在代码中捕获发生的异常，自行处理<br />快捷键：`ctrl+alt+t`
+
+```java
+try{
+    //代码可能有异常
+  	//如果异常发生了，异常后面的代码不执行，直接进入到catch块、
+    //如果没有发生异常，catch代码块不执行
+}catch(Exception e){
+    //捕获到异常
+    //当异常发生时，系统将异常封装成Exception对象e，传递给catch
+    //得到异常对象后，程序员自己处理
+    //可以有多个catch语句，捕获不同的异常，要求父类异常在后，子类异常在前，且只会匹配一个catch
+}finally{
+    //可以没有finally
+    //不管try代码块是否有异常发生，一定会执行
+    //所以通常将释放资源的代码放在finally
+}
+//之后的代码
+//catch捕获到异常，正常执行
+//catch没捕获到，不再执行
+```
+```java
+class Person {
+    private String name = "jack";
+
+    public String getName() {
+        return name;
+    }
+}
+```
+```java
+class Person {
+    private String name = "jack";
+
+    public String getName() {
+        return name;
+    }
+}
+public class Test2 {
+    public static void main(String[] args) {
+        try {
+            Person person = new Person();
+            person = null;
+            System.out.println(person.getName()); //NullPointerException
+            int n1 = 10;
+            int n2 = 0;
+            int res = n1 / n2; //ArithmeticException
+        } catch (NullPointerException e) {
+            System.out.println("空指针异常=" + e.getMessage());
+        } catch (ArithmeticException e) {
+            System.out.println("算术异常=" + e.getMessage());
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+        } finally {
+            System.out.println("finally代码块执行");
+        }
+        System.out.println("程序继续");
+    }
+}
+//执行结果：
+//空指针异常=null
+//finally代码块执行
+//程序继续
+```
+
+- 只写`try-finally`，这种用法相当于没有捕获异常，如果发生异常，执行完`finally`程序会直接退出
+- **在**`**try**`**或**`**catch**`**中遇到**`**return**`**语句时，**`**finally**`**将在方法返回之前被执行**
+- 像数据库连接、输入输出流、网络编程Socket等资源，JVM是不能自动的回收的，我们需要自己手动的进行资源的释放。此时的资源释放，就需要声明在`finally`中
+- **体会**：使用`try-catch-finally`处理编译时异常，程序在编译时就不再报错，但是运行时仍可能报错，**相当于将一个编译时可能出现的异常，延迟到运行时出现。**
+
+最佳实践：如果用户输入的不是一个整数，就提示他反复输入，直到是整数为止
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        int num = 0;
+        String inputStr;
+        while (true) {
+            System.out.println("请输入一个整数：");
+            inputStr = scanner.next();
+            try {
+                num = Integer.parseInt(inputStr);
+                break;
+            } catch (NumberFormatException e) {
+                System.out.println("你输入的不是一个整数");
+            }
+        }
+        System.out.println("你输入的值是：" + num);
+    }
+}
+```
+### throws
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1692890391460-741ef00d-1840-4a41-b3b9-e2206708bd34.png#averageHue=%235c5a52&clientId=u5e2fa6b4-c345-4&from=paste&height=279&id=ufa950083&originHeight=483&originWidth=873&originalType=binary&ratio=1.7324999570846558&rotation=0&showTitle=false&size=312000&status=done&style=none&taskId=uae8c00dd-ec69-44d2-9795-cb3ab9280ef&title=&width=503.8961163779944)
+
+- 如果一个方法（中的语句执行时）可能生成某种异常，但是并不能确定如何处理这种异常，则此方法应显示地声明抛出异常，表明该方法将不对异常进行处理，而**由该方法的调用者处理**
+- 在方法声明中用`**throws**`**语句可以声明抛出异常的列表**，throws后面的异常类型可以是**方法中产生的异常类型，也可以是它的父类**
+- 注意事项：
+   -  对于**运行时异常**，程序中如果没有处理，**默认是throws方式处理 **
+   -  **子类重写父类的方法时，对抛出异常的规定：**子类重写的方法所抛出的异常类型要么和父类抛出的异常类型**一致**，要么为**父类抛出的异常类型的子类 **
+   -  在throws过程中，**如果有方法try-catch，就相当于处理异常，不必再throws** 
+```java
+class Father {
+    public void method() throws RuntimeException {}
+}
+
+class Son extends Father {
+    //抛出异常只能是RuntimeException或它的子类
+    @Override
+    public void method() throws NullPointerException {}
+}
+```
+```java
+public class Test2 {
+  	//main调f1，继续throws给jvm
+    public static void main(String[] args) throws FileNotFoundException {
+        f1();
+    }
+		//f1调f2，继续throws给主函数
+    public static void f1() throws FileNotFoundException {     
+        f2();
+    }
+		//编译时异常，必须显式处理，要么try-catch，或者继续throws
+    public static void f2() throws FileNotFoundException {
+        FileInputStream fis = new FileInputStream("路径");
+    }
+
+  	//f3调f4，可以不管f4抛出的ArithmeticException
+    public static void f3() {
+        f4();
+    }
+		//运行时异常不要求程序员显示处理
+    public static void f4() throws ArithmeticException {}
+}
+```
+## 自定义异常
+> Java中不同的异常类，分别表示着某一种具体的异常情况。那么在开发中总是有些异常情况是核心类库中没有定义好的，此时我们需要根据自己业务的异常情况来定义异常类。例如年龄负数问题，考试成绩负数问题，某员工已在团队中等。
+
+如何自定义异常？
+
+1. 要继承一个异常类型
+   1. 自定义一个**编译时异常**类型：自定义类继承`java.lang.Exception`
+   2. 自定义一个**运行时异常**类型：自定义类继承`java.lang.RuntimeException`
+2. 建议大家提供至少两个构造器
+   1. 无参构造
+   2. `(String message)`构造器
+3. 自定义异常需要提供`serialVersionUID`（未解释清楚）
+
+---
+
+注意点
+
+1. 自定义的异常只能通过 **`throw`** 抛出（手动抛出）
+2. 自定义异常最重要的是异常类的名字和 `message` 属性。当异常出现时，可以根据名字判断异常类型。比如：`TeamException("成员已满，无法添加")`、 `TeamException("该员工已是某团队成员")`
+3. 抛出后**由**`**try..catch**`**处理**，也可以**甩锅**`**throws**`**给调用者处理**。
+
+```java
+// 自定义异常
+class AgeException extends RuntimeException {
+    public AgeException(String message) {
+        super(message);
+    }
+}
+```
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        int age = 180;
+        if (!(age >= 18 && age <= 120)) {
+            //通过构造器设置信息
+            throw new AgeException("年龄需要在18-120之间");
+        }
+        System.out.println("你的年龄范围正确");
+    }
+}
+```
+## Throwable 类常用方法
+```java
+public string getMessage() //返回异常发生时的简要描述
+
+public string toString() //返回异常发生时的详细信息
+
+public String getLocalizedMessage() { //返回异常对象的本地化信息
+    return getMessage();
+} 
+//使用 Throwable 的子类覆盖这个方法，可以生成本地化信息
+//如果子类没有覆盖该方法，则该方法返回的信息与 getMessage()返回的结果相同
+
+public void printStackTrace() //在控制台上打印 Throwable 对象封装的异常信息
+```
+
+
 # 反射
 
 ## 引入

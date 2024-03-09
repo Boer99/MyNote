@@ -4569,4 +4569,35 @@ margin-top: 负的高度一半;
 </body>
 ```
 
+# ---------- 布局
+
+## 版心
+
+- 在 PC 端网页中，一般都会有一个**固定宽度**且**水平居中**的盒子，来显示网页的主要内容，这是网页的版心
+- 版心的宽度一般是 **960 ~ 1200** px 之间
+- 版心可以是一个，也可以是**多个**
+
+![|600](assets/Pasted%20image%2020240306185511.png)
+
+## 常用布局名词
+
+- 顶部导航条 topbar
+- 页头 header 、 page-header
+- 导航 nav 、 navigator 、 navbar
+- 搜索框 search 、 search-box
+- 横幅、广告、宣传图 banner
+- 主要内容 content 、 main
+- 侧边栏 aside 、 sidebar
+- 页脚 footer 、 page-footer
+
+## 重置默认样式
+
+
+
+
+
+
+
+
+
 
