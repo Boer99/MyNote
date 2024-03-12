@@ -233,95 +233,6 @@ new 一个 `Thread`，线程进入了新建状态。调用 `start()`方法，会
 
 但是，直接执行 `run()` 方法，会把 `run()` 方法当成一个 **main 线程下的普通方法**去执行，并不会在某个线程中执行它，所以这并不是多线程工作。
 
-### 如何保证变量的可见性？
-
-每次使用它都到主存中进行读取
-
-> #JavaGuide 
-> 
-> `volatile` 关键字其实并非是 Java 语言特有的，在 C 语言里也有，它最原始的意义就是**禁用 CPU 缓存**。如果我们将一个变量使用 `volatile` 修饰，这就指示 编译器，这个变量是共享且不稳定的，每次使用它都到主存中进行读取。
-
-### 如何禁止指令重排序
-
-#todo 内存屏障
-
-### volatile 可以保证原子性吗？
-
-> #《深入理解Java虚拟机》 
-> 
-> volatile 变量对所有线程是立即可见的，对 volatile 变量所有的写操作都能立刻反映到其他线程之中。换句话说，volatile 变量在各个线程中是一致的，所以基于 volatile 变量的运算在并发下是线程安全的”。
-> 
-> 这句话的论据部分并没有错，但是由其论据并**不能得出“基于 volatile 变量的运算在并发下是线程安全的”这样的结论**。volatile 变量在各个线程的工作内存中是不存在一致性问题的（从物理存储的角度看，各个线程的工作内存中 volatile 变量也可以存在不一致的情况，但由于每次使用之前都要先刷新，执行引擎看不到不一致的情况，因此可以认为不存在一致性问题），但是 **Java 里面的运算操作符并非原子操作，这导致 volatile 变量的运算在并发下一样是不安全的**
-
-i++案例
-
-```java
-public class VolatoleAtomicityDemo {
-    public volatile static int inc = 0;
-
-    public void increase() {
-        inc++;
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        ExecutorService threadPool = Executors.newFixedThreadPool(5);
-        VolatoleAtomicityDemo volatoleAtomicityDemo = new VolatoleAtomicityDemo();
-        for (int i = 0; i < 5; i++) {
-            threadPool.execute(() -> {
-                for (int j = 0; j < 500; j++) {
-                    volatoleAtomicityDemo.increase();
-                }
-            });
-        }
-        // 等待1.5秒，保证上面程序执行完成
-        Thread.sleep(1500);
-        System.out.println(inc);
-        threadPool.shutdown();
-    }
-}
-```
-
-`inc++` 其实是一个复合操作，包括三步：
-1. 读取 inc 的值。
-2. 对 inc 加 1。
-3. 将 inc 的值写回内存。
-
-`volatile` 是无法保证这三个操作是具有原子性的，可能导致两个线程分别对 `inc` 进行了一次自增操作后，`inc` 实际上只增加了 1。
-
-改进方式：
-
-```java
-//synchronized
-public synchronized void increase() {
-    inc++;
-}
-
-//AtomicInteger
-public AtomicInteger inc = new AtomicInteger();
-
-public void increase() {
-    inc.getAndIncrement();
-}
-
-//ReentrantLock
-Lock lock = new ReentrantLock();
-public void increase() {
-    lock.lock();
-    try {
-        inc++;
-    } finally {
-        lock.unlock();
-    }
-}
-```
-
-### 应用场景
-
-#todo
-
-### DCL 单例模式
-
-#todo 
 
 ## 乐观锁 和 悲观锁
 
@@ -748,19 +659,66 @@ new Thread(() -> {
 
 #todo 
 
-
-# ---------- 无锁
-
 ## 说一下 volatile 关键字
 
 #B站Java后端23_秋招 #得物_实习_Java
 
 > volatile可以保证线程安全吗？ #B站Java后端23_秋招 
 
+volatile（易变关键字）：它可以用来修饰**成员变量**和**静态成员变量**，他可以避免线程从自己的工作缓存中查找变量的值，必须到主存中获取它的值，线程操作 volatile 变量都是直接操作主存
+
+
 volatile 保证可见性和有序性，不保证原子性。
 - 当**写**一个 volatile 变量时，JMM 会把该线程对应的本地内存中的**共享变量值立即刷新回主内存中**
 - 当**读**一个 volatile 变量时，JMM 会把该线程对应的本地内存设置为无效，**重新回到主内存中读取最新共享变量的值**
 - 所以 volatile 的写内存语义是直接刷新到主内存中，读的内存语义是直接从主内存中读取
+
+### 如何保证变量的可见性？
+
+每次使用它都到主存中进行读取
+
+> #JavaGuide 
+> 
+> `volatile` 关键字其实并非是 Java 语言特有的，在 C 语言里也有，它最原始的意义就是**禁用 CPU 缓存**。如果我们将一个变量使用 `volatile` 修饰，这就指示 编译器，这个变量是共享且不稳定的，每次使用它都到主存中进行读取。
+
+### 如何禁止指令重排序
+
+#todo 内存屏障
+
+### volatile 可以保证原子性吗？
+
+不能，i++案例
+
+### 应用场景
+
+#todo
+
+### DCL 单例模式
+
+在单例 INSTANCE 上用 volatile 修饰
+
+```java
+public final class Singleton {
+    private Singleton() {}
+
+    private static volatile Singleton INSTANCE = null;
+
+    public static Singleton getInstance() {
+        // 实例没创建，才会进入内部的 synchronized代码块
+        if (INSTANCE == null) {
+            synchronized (Singleton.class) {
+                // 也许有其它线程已经创建实例，所以再判断一次
+                if (INSTANCE == null) {
+                    INSTANCE = new Singleton();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}
+```
+
+# ---------- 无锁
 
 
 ## CAS

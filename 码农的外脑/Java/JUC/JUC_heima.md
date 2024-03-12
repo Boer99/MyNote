@@ -1,3 +1,12 @@
+
+> 参考：黑马 JUC 教程 2022
+> 
+> 并发相关Java包
+> 
+> - `java.util.concurrent`
+> - `java.util.concurrent.atomic`
+> - `java.util.concurrent.locks`
+
 # ---------- 进程与线程
 ## 并行与并发
 
@@ -37,11 +46,11 @@
 > - tomcat 的异步 servlet 也是类似的目的，让用户线程处理耗时较长的操作，避免阻塞 tomcat 的工作线程
 > - ui 程序中，开线程进行其他操作，避免阻塞 ui 线程
 
-1. **单核 cpu** 下，多线程不能实际提高程序运行效率，只是为了能够在不同的任务之间切换，不同线程轮流使用 cpu ，**不至于一个线程总占用 cpu，别的线程没法干活**
-2. **多核 cpu** 可以并行跑多个线程，但能否提高程序运行效率还是要分情况的 
-   1. 有些任务，经过精心设计，将任务拆分，并行执行，当然可以提高程序的运行效率。但不是所有计算任务都能拆分（参考后文的【阿姆达尔定律】）
-   2. 也不是所有任务都需要拆分，任务的目的如果不同，谈拆分和效率没啥意义
-3. IO 操作不占用 cpu，只是我们一般拷贝文件使用的是【阻塞 IO】，这时相当于线程虽然不用 cpu，但需要一 直等待 IO 结束，没能充分利用线程。所以才有后面的【非阻塞 IO】和【异步 IO】优化。
+- **单核 cpu** 下，多线程不能实际提高程序运行效率，只是为了能够在不同的任务之间切换，不同线程轮流使用 cpu ，**不至于一个线程总占用 cpu，别的线程没法干活**
+- **多核 cpu** 可以**并行跑多个线程**，但能否提高程序运行效率还是要分情况的 
+   - 有些任务，经过精心设计，将任务拆分，并行执行，当然可以提高程序的运行效率。但不是所有计算任务都能拆分（参考后文的【阿姆达尔定律】）
+   - 也不是所有任务都需要拆分，任务的目的如果不同，谈拆分和效率没啥意义
+- IO 操作不占用 cpu，只是我们一般拷贝文件使用的是【阻塞 IO】，这时相当于线程虽然不用 cpu，但需要一 直等待 IO 结束，没能充分利用线程。所以才有后面的【非阻塞 IO】和【异步 IO】优化。
 
 # ---------- Java 线程
 
@@ -877,10 +886,10 @@ static void decrement()
 
 ## synchronized
 
-为了**避免临界区的竞态条件发生**，有多种手段可以达到目的。
-
-- **阻塞式**的解决方案：synchronized，Lock
-- **非阻塞式**的解决方案：原子变量
+> 为了**避免临界区的竞态条件发生**，有多种手段可以达到目的。
+> 
+> - **阻塞式**的解决方案：synchronized，Lock
+> - **非阻塞式**的解决方案：原子变量
 
 synchronized：即俗称的【对象锁】
 - 采用**互斥**的方式让同一时刻至多只有一个线程能持有【对象锁】，其它线程再想获取这个【对象锁】时就会**阻塞**住。
@@ -1228,6 +1237,8 @@ new Thread(()->{
 ### 线程安全类方法的组合
 
 这些类的每个方法是**原子的**，但它们多个方法的**组合不是原子的**
+
+> #Bo 加锁的时候要把读写操作都包含进来
 
 ```java
 Hashtable table = new Hashtable();
@@ -1669,6 +1680,7 @@ LockSupport.unpark(暂停线程对象)
 	- notify、notifyall 只能随机或全部唤醒等待线程
 - 可以先 unpark，再 park
 	- 不能先 notify 再 wait
+- #Bo unpark 是要指定线程的，而 notify、notifyAll 不需要
 
 > 演示：先 park 后 unpark
 
@@ -2150,9 +2162,9 @@ ReentrantLock 支持**多个**条件变量的
 
 使用要点：
 
-- await 前需要**先获得锁**
+- await 前需要**先获得锁**，否则会抛出 IllegalMonitorStateException
 - await 执行后，会**释放锁**，进入 conditionObject 等待
-- await 的线程被唤醒（或打断、或超时）取**重新竞争** lock 锁
+- await 的线程被唤醒（或打断、或超时）**重新竞争** lock 锁
 - 竞争 lock 锁成功后，从 await 后继续执行
 
 ```java
@@ -2229,7 +2241,7 @@ public class TestCondition {
 
 # ---------- 共享模型_内存
 
-JMM 即 Java Memory Model，它定义了主存、工作内存抽象概念，底层对应着 CPU 寄存器、缓存、硬件内存、CPU 指令优化等。
+JMM 即 Java Memory Model，它定义了**主存、工作内存抽象概念**，底层对应着 CPU 寄存器、缓存、硬件内存、CPU 指令优化等。
 
 JMM 体现在以下几个方面
 
@@ -2237,9 +2249,98 @@ JMM 体现在以下几个方面
 - 可见性 - 保证指令不会受 cpu 缓存的影响
 - 有序性 - 保证指令不会受 cpu 指令并行优化的影响
 
+## 主内存与工作内存
+
+#《深入理解Java虚拟机》 
+
+Java 内存模型的主要目的是定义程序中各种变量的访问规则，即关注在虚拟机中把变量值存储到内存和从内存中取出变量值这样的底层细节
+
+> 此处的变量（Variables）与 Java 编程中所说的变量有所区别，它包括了实例字段、静态字段和构成数组对象的元素，但是**不包括 局部变量 与 方法参数**，因为后者是**线程私有的，不会被共享，自然就不会存在竞争问题**
+
+- Java 内存模型规定了所有的变量都存储在主内存（Main Memory）中
+- 每条线程还有自己的工作内存，
+	- 保存了被该线程使用的**变量的主内存副本**，
+	- 线程对变量的所有操作（读取、赋值等）都**必须在工作内存中进行**，而不能直接读写主内存中的数据
+- 不同的线程之间也无法直接访问对方工作内存中的变量，**线程间变量值的传递均需要通过主内存**来完成
+
+> 此处的主内存与介绍物理硬件时提到的主内存名字一样，两者也可以类比，但**物理上它仅是虚拟机内存的一部分**
+
+![](assets/Pasted%20image%2020240205224953.png)
+
+> 这里所讲的主内存、工作内存与 Java 内存区域中的 Java 堆、栈、方法区等并不是同一个层次的对内存的划分，这两者基本上是没有任何关系的。如果两者一定要勉强对应起来，那么从变量、主内存、工作内存的定义来看，
+> - 主内存主要对应于 Java “堆”中的对象实例数据部分[4]，
+> - 而工作内存则对应于“虚拟机栈”中的部分区域。
+> 
+> 从更基础的层次上说，
+> - 主内存直接对应于物理硬件的内存，
+> - 而为了获取更好的运行速度，虚拟机（或者是硬件、操作系统本身的优化措施）可能会让工作内存优先存储于寄存器和高速缓存中，因为程序运行时主要访问的是工作内存。
+
+> #JavaGuide 
+> 
+> - *主内存*：所有线程创建的实例对象都存放在主内存中，不管该实例对象是成员变量，还是局部变量，类信息、常量、静态变量都是放在主内存中。为了获取更好的运行速度，虚拟机及硬件系统可能会让工作内存优先存储于寄存器和高速缓存中。
+> - *本地内存*：每个线程都有一个私有的本地内存，本地内存存储了该线程以**读 / 写共享变量的副本**。
+> 	- 每个线程只能操作自己本地内存中的变量，无法直接访问其他线程的本地内存。
+> 	- **如果线程间需要通信，必须通过主内存来进行**。
+> 	- 本地内存是 JMM **抽象**出来的一个概念，并不真实存在，它涵盖了缓存、写缓冲区、寄存器以及其他的硬件和编译器优化。
+
+### ~~内存间交互操作~~
+
+#《深入理解Java虚拟机》 
+
+关于主内存与工作内存之间具体的交互协议，即一个变量如何从主内存拷贝到工作内存、如何从工作内存同步回主内存这一类的实现细节，Java 内存模型中定义了 8 种操作来完成。
+
+Java 虚拟机实现时必须保证下面提及的每一种操作都是**原子的、不可再分**的（对于 double 和 long 类型的变量来说， load、store、read 和 write 操作在某些平台上允许有例外）
+- **锁定（lock）**: 作用于主内存中的变量，将他标记为一个线程独享变量。
+- **解锁（unlock）**: 作用于主内存中的变量，解除变量的锁定状态，被解除锁定状态的变量才能被其他线程锁定。
+- **read（读取）**：作用于主内存的变量，它把一个变量的值从主内存传输到线程的工作内存中，以便随后的 load 动作使用。
+- **load(载入)**：把 read 操作从主内存中得到的变量值放入工作内存的变量的副本中。
+- **use(使用)**：把工作内存中的一个变量的值传给执行引擎，每当虚拟机遇到一个使用到变量的指令时都会使用该指令。
+- **assign（赋值）**：作用于工作内存的变量，它把一个从执行引擎接收到的值赋给工作内存的变量，每当虚拟机遇到一个给变量赋值的字节码指令时执行这个操作。
+- **store（存储）**：作用于工作内存的变量，它把工作内存中一个变量的值传送到主内存中，以便随后的 write 操作使用。
+- **write（写入）**：作用于主内存的变量，它把 store 操作从工作内存中得到的变量的值放入主内存的变量中。
+
+> 如果要把一个变量从主内存拷贝到工作内存，那就要按顺序执行 read 和 load 操作，如果要把变量从工作内存同步回主内存，就要按顺序执行 store 和 write 操作。注意，Java 内存模型只要求上述两个操作必须按顺序执行，但不要求是连续执行。也就是说 read 与 load 之间、store 与 write 之间是可插入其他指令的，如对主内存中的变量 a、b进行访问时，一种可能出现的顺序是 read a、read b、load b、load a。
+
+除此之外，Java 内存模型还规定了在执行上述 8 种基本操作时必须满足如下规则：
+- 不允许 read 和 load、store 和 write 操作之一单独出现，
+	- 即不允许一个变量从主内存读取了但工作内存不接受，或者工作内存发起回写了但主内存不接受的情况出现。
+- 不允许一个线程丢弃它最近的 assign 操作，
+	- 即变量在工作内存中改变了之后必须把该变化同步回主内存。
+- 不允许一个线程无原因地（没有发生过任何 assign 操作）把数据从线程的工作内存同步回主内存中。
+- 一个新的变量只能在主内存中“诞生”，不允许在工作内存中直接使用一个未被初始化（load 或 assign）的变量，
+	- 换句话说就是对一个变量实施 use、store 操作之前，必须先执行 assign 和 load 操作。
+- 一个变量在同一个时刻只允许一条线程对其进行 lock 操作，但 lock 操作可以被同一条线程重复执行多次，多次执行 lock 后，只有执行相同次数的 unlock 操作，变量才会被解锁。
+- 如果对一个变量执行 lock 操作，那将会**清空工作内存中此变量的值**，在执行引擎使用个变量前，需要重新执行 load 或 assign 操作以初始化变量的值。
+- 如果一个变量事先没有被 lock 操作锁定，那就不允许对它执行 unlock 操作，也不允许去 unlock 一个被其他线程锁定的变量。
+- 对一个变量执行 unlock 操作之前，必须先把此变量同步回主内存中（执行 store、write 操作）。
+
+
+## 原子性
+
+1）原子性：指一个操作是不可打断的，即多线程环境下，操作不能被其他线程干扰
+
+> #《深入理解Java虚拟机》 
+> 
+> 由 Java 内存模型来直接保证的原子性变量操作包括 read、load、assign、use、store 和 write 这六个，我们大致可以认为，**基本数据类型的访问、读写都是具备原子性的**（例外就是 long 和 double 的非原子性协定，读者只要知道这件事情就可以了，无须太过在意这些几乎不会发生的例外情况）
+> 
+> 如果应用场景需要一个更大范围的原子性保证（经常会遇到），Java 内存模型还提
+> 供了 lock 和 unlock 操作来满足这种需求，尽管虚拟机未把 lock 和 unlock 操作直接开放给用户使用，但是却提供了更高层次的**字节码指令 monitorenter 和 monitorexit 来隐式地使用这两个操作**。这两个字节码指令反映到 Java 代码中就是同步块——**synchronized 关键字**，因此在 synchronized 块之间的操作也具备原子性。
+
 ## 可见性
 
+定义：当一个线程修改了某一个共享变量的值，其他线程是否能够**立即**知道该变更。
+
+> #Bo 在不使用 volatile 关键字的情况下，有哪些情况会导致线程的工作内存失效，然后必须重新去读取主存的共享变量？
+> 
+> - 线程中释放锁时
+> - 线程切换时
+> - CPU有空闲时间时（比如线程休眠时）
+> 
+> 参考：[多线程中主存与线程工作空间同步数据的时机_线程在读取一个静态变量后,什么时候再次同步主内存的数据-CSDN博客](https://blog.csdn.net/Hellowenpan/article/details/103202898)
+
 ### 退不出的循环
+
+main 线程对 run 变量的修改对于 t 线程**不可见**，导致了 t 线程无法停止
 
 ```java
  static boolean run = true;
@@ -2260,75 +2361,1483 @@ public static void main(String[] args) throws InterruptedException {
 }
 ```
 
-> #todo while 里面不能有输出，sout 里面有同步代码块
+> #todo while 里面加入 sout，线程就停止了
+> - 第一种说法（不靠谱）：`println()` 方法内有同步块，但是 run 变量没在同步块里面啊？
+> - 第二种说法：IO 操作会阻塞线程 t，上下文切换回来后，t 会重新读取主存的值
+
+分析：
+
+- 初始状态，t 线程刚开始从主内存读取了 run 的值到工作内存。
+- 因为 t 线程要频繁从主内存中读取 run 的值，**JIT 编译器**会将 run 的值缓存至自己工作内存中的高速缓存中，减少对主存中 run 的访问，提高效率
+- 1 秒之后，main 线程修改了 run 的值，并同步至主存，而 t 是从自己工作内存中的高速缓存中读取这个变量的值，结果永远是旧值
+
+> #Bo 不是一开始就缓存，执行到一定次数后缓存，所以主线程要 `sleep(1)`，不然 t 线程会停下来
+
+![|500](assets/Pasted%20image%2020240309225817.png)
+
+### 解决办法
+
+> #《深入理解Java虚拟机》 
+> 
+> - volatile 保证了多线程操作时变量的可见性
+> 
+> - synchronized 的可见性是由“**对一个变量执行 unlock 操作之前，必须先把此变量同步回主内存中（执行 store、write 操作）**”这条规则获得的
+> 
+> - final 关键字的可见性是指：被 final 修饰的字段**在构造器中一旦被初始化完成**，并且构造器没有把“this”的引用传递出去（this 引用逃逸是一件很危险的事情，其他线程有可能通过这个引用访问到“初始化了一半”的对象），那么**在其他线程中就能看见 final 字段的值**
+
+## 有序性
+
+JVM 会在不影响正确性的前提下，可以调整语句的执行顺序
+
+> #《深入理解Java虚拟机》 
+> 
+> Java 程序中**天然的有序性**：如果在本线程内观察，所有的操作都是有序的；如果在一个线程中观察另一个线程，所有的操作都是无序的。
+> 
+> - 前半句是指“线程内似表现为串行的语义”，
+> - 后半句是指“**指令重排序**”现象和“**工作内存与主内存同步延迟**”现象。
+
+
+在某些情况下要**禁止**指令重排序
+- 单线程环境里能够确保程序最终执行结果和代码顺序执行的结果一致。处理器在进行重排序时==必须要考虑==指令之间的**数据依赖性**。
+- 多线程环境中线程交替执行，由于**编译器优化重排**的存在，两个线程中使用的变量能否保证一致性是==无法确定的==，结果无法预测。
+
+> #JavaGuide 
+> 
+> 编译器和处理器的“指令重排序”的处理方式不一样。
+> - 对于编译器，通过禁止特定类型的编译器重排序的方式来禁止重排序。
+> - 对于处理器，通过插入内存屏障（Memory Barrier，或有时叫做内存栅栏，Memory Fence）的方式来禁止特定类型的处理器重排序。指令并行重排 和 内存系统重排 都属于是处理器级别的指令重排序。
+
+### 指令级并行原理
+
+#todo 
+
+### 指令重排序
+
+指令的重排序：Java 规范规定 JVM 线程内部维持顺序化语义，即只要 **程序的最终结果 与 它顺序化执行的结果相等**，那么 指令的执行顺序 可以与 代码顺序 不一致
+
+> Java 源码到最终执行：源代码-->编译器优化的重排-->指令并行的重排-->内存系统的重排-->最终执行的指令
+
+优缺点：
+
+- JVM 能根据处理器特性（CPU 多级缓存系统、多核处理器等）适当的对机器指令进行重排序，使机器指令能更符合 CPU 的执行特性，最大限度的**发挥机器性能**。
+- 但是，指令重排可以**保证串行语义一致**，但**不保证多线程间的语义也一致**
+
+> #JavaGuide 
+> 
+> 常见的指令重排序有下面 2 种情况：
+> - *编译器优化重排*：编译器（包括 JVM、JIT 编译器等）在**不改变单线程程序语义**的前提下，重新安排语句的执行顺序。
+> - *指令并行重排*：现代处理器采用了指令级并行技术(Instruction-Level Parallelism，ILP)来将多条指令重叠执行。如果**不存在数据依赖性**，处理器可以改变语句对应机器指令的执行顺序。
+
+### 诡异的结果
+
+结果可能是 0：线程2 执行 `ready = true`，切换到线程 1，进入 if 分支，相加为 0，再切回线程 2 执行 num = 2。这种现象叫做指令重排
+
+> 线程切换到 1，会重新从贮存中读取 ready
+
+```java
+int num=0;
+boolean ready = false;
+
+// 线程1 执行此方法
+public void actor1(I_Result r) {
+	if(ready) {
+		r.r1 = num + num;
+	} else {
+		r.r1 = 1;
+	}
+}
+
+// 线程2 执行此方法
+public void actor2(I_Result r) { 
+	num = 2;
+	ready = true; 
+}
+```
+
+
+
+> #todo 并发工具复现错误
+
+### 解决方法
+
+volatile 修饰的变量，可以禁用指令重排
+
+> #《深入理解Java虚拟机》 
+> 
+> Java 语言提供了 volatile 和 synchronized 两个关键字来保证**线程之间操作的有序性**，
+> 
+> - volatile 关键字本身就包含了**禁止指令重排序**的语义，
+> - synchronized 由“一个变量在同一个时刻只允许一条线程对其进行 lock 操作”这条规则获得的，这个规则决定了**持有同一个锁的两个同步块只能串行地进入**
+> - final
+
+> #todo synchronized无法禁用同步块内部的指令重排
+
+## happens-before
+
+happens-before 规定了对共享变量的写操作对其它线程的读操作可见，它是**可见性与有序性**的一套规则总结
+
+抛开以下 happens-before 规则，JMM 并不能保证一个线程对共享变量的写，对于其它线程对该共享变量的读可见
+
+- 线程解锁 m 之前对变量的写，对于接下来对 m 加锁的其它线程对该变量的读可见
+
+```java
+static int x;
+static Object m = new Object();
+
+new Thread(()->{
+	synchronized(m) {
+		x = 10;
+	}
+},"t1").start();
+
+new Thread(()->{
+	synchronized(m) {
+		System.out.println(x);
+	}
+},"t2").start();
+```
+
+- 线程对 volatile 变量的写，对接下来其它线程对该变量的读可见
+
+```java
+volatile static int x;
+
+new Thread(()->{
+	x = 10;
+},"t1").start();
+
+new Thread(()->{
+	System.out.println(x);
+},"t2").start();
+```
+
+- 线程 start 前对变量的写，对该线程开始后对该变量的读可见
+
+```java
+static int x;
+x = 10;
+
+new Thread(()->{
+	System.out.println(x);
+},"t2").start();
+```
+
+- 线程结束前对变量的写，对其它线程得知它结束后的读可见（比如其它线程调用 t1.isAlive() 或 t1.join()等待它结束）
+
+```java
+static int x;
+
+Thread t1 = new Thread(()->{
+	x = 10;
+},"t1");
+t1.start();
+
+t1.join();
+System.out.println(x);
+```
+
+- 线程 t1 打断 t2（interrupt）前对变量的写，对于其他线程得知 t2 被打断后对变量的读可见（通过 t2.interrupted 或 t2.isInterrupted）
+
+```java
+static int x;
+
+public static void main(String[] args) {
+	Thread t2 = new Thread(()->{
+		while(true) {
+			if(Thread.currentThread().isInterrupted()) {
+				System.out.println(x);
+				break;
+			}
+		}
+	},"t2");
+	t2.start();
+	
+	new Thread(()->{
+		sleep(1);
+		x = 10;
+		t2.interrupt();
+	},"t1").start();
+	
+	while(!t2.isInterrupted()) {
+		Thread.yield();
+	}
+	
+	System.out.println(x);
+}
+```
+
+- 对变量默认值（0，false，null）的写，对其它线程对该变量的读可见
+
+- 具有传递性，如果 x hb-> y 并且 y hb-> z 那么有 x hb-> z ，配合 volatile 的防指令重排，有下面的例子
+
+```java
+volatile static int x;
+static int y;
+
+new Thread(()->{ 
+	y = 10;
+	x = 20;
+},"t1").start();
+
+new Thread(()->{
+	// x=20 对 t2 可见, 同时 y=10 也对 t2 可见
+	System.out.println(x); 
+},"t2").start();
+```
+
+
+
+
+
+
+## volatile
+
+volatile（易变关键字）：
+
+- 可以用来修饰**成员变量**和**静态成员变量**，
+- 可以避免线程从自己的工作缓存中查找变量的值，必须到主存中获取它的值，线程操作 volatile 变量都是直接操作主存
+
+被 volatile 修饰的变量特点：
+
+1. 可见性
+2. 有序性：有排序要求，有时需要禁重排
+3. 不保证原子性
+
+内存语义：
+- 写 volatile 变量时，线程对应的本地内存中的**共享变量值立即刷新回主内存中**
+- 读 volatile 变量时，线程对应的本地内存设置为无效，**重新回到主内存中读取最新共享变量的值**
+
+
+### 原理
+
+> 代码参考[诡异的结果](#诡异的结果)
+
+volatile 的底层实现原理是【内存屏障】（Memory Barrier/Memory Fence）
+
+- 对 volatile 变量的写指令**后**会加入写屏障
+- 对 volatile 变量的读指令**前**会加入读屏障
+
+#### 保证可见性
+
+- 写屏障（sfence）保证在该屏障**之前**的，对共享变量的改动，都同步到主存当中
+- 读屏障（lfence）保证在该屏障**之后**，对共享变量的读取，加载的是主存中最新数据
+
+```java
+boolean volatile ready;
+
+public void actor2(I_Result r) {
+	num = 2;
+	ready = true; // ready 是 volatile 赋值带写屏障
+	// 写屏障
+}
+
+public void actor1(I_Result r) {
+	// 读屏障
+	// ready 是 volatile 读取值带读屏障
+	if(ready) {
+		r.r1 = num + num;
+	} else {
+		r.r1 = 1;
+	}
+}
+```
+
+![|600](assets/Pasted%20image%2020240310125710.png)
+
+#### 保证有序性
+
+- 写屏障会确保指令重排序时，不会将写屏障**之前**的代码排在写屏障之后
+- 读屏障会确保指令重排序时，不会将读屏障**之后**的代码排在读屏障之前
+
+![|600](assets/Pasted%20image%2020240310130758.png)
+
+不能解决指令交错：
+
+- 写屏障仅仅是保证之后的读能够读到最新的结果，但**不能保证读跑到它前面去**
+- 而有序性的保证也只是保证了**本线程内**相关代码不被重排序
+
+![|500](assets/Pasted%20image%2020240310132745.png)
+
+#### 不保证原子性
+
+> #《深入理解Java虚拟机》 
+> 
+> Java 里面的运算操作符并非原子操作，这导致 volatile 变量的运算在并发下一样是不安全的
+
+> 无原子性演示：
+
+```java
+public class VolatileSeeDemo2 {
+    public volatile static int inc;
+
+    public static void addPlusPlus() {
+        inc++;
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        for (int i = 0; i < 10; i++) {
+            new Thread(() -> {
+                for (int j = 0; j < 1000; j++) {
+                    addPlusPlus();
+                }
+            }).start();
+        }
+
+        Thread.sleep(3000);
+        log.debug("inc: {}", inc);
+        // 13:40:18.597 [main] DEBUG cn.itcast.n5.VolatileSeeDemo2 - inc: 7758
+    }
+}
+```
+
+`inc++` 其实是一个复合操作，包括三步：
+
+1. 读取 inc 的值。
+2. 对 inc 加 1。
+3. 将 inc 的值写回内存
+
+volatile 是无法保证这三个操作是具有原子性的，可能导致两个线程分别对 inc 进行了一次自增操作后，inc 实际上只增加了 1
+
+改进方式：
+
+```java
+//synchronized
+public synchronized void increase() {
+    inc++;
+}
+
+//AtomicInteger
+public AtomicInteger inc = new AtomicInteger();
+
+public void increase() {
+    inc.getAndIncrement();
+}
+
+//ReentrantLock
+Lock lock = new ReentrantLock();
+public void increase() {
+    lock.lock();
+    try {
+        inc++;
+    } finally {
+        lock.unlock();
+    }
+}
+```
+
+### double-checked locking
+
+以著名的 double-checked locking 单例模式为例，它的实现特点：
+
+- 懒惰实例化
+- 首次使用 `getInstance()` 才使用 synchronized 加锁，后续使用时无需加锁
+- `INSTANCE == null` 是在同步块之外，INSTANCE 用 **volatile** 修饰保证有序性
+
+```java
+public final class Singleton {
+    private Singleton() {}
+
+    private static volatile Singleton INSTANCE = null;
+
+    public static Singleton getInstance() {
+        // 实例没创建，才会进入内部的 synchronized代码块
+        if (INSTANCE == null) {
+            synchronized (Singleton.class) {
+                // 也许有其它线程已经创建实例，所以再判断一次
+                if (INSTANCE == null) {
+                    INSTANCE = new Singleton();
+                }
+            }
+        }
+        return INSTANCE;
+    }
+}
+```
+
+---
+`getInstance()` 的字节码如下
+
+```java
+0: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+// Singleton不为null，跳转37
+3: ifnonnull 37 
+// 获得类对象Singleton.class
+6: ldc #3 // class cn/itcast/n5/Singleton 
+8: dup
+9: astore_0
+10: monitorenter
+11: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+14: ifnonnull 27
+17: new #3 // class cn/itcast/n5/Singleton
+20: dup
+21: invokespecial #4 // Method "<init>":()V
+24: putstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+27: aload_0
+28: monitorexit
+29: goto 37
+32: astore_1
+33: aload_0
+34: monitorexit
+35: aload_1
+36: athrow
+37: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+40: areturn
+```
+
+> - 17 表示创建对象，将对象引用入栈 // new Singleton
+> - 20 表示复制一份对象引用 // 引用地址
+> - 21 表示利用一个对象引用，调用构造方法
+> - 24 表示利用一个对象引用，赋值给 static INSTANCE
+
+也许 jvm 会优化为：先执行 24，再执行 21
+
+- t1 执行了 24，INSTANCE 变量中已经有地址值
+- t1 还未执行 21，即没调用构造方法
+- t2 执行 0，发现 `INSTANCE!=null`，t2 将拿到一个**未初始化完毕的单例**
+
+![|700](assets/Pasted%20image%2020240310150852.png)
+
+对 INSTANCE 使用 volatile 修饰即可，可以禁用指令重排
+- 24 带写屏障，24 前的 21 就不可以排到 24 后面
+
+> 字节码上看不出来 volatile 指令的效果
+
+```java
+-------------------------------------> 加入对 INSTANCE 变量的读屏障
+0: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+3: ifnonnull 37
+6: ldc #3 // class cn/itcast/n5/Singleton
+8: dup
+9: astore_0
+10: monitorenter -----------------------> 保证原子性、可见性
+11: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+14: ifnonnull 27
+17: new #3 // class cn/itcast/n5/Singleton
+20: dup
+21: invokespecial #4 // Method "<init>":()V
+24: putstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+-------------------------------------> 加入对 INSTANCE 变量的写屏障
+27: aload_0
+28: monitorexit ------------------------> 保证原子性、可见性
+29: goto 37
+32: astore_1
+33: aload_0
+34: monitorexit
+35: aload_1
+36: athrow
+37: getstatic #2 // Field INSTANCE:Lcn/itcast/n5/Singleton;
+40: areturn
+```
+
+![|700](assets/Pasted%20image%2020240310153225.png)
+
+### ~~内存屏障~~
+
+> 内存屏障是什么？
+
+内存屏障（也称内存栅栏，屏障指令等）是一类**同步屏障指令**，是CPU或编译器在对内存随机访问的操作中的一个同步点，使得此点之前的所有读写操作都执行后才可以开始执行此点之后的操作，避免代码重排序。
+
+内存屏障其实就是一种**JVM指令**，Java内存模型的重排规则会要求==Java编译器在生成JVM指令时插入特定的内存屏障指令==，通过这些内存屏障指令，volatile实现了Java内存模型中的可见性和有序性（禁重排），但==volatile无法保证原子性==
+- 内存屏障**之前**的所有**写操作**都要回写到主内存
+- 内存屏障**之后**的所有**读操作**都能获得内存屏障之前的所有写操作的最新结果（可见性）
+
+~~写屏障（Store Memory Barrier）：~~
+- ~~告诉处理器在写屏障之前将所有存储在缓存(store buffers)中的数据同步到主内存，~~
+- ~~也就是说当看到**Store屏障指令**，就必须把该指令之前的所有写入指令执行完毕才能继续往下执行~~
+
+~~读屏障（Load Memory Barrier）：~~
+- ~~处理器在读屏障之后的读操作，都在读屏障之后执行。~~
+- ~~也就是说在**Load屏障指令**之后就能够保证后面的读取数据指令一定能够读取到最新的数据。 |~~
+
+重排序时，==不允许把内存屏障之后的指令重排序到内存屏障之前==。
+
+一句话：对一个volatile变量的写，先行发生于任意后续对这个volatile变量的读，也叫写后读
+
+> 内存屏障分类
+
+粗分两种：
+- 读屏障（Load Barrier）：在==读指令之前插入读屏障==，让工作内存或CPU高速缓存 当中的缓存数据失效，重新回到主内存中获取最新数据。
+- 写屏障（Store Barrier）：在==写指令之后插入写屏障==，强制把缓冲区的数据刷回到主内存中。
+
+> 内存屏障禁重排--->保证有序性
+
+- 重排序有可能影响程序的执行和实现，因此，我们有时候希望告诉JVM别自动重排序，我这里不需要重排序，一切听我的。
+- 对于编译器的重排序，JMM会根据重排序的规则，禁止特定类型的编译器重排序
+- 对于处理器的重排序，Java编译器在生成指令序列的适当位置，插入内存屏障指令，来禁止特定类型的处理器排序。
+
+> happens-before之volatile变量规则
+
+| 第一个操作 | 第二个操作：普通读写 | 第二个操作：volatile读 | 第二个操作：volatile写 |
+| ---- | ---- | ---- | ---- |
+| 普通读写 | 可以重排 | 可以重排 | 不可以重排 |
+| volatile读 | 不可以重排 | 不可以重排 | 不可以重排 |
+| volatile写 | 可以重排 | 不可以重排 | 不可以重排 |
+
+- 当第一个操作为volatile读时，不论第二个操作是什么，都不能重排序，这个操作保证了volatile读之后的操作不会被重排到volatile读之前。
+- 当第一个操作为volatile写，第二个操作为volatile读时，不能重排
+- 当第二个操作为volatile写时，不论第一个操作是什么，都不能重排序
+	- 这个操作保证了volatile写之前的操作不会被重排到volatile写之后
+
+> JMM就将内存屏障插入策略分为4种规则
+
+| **屏障类型** | **指令示例** | **说明** |
+| ---- | ---- | ---- |
+| LoadLoad | Load1;LoadLoad;Load2 | 保证Load1的读取操作在Load2及后续读取操作之前执行 |
+| StoreStore | Store1;StoreStore;Store2 | 在store2及其后的写操作执行前，保证Store1的写操作已经刷新到主内存 |
+| LoadStore | Load1;LoadStore;Store2 | 在Store2及其后的写操作执行前，保证Load1的读操作已经结束 |
+| StoreLoad | Store1;StoreLoad;Load2 | 保证Store1的写操作已经刷新到主内存后，Load2及其后的读操作才能执行 |
+
+读屏障：在每个volatile**读**操作的**后面**插入一个
+- LoadLoad屏障：禁止处理器把上面的volatile读与下面的普通读重排序。
+- LoadStore屏障：禁止处理器把上面的volatile读与下面的普通写重排序。
+
+![](assets/Pasted%20image%2020240108174829.png)
+
+写屏障：在每个volatile**写**操作的
+- **前面**插入StoreStore屏障：保证在volatile写之前，其前面的所有普通写操作都已经刷新到主内存中
+- **后面**插入StoreLoad屏障：避免volatile写与后面可能有的volatile读/写操作重排序
+
+![](assets/Pasted%20image%2020240108175107.png)
+
+### 如何正确使用 volatile ？
+
+> 单一赋值可以，但是含复合运算赋值不可以（i++之类的）
+
+- volatile int a = 10;
+- volatile boolean flag = true;
+
+> 状态标志，判断业务是否结束
+
+```java
+public class VolatileSeeDemo {
+
+	// 状态标志
+    static volatile boolean flag = true;
+
+    public static void main(String[] args) {
+        new Thread(() -> {
+            System.out.println(Thread.currentThread().getName() + "\t-------come in");
+            while (flag) {
+				// 业务
+            }
+            System.out.println(Thread.currentThread().getName() + "\t-------flag被设置为false，程序停止");
+        }, "t1").start();
+
+        try {
+            TimeUnit.SECONDS.sleep(2);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        // 更新标志位
+        flag = false;
+    }
+}
+```
+
+> 开销较低的读，写锁策略
+
+当读远多于写，结合使用内部锁和 volatile 变量来==减少同步的开销==
+- 利用 volatile 保证读取操作的可见性
+- 用 synchronized 保证复合操作的原子性
+
+```java
+private volatile int value =0;
+
+public int getValue(){
+    return value;
+}
+
+public synchronized int setValue(){
+    return value++;
+}
+```
+
+### 字节码层面理解 volatile
+
+凭什么我们Java写了一个volatile关键字，系统底层加入内存屏障？两者的关系如何勾搭？
+
+![](assets/Pasted%20image%2020240109140623.png)
+
+## 习题
+
+#todo balking 模式习题
+
+#todo 线程安全单例习题
+
+# ---------- 共享模型_无锁
+
+## CAS
+
+### 引出
+
+要保证 withdraw() 取款方法的线程安全
+
+```java
+interface Account {
+    // 获取余额
+    Integer getBalance();
+
+    // 取款
+    void withdraw(Integer amount);
+
+    /**
+     * 方法内会启动 1000 个线程，每个线程做 -10 元 的操作
+     * 如果初始余额为 10000 那么正确的结果应当是 0
+     */
+    static void demo(Account account) {
+        List<Thread> ts = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            ts.add(new Thread(() -> {
+                account.withdraw(10);
+            }));
+        }
+        long start = System.nanoTime();
+        ts.forEach(Thread::start);
+        ts.forEach(t -> {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+        long end = System.nanoTime();
+        System.out.println(account.getBalance()
+                + " cost: " + (end-start)/1000_000 + " ms");
+    }
+}
+
+class AccountUnsafe implements Account {
+
+    private Integer balance;
+
+    public AccountUnsafe(Integer balance) {
+        this.balance = balance;
+    }
+
+    @Override
+    public Integer getBalance() {
+        synchronized (this) {
+            return this.balance;
+        }
+    }
+
+    @Override
+    public void withdraw(Integer amount) {
+        synchronized (this) {
+            this.balance -= amount;
+        }
+    }
+
+	public static void main(String[] args) {
+        Account account = new AccountUnsafe(10000);
+        Account.demo(account);
+        //330 cost: 306 ms
+    }
+}
+```
+
+原有实现并不是线程安全的，无锁解决，AtomicInteger
+
+```java
+class AccountCas implements Account {
+    private AtomicInteger balance;
+
+    public AccountCas(int balance) {
+        this.balance = new AtomicInteger(balance);
+    }
+
+    @Override
+    public Integer getBalance() {
+        return balance.get();
+    }
+
+    @Override
+    public void withdraw(Integer amount) {
+        while(true) {
+            // 获取余额的最新值
+            int prev = balance.get();
+            // 要修改的余额
+            int next = prev - amount;
+            // 真正修改
+            if(balance.compareAndSet(prev, next)) {
+                break;
+            }
+        }
+        // 可以简化为下面的方法
+        // balance.getAndAdd(-1 * amount);
+    }
+}
+```
+
+---
+> AtomicInteger 的解决方法，内部并没有用锁来保护共享变量的线程安全，
+
+其中的关键是 `compareAndSet()`，它的简称就是 CAS （也有 Compare And Swap 的说法），用于实现**乐观锁**
+
+CAS 是一个**原子操作**
+
+> 原子操作 即最小不可拆分的操作，也就是说操作一旦开始，就不能被打断，直到操作完成。
+> 
+> CAS底层依赖一条原子指令 lock cmpxchg 指令（X86 架构），在单核 CPU 和**多核** CPU 下都能够保证【比较-交换】的原子性。
+> 
+> - 在多核状态下，某个核执行到带 lock 的指令时，CPU 会让总线锁住，当这个核把此指令执行完毕，再开启总线。这个过程中不会被线程的调度机制所打断，保证了多个线程对内存操作的准确性，是原子的
+
+CAS 涉及到三个操作数：
+
+- **V**：要更新的变量值(Var)
+- **E**：预期值(Expected)
+- **N**：拟写入的新值(New)
+
+思想：用 E 和 V 比较，相等用 N 更新 V。如果不等，说明已经有其它线程更新了 V
+
+![|500](assets/Pasted%20image%2020240310174629.png)
+
+### CAS 与 volatile
+
+> 获取共享变量时，为了保证该变量的可见性，需要使用 volatile 修饰。
+> 
+> 它可以用来修饰成员变量和静态成员变量，他可以避免线程从自己的工作缓存中查找变量的值，必须到主存中获取它的值，线程操作 volatile 变量都是直接操作主存。即一个线程对 volatile 变量的修改，对另一个线程可见。
+
+volatile 仅仅保证了共享变量的可见性，让其它线程能够看到最新值，但**不能解决【指令交错】** 问题（不能保证原子性）
+
+CAS 必须**借助 volatile** 才能读取到共享变量的最新值来实现【比较并交换】的效果
+
+### 无锁效率高的原因
+
+无锁情况下，即使重试失败，**线程始终在高速运行，没有停歇**，而 synchronized 会让线程在没有获得锁的时候，发生上下文切换，进入阻塞。
+
+> 打个比喻线程就好像高速跑道上的赛车，高速运行时，速度超快，一旦发生上下文切换，就好比赛车要减速、熄火，等被唤醒又得重新打火、启动、加速... 恢复到高速运行，代价比较大
+
+但无锁情况下，因为线程要保持运行，需要额外 CPU 的支持，CPU 在这里就好比高速跑道，**没有额外的跑道**，线程想高速运行也无从谈起，虽然不会进入阻塞，但由于没有分到时间片，仍然会进入可运行状态，**还是会导致上下文切换**。
+
+> #Bo 空间换时间
+
+### CAS 特点
+
+> - CAS 是基于**乐观锁**的思想：最乐观的估计，不怕别的线程来修改共享变量，就算改了也没关系，我吃亏点再重试呗
+> - synchronized 是基于**悲观锁**的思想：最悲观的估计，得防着其它线程来修改共享变量，我上了锁你们都别想改，我改完了解开锁，你们才有机会
+
+结合 CAS 和 volatile 可以
+
+- 实现无锁并发、无阻塞并发
+	- 没有使用 synchronized，线程不会陷入阻塞，这是效率提升的因素之一
+- 适用场景：**线程数少、多核 CPU**
+- 但如果竞争激烈，可以想到重试必然频繁发生，反而效率会受影响
+
+## 基本类型原子类
+
+J.U.C 并发包提供了：
+
+- AtomicBoolean
+- AtomicInteger
+- AtomicLong
+
+> 以 AtomicInteger 为例
+
+```java
+AtomicInteger i = new AtomicInteger(0);
+
+// 获取并自增（i = 0, 结果 i = 1, 返回 0），类似于 i++
+System.out.println(i.getAndIncrement());
+
+// 自增并获取（i = 1, 结果 i = 2, 返回 2），类似于 ++i
+System.out.println(i.incrementAndGet());
+
+// 自减并获取（i = 2, 结果 i = 1, 返回 1），类似于 --i
+System.out.println(i.decrementAndGet());
+
+// 获取并自减（i = 1, 结果 i = 0, 返回 1），类似于 i--
+System.out.println(i.getAndDecrement());
+
+// 获取并加值（i = 0, 结果 i = 5, 返回 0）
+System.out.println(i.getAndAdd(5));
+
+// 加值并获取（i = 5, 结果 i = 0, 返回 0）
+System.out.println(i.addAndGet(-5));
+
+// 获取并更新（i = 0, p 为 i 的当前值, 结果 i = -2, 返回 0）
+// 其中函数中的操作能保证原子，但函数需要无副作用
+System.out.println(i.getAndUpdate(p -> p - 2));
+
+// 更新并获取（i = -2, p 为 i 的当前值, 结果 i = 0, 返回 0）
+// 其中函数中的操作能保证原子，但函数需要无副作用
+System.out.println(i.updateAndGet(p -> p + 2));
+
+// 获取并计算（i = 0, p 为 i 的当前值, x 为参数1, 结果 i = 10, 返回 0）
+// 其中函数中的操作能保证原子，但函数需要无副作用
+// getAndUpdate 如果在 lambda 中引用了外部的局部变量，要保证该局部变量是 final 的
+// getAndAccumulate 可以通过 参数1 来引用外部的局部变量，但因为其不在 lambda 中因此不必是 final
+System.out.println(i.getAndAccumulate(10, (p, x) -> p + x));
+
+// 计算并获取（i = 10, p 为 i 的当前值, x 为参数1, 结果 i = 0, 返回 0）
+// 其中函数中的操作能保证原子，但函数需要无副作用
+System.out.println(i.accumulateAndGet(-10, (p, x) -> p + x));
+```
+
+getAndUpdate 的源码
+
+- IntUnaryOperator 是一个函数式接口
+- 通过 `compareAndSet()` 更新 value
+
+```java
+public final int getAndUpdate(IntUnaryOperator updateFunction) {  
+    int prev, next;  
+    do {  
+        prev = get();  
+        next = updateFunction.applyAsInt(prev);  
+    } while (!compareAndSet(prev, next));  
+    return prev;  
+}
+```
+
+getAndAccumulate 的源码
+
+- IntBinaryOperator 也是一个函数式接口，抽象方法比 IntUnaryOperator 中的多一个参数 x
+
+```java
+public final int getAndAccumulate(int x,  
+                                  IntBinaryOperator accumulatorFunction) {  
+    int prev, next;
+    do {  
+        prev = get();  
+        next = accumulatorFunction.applyAsInt(prev, x);  
+    } while (!compareAndSet(prev, next));  
+    return prev;  
+}
+```
+
+## 原子引用
+
+J.U.C 并发包提供了：
+
+- `AtomicReference<V>`
+- AtomicMarkableReference
+- AtomicStampedReferenc
+
+作用：自定义其他原子类型
+
+### AtomicReference
+
+> 演示：多线程，每个线程对 BigDecimal 类型的 balance 减 10，初值为 10000 减为 0
+
+```java
+public class DecimalAccountCas {
+    private AtomicReference<BigDecimal> balance;
+
+    public DecimalAccountCas(BigDecimal balance) {
+        this.balance = new AtomicReference<>(balance);
+    }
+
+    public BigDecimal getBalance() {
+        return balance.get();
+    }
+
+    public void withdraw(BigDecimal amount) {
+        while(true) {
+            BigDecimal prev = balance.get();
+            BigDecimal next = prev.subtract(amount);
+            if (balance.compareAndSet(prev, next)) {
+                break;
+            }
+        }
+    }
+
+    public static void main(String[] args) {
+        DecimalAccountCas account = new DecimalAccountCas(new BigDecimal(10000));
+
+        List<Thread> ts = new ArrayList<>();
+        for (int i = 0; i < 1000; i++) {
+            ts.add(new Thread(() -> {
+                account.withdraw(BigDecimal.TEN);
+            }));
+        }
+        ts.forEach(Thread::start);
+        ts.forEach(t -> {
+            try {
+                t.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        System.out.println(account.getBalance()); //0
+    }
+}
+```
+
+---
+> #Bo BigDecimal 不是不可变的，线程安全的？
+
+不使用原子引用尝试一下
+
+```java
+public class DecimalAccountCas2 {
+    BigDecimal balance;
+
+    public DecimalAccountCas2(BigDecimal balance) {
+        this.balance = balance;
+    }
+
+    public BigDecimal getBalance() {
+        return balance;
+    }
+
+    public void withdraw(BigDecimal amount) {
+        balance = balance.subtract(amount);
+    }
+}
+```
+
+结果是>0，为什么呢？原子操作的组合？
+
+```java
+balance = balance.subtract(amount);
+
+// 等同于
+
+BigDecimal newBalance = balance.subtract(amount);  
+balance = newBalance;
+```
+
+### ABA
+
+```java
+static AtomicReference<String> ref = new AtomicReference<>("A");
+  
+public static void main(String[] args) throws InterruptedException {  
+	String prev = ref.get();
+	
+	other();
+	
+	sleep(1);
+	// 尝试改为 C
+	log.debug("change A->C {}", ref.compareAndSet(prev, "C"));
+}  
+  
+private static void other() {  
+    new Thread(() -> {
+		log.debug("change A->B {}", ref.compareAndSet(ref.get(), "B"));
+	}, "t1").start();
+
+	sleep(0.5);
+
+	new Thread(() -> {
+		log.debug("change B->A {}", ref.compareAndSet(ref.get(), "A"));
+	}, "t2").start();
+}
+
+11:29:52.379 c.Test36 [t1] - change A->B true 
+11:29:52.879 c.Test36 [t2] - change B->A true 
+11:29:53.880 c.Test36 [main] - change A->C true
+```
+
+主线程仅能判断出共享变量的值与最初值 A 是否相同，不能感知到这种**从 A 改为 B 又 改回 A** 的情况
+
+如果主线程希望：只要有其它线程【动过了】共享变量，那么自己的 cas 就算失败，这时，仅比较值是不够的，需要**再加一个版本号**
+
+### AtomicStampedReference
+
+AtomicStampedReference 可以给原子引用加上**版本号**，追踪原子引用整个的变化过程，知道引用变量中途被**更改了几次**
+
+> ABA 问题解决
+
+```java
+static AtomicStampedReference<String> ref = new AtomicStampedReference<>("A", 0);
+
+public static void main(String[] args) throws InterruptedException {
+	String prev = ref.getReference();
+	// 获取版本号
+	int stamp = ref.getStamp();
+	log.debug("版本 {}", stamp);
+	
+	// 中间有其它线程干扰，发生了 ABA 现象
+	other();
+	sleep(1);
+	
+	// 尝试改为 C
+	log.debug("change A->C {}", 
+		ref.compareAndSet(prev, "C", stamp, stamp + 1));
+}
+
+private static void other() {
+	new Thread(() -> {
+		log.debug("change A->B {}", 
+			ref.compareAndSet(ref.getReference(), "B", ref.getStamp(), ref.getStamp() + 1));
+		log.debug("更新版本为 {}", ref.getStamp());
+	}, "t1").start();
+	
+	sleep(0.5);
+	
+	new Thread(() -> {
+		log.debug("change B->A {}", ref.compareAndSet(ref.getReference(), "A", ref.getStamp(), ref.getStamp() + 1));
+		log.debug("更新版本为 {}", ref.getStamp());
+	}, "t2").start();
+}
+
+15:41:34.894 c.Test36 [main] - 版本 0 
+15:41:34.956 c.Test36 [t1] - change A->B true 
+15:41:34.956 c.Test36 [t1] - 更新版本为 1 
+15:41:35.457 c.Test36 [t2] - change B->A true 
+15:41:35.457 c.Test36 [t2] - 更新版本为 2 
+15:41:36.457 c.Test36 [main] - change A->C false
+```
+
+### AtomicMarkableReference
+
+> #todo 是否解决aba？
+> 
+> - 针对是否更改过，肯定是解决了
+
+有时候，并不关心引用变量更改了几次，只是单纯的关心**是否更改过**，所以就有了AtomicMarkableReference
+
+![|200](assets/Pasted%20image%2020240311114302.png)
+
+```java
+public class Test38 {
+    public static void main(String[] args) throws InterruptedException {
+        GarbageBag bag = new GarbageBag("装满了垃圾");
+        // 参数2 mark 可以看作一个标记，表示垃圾袋满了
+        AtomicMarkableReference<GarbageBag> ref = new AtomicMarkableReference<>(bag, true);
+
+        log.debug("start...");
+        GarbageBag prev = ref.getReference();
+        log.debug(prev.toString());
+
+        new Thread(() -> {
+            log.debug("start...");
+            bag.setDesc("空垃圾袋");
+            ref.compareAndSet(bag, bag, true, false);
+            log.debug(bag.toString());
+        },"保洁阿姨").start();
+
+        sleep(1);
+        log.debug("想换一只新垃圾袋？");
+        boolean success = ref.compareAndSet(prev, new GarbageBag("空垃圾袋"), true, false);
+        log.debug("换了么？" + success);
+        log.debug(ref.getReference().toString());
+    }
+}
+
+class GarbageBag {
+    String desc;
+
+    public GarbageBag(String desc) {
+        this.desc = desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() + " " + desc;
+    }
+}
+```
+
+## 原子数组
+
+- AtomicIntegerArray
+- AtomicLongArray
+- AtomicReferenceArray
+
+#todo 
+
+## 字段更新器
+
+- AtomicReferenceFieldUpdater // 域 字段
+- AtomicIntegerFieldUpdater
+- AtomicLongFieldUpdater
+
+#todo 
+
+## 原子累加器
+
+#todo 
+
+## Unsafe
+
+#todo 
+
+# ---------- 共享模型_不可变
+
+## 日期转换问题
+
+SimpleDateFormat 不是线程安全的
+
+```java
+SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+
+for (int i = 0; i < 10; i++) {
+	 new Thread(() -> {
+		 try {
+			 log.debug("{}", sdf.parse("1951-04-21"));
+		 } catch (Exception e) {
+			 log.error("{}", e);
+		 }
+	 }).start();
+}
+
+java.lang.NumberFormatException
+```
+
+同步锁解决问题，但带来的是性能上的损失
+
+```java
+new Thread(() -> {
+	 synchronized (sdf) {
+		 try {
+			 log.debug("{}", sdf.parse("1951-04-21"));
+		 } catch (Exception e) {
+			 log.error("{}", e);
+		 }
+	 }
+ }).start();
+```
+
+如果一个对象在**不能够修改其内部状态（属性）**，那么它就是线程安全的，因为不存在并发修改，例如在 Java 8 后，提供了一个新的日期格式化类
+
+```java
+DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+for (int i = 0; i < 10; i++) {
+	new Thread(() -> {
+		LocalDate date = dtf.parse("2018-10-01", LocalDate::from);
+		log.debug("{}", date);
+	}).start();
+}
+```
+
+## 不可变设计
+
+以 String 类为例
+
+> #JavaGuide `String` 不可变原因：
+> 
+> - 保存字符串的数组被 `final` 修饰且为私有的，并且 `String` 类**没有提供/暴露修改这个字符串的方法**。（相当于只读）
+> - `String` 类被 `final` 修饰导致其不能被继承，进而避免了子类破坏 `String` 不可变。
+
+### final 的使用
+
+- 所有属性用 final 修饰
+- 类用 final 修饰，防止子类无意间破坏不可变性
+
+```java
+public final class String  
+    implements java.io.Serializable, Comparable<String>, CharSequence {  
+    /** The value is used for character storage. */  
+    private final char value[];  
+  
+    /** Cache the hash code for the string */  
+    private int hash; // Default to 0
+}
+```
+
+### 保护性拷贝
+
+使用字符串时，也有一些跟修改相关的方法啊，比如 substring 等。
+
+substring 内部是调用 String 的构造方法创建了一个新字符串
+
+```java
+public String substring(int beginIndex) {
+	if (beginIndex < 0) {
+		throw new StringIndexOutOfBoundsException(beginIndex);
+	}
+	int subLen = value.length - beginIndex;
+	if (subLen < 0) {
+		throw new StringIndexOutOfBoundsException(subLen);
+	}
+	return (beginIndex == 0) ? this : new String(value, beginIndex, subLen);
+}
+```
+
+构造新字符串对象时，会生成新的 `char[] value`，对内容进行复制。这种通过创建副本对象来避免共享的手段称之为【**保护性拷贝**（defensive copy）】
+
+```java
+public String(char value[], int offset, int count) {  
+    if (offset < 0) {  
+        throw new StringIndexOutOfBoundsException(offset);  
+    }  
+    if (count <= 0) {  
+        if (count < 0) {  
+            throw new StringIndexOutOfBoundsException(count);  
+        }  
+        if (offset <= value.length) {  
+            this.value = "".value;  
+            return;  
+        }  
+    }  
+    // Note: offset or count might be near -1>>>1.  
+    if (offset > value.length - count) {  
+        throw new StringIndexOutOfBoundsException(offset + count);  
+    }  
+    this.value = Arrays.copyOfRange(value, offset, offset+count);  
+}
+```
+
+考虑到不可变类需要频繁创建对象，一般都会关联一种设计模式【享元模式】
+
+## final 原理
+
+### 设置 final 变量的原理
+
+final 变量的赋值也会通过 putfield 指令来完成，同样在这条指令之后也会加入**写屏障**，保证在其它线程读到它的值时不会出现为 0 的情况
+
+> #《深入理解Java虚拟机》 
+> 
+> final 关键字的**可见性**是指：被final 修饰的字段在**构造器中一旦被初始化完成**，并且构造器没有把“this”的引用传递出去（this 引用逃逸是一件很危险的事情，其他线程有可能通过这个引用访问到“初始化了一半”的对象），那么**在其他线程中就能看见 final 字段的值** 
+
+```java
+public class TestFinal {
+	final int a = 20;
+}
+
+0: aload_0
+1: invokespecial #1 // Method java/lang/Object."<init>":()V
+4: aload_0
+5: bipush 20
+7: putfield #2 // Field a:I
+ <-- 写屏障
+10: return
+```
+
+### 获取 final 变量的原理
+
+#todo 
+
+## 无状态
+
+在 web 阶段学习时，设计 Servlet 时为了保证其线程安全，都会有这样的建议，不要为 Servlet 设置成员变量
+
+这种没有**任何成员变量的类**是线程安全的
+
+# ---------- 线程池
+
+## 自定义线程池
+
+![|600](assets/Pasted%20image%2020240312131843.png)
+
+> #todo 自己实现
+
+## ThreadPoolExecutor
+
+![|500](assets/Pasted%20image%2020240312145505.png)
+
+### 线程池状态
+
+ThreadPoolExecutor 使用 int 的高 3 位来表示线程池状态，低 29 位表示线程数量
+
+![|600](assets/Pasted%20image%2020240312145604.png)
+
+> 从数字上比较（第一位是符号位），TERMINATED > TIDYING > STOP > SHUTDOWN > RUNNING
+
+线程池状态与线程个数存储在一个**原子变量** ctl 中，这样就可以用**一次 cas 原子操作**进行赋值
+
+```java
+// c 为旧值， ctlOf 返回结果为新值
+ctl.compareAndSet(c, ctlOf(targetState, workerCountOf(c))));
+
+// rs 为高 3 位代表线程池状态， wc 为低 29 位代表线程个数，ctl 是合并它们
+private static int ctlOf(int rs, int wc) { return rs | wc; }
+```
+
+### 构造方法
+
+```java
+public ThreadPoolExecutor(
+	int corePoolSize,
+	int maximumPoolSize,
+	long keepAliveTime,
+	TimeUnit unit,
+	BlockingQueue<Runnable> workQueue,
+	ThreadFactory threadFactory,
+	RejectedExecutionHandler handler
+)
+```
+
+- *corePoolSize*：核心线程数目 (最多保留的线程数)
+- *maximumPoolSize*：最大线程数目
+- *keepAliveTime*：生存时间（针对救急线程）
+- *unit*：时间单位（针对救急线程）
+- *workQueue*：阻塞队列
+- *threadFactory*：线程工厂 - 可以为线程创建时起个好名字
+- *handler*：拒绝策略
+
+根据这个构造方法，JDK **Executors** 类中提供了众多工厂方法来**创建各种用途的线程池**
+
+工作流程：
+
+- 线程池一开始没有线程，会创建新线程执行任务
+- 当线程数达到 corePoolSize，新任务放入 workQueue 排队，直到有空闲线程
+	- 如果 workQueue 是**有界**队列，那么任务超过了队列大小时，会创建 `maximumPoolSize - corePoolSize` 数目的线程来**救急**
+- 如果线程数到达 maximumPoolSize 仍然有新任务，会执行**拒绝策略**。
+- 当高峰过去后，超过 corePoolSize 的救急线程如果一段时间没有任务做，需要结束节省资源，这个时间由 keepAliveTime 和 unit 来控制
+
+jdk 提供了 4 种：
+
+- *AbortPolicy*（默认）让调用者抛出 RejectedExecutionException
+- *CallerRunsPolicy* 让调用者运行任务
+- *DiscardPolicy* 放弃本次任务
+- *DiscardOldestPolicy* 放弃队列中最早的任务，本任务取而代之
+
+![](assets/Pasted%20image%2020240312153205.png)
+
+> 其它著名框架也提供的拒绝策略实现：
+> 
+> - *Dubbo* 的实现，在抛出 RejectedExecutionException 异常之前会记录日志，并 dump 线程栈信息，方便定位问题
+> - *Netty* 的实现，是创建一个新线程来执行任务
+> - *ActiveMQ* 的实现，带超时等待（60s）尝试放入队列，类似我们之前自定义的拒绝策略
+> - *PinPoint* 的实现，它使用了一个拒绝策略链，会逐一尝试策略链中每种拒绝策略
+
+### newFixedThreadPool
+
+```java
+public static ExecutorService newFixedThreadPool(int nThreads, ThreadFactory threadFactory) {  
+    return new ThreadPoolExecutor(nThreads, nThreads,  
+                                  0L, TimeUnit.MILLISECONDS,  
+                                  new LinkedBlockingQueue<Runnable>(),  
+                                  threadFactory);  
+}
+```
+
+特点：
+
+- 核心线程数 == 最大线程数（没有救急线程被创建），因此也无需超时时间
+- 阻塞队列是无界的，可以放任意数量的任务
+
+使用场景：适用于任务量已知，相对耗时的任务
+
+```java
+ExecutorService pool = Executors.newFixedThreadPool(2, new ThreadFactory() {  
+    private AtomicInteger t = new AtomicInteger(1);  
+  
+    @Override  
+    public Thread newThread(Runnable r) {  
+	    // 为线程取名
+        return new Thread(r, "mypool_t" + t.getAndIncrement());  
+    }  
+});  
+  
+pool.execute(() -> {  
+    log.debug("1");  
+});  
+  
+pool.execute(() -> {  
+    log.debug("2");  
+});  
+  
+pool.execute(() -> {  
+    log.debug("3");  
+});
+```
+
+### newCachedThreadPool
+
+```java
+public static ExecutorService newCachedThreadPool() {
+	return new ThreadPoolExecutor(0, Integer.MAX_VALUE,
+								  60L, TimeUnit.SECONDS,
+								  new SynchronousQueue<Runnable>());
+}
+```
+
+特点：
+- 核心线程数是 0，最大线程数是 Integer.MAX_VALUE，救急线程的空闲生存时间是 60s，
+	- 全部都是救急线程（60s 后可以回收）
+	- 救急线程可以无限创建
+- 队列采用了 SynchronousQueue，实现特点是，它**没有容量**，没有线程来取是放不进去的（一手交钱、一手交货）
+
+> **线程数**会根据任务量不断增长，**没有上限**，当任务执行完毕，空闲 1 分钟后释放线程。
+
+使用场景：适合任务数比较**密集**，但每个任务**执行时间较短**的情况
+
+> 演示：SynchronousQueue
+
+```java
+public static void main(String[] args) throws InterruptedException {  
+    SynchronousQueue<Integer> integers = new SynchronousQueue<>();  
+  
+    new Thread(() -> {  
+        try {  
+            log.debug("putting {} ", 1);  
+            integers.put(1);  
+            log.debug("{} putted...", 1);  
+  
+            log.debug("putting...{} ", 2);  
+            integers.put(2);  
+            log.debug("{} putted...", 2);  
+        } catch (InterruptedException e) {  
+            e.printStackTrace();  
+        }  
+    },"t1").start();  
+  
+    sleep(1);  
+  
+    new Thread(() -> {  
+        try {  
+            log.debug("taking {}", 1);  
+            integers.take();  
+        } catch (InterruptedException e) {  
+            e.printStackTrace();  
+        }  
+    },"t2").start();  
+  
+    sleep(1);  
+  
+    new Thread(() -> {  
+        try {  
+            log.debug("taking {}", 2);  
+            integers.take();  
+        } catch (InterruptedException e) {  
+            e.printStackTrace();  
+        }  
+    },"t3").start();  
+}
+
+11:48:15.500 c.TestSynchronousQueue [t1] - putting 1 
+11:48:16.500 c.TestSynchronousQueue [t2] - taking 1 
+11:48:16.500 c.TestSynchronousQueue [t1] - 1 putted... 
+11:48:16.500 c.TestSynchronousQueue [t1] - putting...2 
+11:48:17.502 c.TestSynchronousQueue [t3] - taking 2 
+11:48:17.503 c.TestSynchronousQueue [t1] - 2 putted...
+```
+
+### newSingleThreadExecutor
+
+```java
+public static ExecutorService newSingleThreadExecutor() {  
+    return new FinalizableDelegatedExecutorService  
+        (new ThreadPoolExecutor(1, 1,  
+                                0L, TimeUnit.MILLISECONDS,  
+                                new LinkedBlockingQueue<Runnable>()));  
+}
+```
+
+特点：
+
+- 线程数固定为 1
+- 任务数多于 1 时，会放入**无界**队列排队
+- 任务执行完毕，这唯一的线程也不会被释放
+- 如果任务执行失败而终止，线程池还会新建一个线程，保证池的正常工作
+
+使用场景：希望多个任务排队执行
+
+区别：
+
+- 自己创建一个单线程串行执行任务，
+- Executors.newSingleThreadExecutor() 线程个数始终为1，不能修改
+	- FinalizableDelegatedExecutorService 应用的是装饰器模式，只对外暴露了 ExecutorService 接口，因此不能调用 ThreadPoolExecutor 中特有的方法
+- Executors.newFixedThreadPool(1) 初始时为1，以后还可以修改
+- 对外暴露的是 ThreadPoolExecutor 对象，可以强转后调用 setCorePoolSize 等方法进行修改
 
 
 
 # ---------- 模式
 
-## 终止模式_两阶段终止
-
-Two Phase Termination，在一个线程 T1 中“优雅”终止线程 T2
-- 【优雅】指的是给 T2 一个**料理后事**的机会
-
-### 错误思路
-
-使用线程对象的 stop() 方法停止线程
-- 会真正杀死线程，如果这时线程**锁住了共享资源**，那么它被杀死后再也没有机会释放锁，其它线程将永远无法获取锁
-
-使用 `System.exit(int)` 方法停止线程
-- 目的仅是停止一个线程，但这种做法会让**整个程序都停止**
-
-### isInterrupted()实现
-
-![|500](assets/Pasted%20image%2020240303202847.png)
-
-思想：
-- 把代码包在 while 中，想要结束线程就 break
-
-```java
-@Slf4j
-public class TwoPhaseTermination {
-    private Thread monitor;
-
-    public void start() {
-        monitor = new Thread(() -> {
-            while (true) {
-                Thread current = Thread.currentThread();
-                if (current.isInterrupted()){
-                    log.debug("料理后事");
-                    break;
-                }
-                try {
-                    Thread.sleep(1000);
-                    log.debug("执行监控记录");
-                } catch (InterruptedException e) {
-                    log.debug("sleep被打断");
-                    // 重新设置打断标记
-                    current.interrupt();
-                }
-            }
-        });
-        monitor.start();
-    }
-
-    public void stop(){
-        monitor.interrupt();
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        TwoPhaseTermination tpt = new TwoPhaseTermination();
-        tpt.start();
-
-        Thread.sleep(3500);
-        tpt.stop();
-    }
-}
-```
-
 ## 同步模式_保护性暂停
-
-### 定义
 
 即 Guarded Suspension，用在 一个线程 **等待** 另一个线程 的【**执行结果**】
 
@@ -2342,7 +3851,7 @@ public class TwoPhaseTermination {
 
 JDK 中，**join** 的实现、**Future** 的实现，采用的就是此模式
 
-![](assets/Pasted%20image%2020240307195230.png)
+![|500](assets/Pasted%20image%2020240307195230.png)
 
 ### GuardedObject 实现
 
@@ -2596,7 +4105,13 @@ public static void main(String[] args) throws InterruptedException {
 10:35:06.689 c.People [Thread-1] - 收到信 id:3, 内容:内容3
 ```
 
-## 同步模式之顺序控制
+## 同步模式_Balking
+
+Balking （犹豫）模式用在一个线程发现另一个线程或本线程已经做了某一件相同的事，那么本线程就无需再做了，直接结束返回
+
+#todo
+
+## 同步模式_顺序控制
 
 #todo
 
@@ -2718,3 +4233,221 @@ public static void main(String[] args) {
 14:05:16.257 [消费者] DEBUG c.MessageQueue - 已消费消息 Message(id=2, value=值2)
 14:05:17.271 [消费者] DEBUG c.MessageQueue - 队列为空, 消费者线程等待
 ```
+
+## 终止模式_两阶段终止
+
+Two Phase Termination，在一个线程 T1 中“优雅”终止线程 T2
+- 【优雅】指的是给 T2 一个**料理后事**的机会
+
+### 错误思路
+
+使用线程对象的 stop() 方法停止线程
+- 会真正杀死线程，如果这时线程**锁住了共享资源**，那么它被杀死后再也没有机会释放锁，其它线程将永远无法获取锁
+
+使用 `System.exit(int)` 方法停止线程
+- 目的仅是停止一个线程，但这种做法会让**整个程序都停止**
+
+### isInterrupted()实现
+
+![|500](assets/Pasted%20image%2020240303202847.png)
+
+思想：
+- 把代码包在 while 中，想要结束线程就 break
+
+```java
+@Slf4j
+public class TwoPhaseTermination {
+    private Thread monitor;
+
+    public void start() {
+        monitor = new Thread(() -> {
+            while (true) {
+                Thread current = Thread.currentThread();
+                if (current.isInterrupted()){
+                    log.debug("料理后事");
+                    break;
+                }
+                try {
+                    Thread.sleep(1000);
+                    log.debug("执行监控记录");
+                } catch (InterruptedException e) {
+                    log.debug("sleep被打断");
+                    // 重新设置打断标记
+                    current.interrupt();
+                }
+            }
+        });
+        monitor.start();
+    }
+
+    public void stop(){
+        monitor.interrupt();
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        TwoPhaseTermination tpt = new TwoPhaseTermination();
+        tpt.start();
+
+        Thread.sleep(3500);
+        tpt.stop();
+    }
+}
+```
+
+### volatile 停止标记实现
+
+通过标志位 stop 控制线程中断，不需要重新设置打断标记
+
+`stop()` 中设置了 `stop = true`，t 不会立即中断，如果睡眠时间过长不想等，就 `t.interrupt()`
+
+> 标志位不加 volatile，t 也会中断，IO 阻塞导致线程切换、线程 sleep 导致 CPU 空闲，都会导致重新从主存读取值，保险起见还是加上
+
+```java
+class TPTVolatile {
+    private Thread t;
+    private volatile boolean stop = false;
+
+    public void start() {
+        t = new Thread(() -> {
+            while (true) {
+                Thread current = Thread.currentThread();
+                if (stop) {
+                    log.debug("料理后事");
+                    break;
+                }
+                try {
+                    Thread.sleep(1000);
+                    log.debug("将结果保存");
+                } catch (InterruptedException e) {
+                    log.debug("sleep被打断");
+                }
+            }
+        }, "监控线程");
+        t.start();
+    }
+
+    public void stop() {
+        stop = true;
+        // t.interrupt();
+    }
+}
+```
+
+## 享元模式
+
+> Java 设计模式，归类 Structual patterns
+
+Flyweight pattern. 当需要**重用数量有限的同一类对象**时
+
+体现：包装类、String 串池、BigDecimal BigInteger
+
+### 实现
+
+一个线上商城应用，QPS 达到数千，如果每次都重新创建和关闭数据库连接，性能会受到极大影响。 
+
+这时**预先创建好一批连接，放入连接池**。一次请求到达后，从连接池**获取连接**，使用完毕后再**还回连接池**，这样既节约了连接的创建和关闭时间，也实现了连接的重用，不至于让庞大的连接数压垮数据库。
+
+
+```java
+public class Test3 {
+    public static void main(String[] args) {
+        Pool pool = new Pool(2);
+        for (int i = 0; i < 5; i++) {
+            new Thread(() -> {
+                Connection conn = pool.borrow();
+                try {
+                    Thread.sleep(new Random().nextInt(1000));
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                pool.free(conn);
+            }).start();
+        }
+    }
+}
+
+@Slf4j(topic = "c.Pool")
+class Pool {
+    // 1. 连接池大小
+    private final int poolSize;
+
+    // 2. 连接对象数组
+    private Connection[] connections;
+
+    // 3. 连接状态数组 0 表示空闲， 1 表示繁忙
+    private AtomicIntegerArray states;
+
+    // 4. 构造方法初始化
+    public Pool(int poolSize) {
+        this.poolSize = poolSize;
+        this.connections = new Connection[poolSize];
+        this.states = new AtomicIntegerArray(new int[poolSize]);
+        for (int i = 0; i < poolSize; i++) {
+            connections[i] = new MockConnection("连接" + (i+1));
+        }
+    }
+
+    // 5. 借连接
+    public Connection borrow() {
+        while(true) {
+            for (int i = 0; i < poolSize; i++) {
+                // 获取空闲连接
+                if(states.get(i) == 0) {
+                    if (states.compareAndSet(i, 0, 1)) {
+                        log.debug("borrow {}", connections[i]);
+                        return connections[i];
+                    }
+                }
+            }
+            // 如果没有空闲连接，当前线程进入等待
+            synchronized (this) {
+                try {
+                    log.debug("wait...");
+                    this.wait();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    // 6. 归还连接
+    public void free(Connection conn) {
+        for (int i = 0; i < poolSize; i++) {
+            if (connections[i] == conn) {
+                states.set(i, 0);
+                synchronized (this) {
+                    log.debug("free {}", conn);
+                    this.notifyAll();
+                }
+                break;
+            }
+        }
+    }
+}
+
+class MockConnection implements Connection {
+
+    private String name;
+
+    public MockConnection(String name) {
+        this.name = name;
+    }
+}
+```
+
+以上实现没有考虑：
+
+- 连接的动态增长与收缩
+- 连接保活（可用性检测）
+- 等待超时处理
+- 分布式 hash
+
+对于关系型数据库，有比较成熟的连接池实现，例如c3p0, druid等 
+
+对于更通用的对象池，可以考虑使用 apache commons pool，例如 redis 连接池可以参考 jedis 中关于连接池的实现
+
+
+
+
+
