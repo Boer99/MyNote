@@ -16,8 +16,8 @@
 一般会将这种线程轮流使用 CPU 的做法称为并发，**concurrent**
 
 | **CPU** | **时间片 1** | **时间片 2** | **时间片 3** | **时间片 4** |
-| --- | --- | --- | --- | --- |
-| core | 线程 1 | 线程 2 | 线程 3 | 线程 4 |
+| ------- | --------- | --------- | --------- | --------- |
+| core    | 线程 1      | 线程 2      | 线程 3      | 线程 4      |
 
 多核 cpu下，每个 核（core） 都可以调度运行线程，这时候线程可以是并行的。
 
@@ -3614,7 +3614,7 @@ public class TestFinal {
 
 这种没有**任何成员变量的类**是线程安全的
 
-# ---------- 线程池
+# ---------- 共享模型_工具_线程池
 
 ## 自定义线程池
 
@@ -3818,20 +3818,552 @@ public static ExecutorService newSingleThreadExecutor() {
 
 特点：
 
-- 线程数固定为 1
+- 线程数固定为 1，且不能修改
+	- FinalizableDelegatedExecutorService 应用的是装饰器模式，只对外暴露了 ExecutorService 接口，因此不能调用 ThreadPoolExecutor 中特有的方法
 - 任务数多于 1 时，会放入**无界**队列排队
 - 任务执行完毕，这唯一的线程也不会被释放
 - 如果任务执行失败而终止，线程池还会新建一个线程，保证池的正常工作
 
 使用场景：希望多个任务排队执行
 
-区别：
+> `Executors.newFixedThreadPool(1)` 初始时为1，以后还可以修改
+> 
+> - 对外暴露的是 ThreadPoolExecutor 对象，可以**强转**后调用 setCorePoolSize 等方法进行修改
 
-- 自己创建一个单线程串行执行任务，
-- Executors.newSingleThreadExecutor() 线程个数始终为1，不能修改
-	- FinalizableDelegatedExecutorService 应用的是装饰器模式，只对外暴露了 ExecutorService 接口，因此不能调用 ThreadPoolExecutor 中特有的方法
-- Executors.newFixedThreadPool(1) 初始时为1，以后还可以修改
-- 对外暴露的是 ThreadPoolExecutor 对象，可以强转后调用 setCorePoolSize 等方法进行修改
+### 提交任务
+
+```java
+// 执行任务
+void execute(Runnable command);
+
+// 提交任务 task，用返回值 Future 获得任务执行结果
+<T> Future<T> submit(Callable<T> task);
+
+// 提交 tasks 中所有任务
+<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+ throws InterruptedException;
+ 
+// 提交 tasks 中所有任务，带超时时间
+<T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks,
+ long timeout, TimeUnit unit)
+ throws InterruptedException;
+ 
+// 提交 tasks 中所有任务，哪个任务先成功执行完毕，返回此任务执行结果，其它任务取消
+<T> T invokeAny(Collection<? extends Callable<T>> tasks)
+ throws InterruptedException, ExecutionException;
+```
+
+> 无超时 invokeAll 演示
+
+```java
+private static void main(String[] args) throws InterruptedException {  
+    ExecutorService pool = Executors.newFixedThreadPool(3);  
+  
+    List<Future<String>> futures = pool.invokeAll(Arrays.asList(  
+            () -> {  
+                log.debug("1");  
+                Thread.sleep(1000);  
+                return "1";  
+            },  
+            () -> {  
+                log.debug("2");  
+                Thread.sleep(2000);  
+                return "2";  
+            },  
+            () -> {  
+                log.debug("3");  
+                Thread.sleep(3000);  
+                return "3";  
+            }  
+    ));  
+  
+    futures.forEach(  
+            f -> {  
+                try {  
+                    log.debug("{}", f.get());  
+                } catch (InterruptedException | ExecutionException e) {  
+                    e.printStackTrace();  
+                }  
+            }  
+    );  
+}
+```
+
+invokeAny 只有一个返回结果
+
+```java
+private static void myTest2() throws InterruptedException, ExecutionException {  
+    ExecutorService pool = Executors.newFixedThreadPool(3);  
+  
+    String res = pool.invokeAny(Arrays.asList(  
+            () -> {  
+                log.debug("1");  
+                Thread.sleep(1000);  
+                return "1";  
+            },  
+            () -> {  
+                log.debug("2");  
+                Thread.sleep(2000);  
+                return "2";  
+            },  
+            () -> {  
+                log.debug("3");  
+                Thread.sleep(3000);  
+                return "3";  
+            }  
+    ));  
+  
+    log.debug("{}", res);  
+}
+
+11:20:12.540 [pool-2-thread-1] DEBUG c.TestSubmit - 1
+11:20:12.540 [pool-2-thread-2] DEBUG c.TestSubmit - 2
+11:20:12.540 [pool-2-thread-3] DEBUG c.TestSubmit - 3
+11:20:13.556 [main] DEBUG c.TestSubmit - 1
+```
+
+### 关闭线程池
+
+```java
+public interface ExecutorService extends Executor {
+	void shutdown();
+	
+	List<Runnable> shutdownNow();
+}
+```
+
+```java
+public class ThreadPoolExecutor extends AbstractExecutorService {
+	public void shutdown() {
+		final ReentrantLock mainLock = this.mainLock;
+		mainLock.lock();
+		try {
+			checkShutdownAccess();
+			// 修改线程池状态
+			advanceRunState(SHUTDOWN);
+			// 仅会打断空闲线程
+			interruptIdleWorkers();
+			onShutdown(); // 扩展点 ScheduledThreadPoolExecutor
+		} finally {
+			mainLock.unlock();
+		}
+		// 尝试终结(没有运行的线程可以立刻终结，如果还有运行的线程也不会打断)
+		tryTerminate();
+	}
+
+	public List<Runnable> shutdownNow() {
+		List<Runnable> tasks;
+		final ReentrantLock mainLock = this.mainLock;
+		mainLock.lock();
+		try {
+			checkShutdownAccess();
+			// 修改线程池状态
+			advanceRunState(STOP);
+			// 打断所有线程
+			interruptWorkers();
+			// 获取队列中剩余任务
+			tasks = drainQueue();
+		} finally {
+			mainLock.unlock();
+		}
+		// 尝试终结
+		tryTerminate();
+		return tasks;
+	}
+}
+```
+
+调用 `shutdown()`，线程池状态变为 SHUTDOWN
+
+- 不会接收新任务
+- 但**已提交任务会执行完**
+- 此方法**不会阻塞**调用线程的执行
+
+调用 `shutdownNow()`，线程池状态变为 STOP
+
+- 不会接收新任务
+- 会将队列中的任务返回
+- 并用 interrupt 的方式**中断正在执行的任务**
+
+其他方法：
+
+```java
+// 不在 RUNNING 状态的线程池，此方法就返回 true
+boolean isShutdown();
+
+// 线程池状态是否是 TERMINATED
+boolean isTerminated();
+
+// 调用 shutdown 后，由于调用线程并不会等待所有任务运行结束，因此如果它想在线程池 TERMINATED 后做些事情，可以利用此方法等待
+boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException;
+```
+
+> shutdownNow()演示
+
+```java
+public static void main(String[] args) throws ExecutionException, InterruptedException {  
+	ExecutorService pool = Executors.newFixedThreadPool(2);  
+
+	Future<Integer> result1 = pool.submit(() -> {  
+		log.debug("task 1 running...");  
+		Thread.sleep(1000);  
+		log.debug("task 1 finish...");  
+		return 1;  
+	});  
+
+	Future<Integer> result2 = pool.submit(() -> {  
+		log.debug("task 2 running...");  
+		Thread.sleep(1000);  
+		log.debug("task 2 finish...");  
+		return 2;  
+	});  
+
+	Future<Integer> result3 = pool.submit(() -> {  
+		log.debug("task 3 running...");  
+		Thread.sleep(1000);  
+		log.debug("task 3 finish...");  
+		return 3;  
+	});  
+
+	log.debug("shutdown");  
+//        pool.shutdown();  
+//        pool.awaitTermination(3, TimeUnit.SECONDS);  
+	List<Runnable> runnables = pool.shutdownNow();  
+	log.debug("other.... {}" , runnables);  
+}
+```
+
+### newScheduledThreadPool
+
+#### Timer
+
+在『任务调度线程池』功能加入之前，可以使用 java.util.Timer 来实现定时功能，
+
+Timer 
+- 优点：简单易用，所有任务都是由同一个线程来调度，因此所有任务都是**串行执行**的，同一时间只能有一个任务在执行
+- 缺点：前一个任务的延迟或异常都将会影响到之后的任务。
+
+```java
+private static void method1() {  
+    Timer timer = new Timer();  
+      
+    TimerTask task1 = new TimerTask() {  
+        @Override  
+        public void run() {  
+            log.debug("task 1");  
+            sleep(2);  
+        }  
+    };  
+      
+    TimerTask task2 = new TimerTask() {  
+        @Override  
+        public void run() {  
+            log.debug("task 2");  
+        }  
+    };  
+  
+    log.debug("start...");  
+    timer.schedule(task1, 1000);  
+    timer.schedule(task2, 1000);  
+}
+
+20:46:09.444 c.TestTimer [main] - start... 
+20:46:10.447 c.TestTimer [Timer-0] - task 1 
+20:46:12.448 c.TestTimer [Timer-0] - task 2
+```
+
+#### 延迟
+
+线程数固定，任务数多于线程数时，会放入**无界**队列排队。任务执行完毕，这些线程也不会被释放。用来执行延迟或反复执行的任务
+
+使用 ScheduledExecutorService 改写
+
+- 可以并行执行
+- 前一个任务的延迟或异常**不会**影响到之后的任务
+
+```java
+public ScheduledFuture<?> schedule(Runnable command,  
+                                   long delay, TimeUnit unit);
+```
+
+```java
+private static void main(String[] args){
+	// 并行
+	// ScheduledExecutorService pool = Executors.newScheduledThreadPool(2);
+	// 串行
+	ScheduledExecutorService pool = Executors.newScheduledThreadPool(1); 
+	 
+	pool.schedule(() -> {  
+	    log.debug("task1");  
+	    int i = 1 / 0;  
+	}, 1, TimeUnit.SECONDS);  
+	  
+	pool.schedule(() -> {  
+	    log.debug("task2");  
+	}, 1, TimeUnit.SECONDS);
+}
+
+16:56:54.757 [pool-1-thread-1] DEBUG c.TestTimer - task1
+16:56:54.757 [pool-1-thread-2] DEBUG c.TestTimer - task2
+```
+
+#### 定时
+
+```java
+// 从上一个任务的开始时间计算间隔 period
+public ScheduledFuture<?> scheduleAtFixedRate(Runnable command,  
+                                              long initialDelay,  
+                                              long period,  
+                                              TimeUnit unit);
+
+// 从上一个任务的结束时间开始计算间隔 delay
+public ScheduledFuture<?> scheduleWithFixedDelay(Runnable command,  
+                                                 long initialDelay,  
+                                                 long delay,  
+                                                 TimeUnit unit);
+```
+
+> scheduleAtFixedRate 演示
+> - 任务执行时间 > 间隔时间，间隔被『撑』到了 2s
+
+```java
+private static void method3() {  
+    ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);  
+    log.debug("start...");  
+    pool.scheduleAtFixedRate(() -> {  
+        log.debug("running...");  
+        sleep(2);
+    }, 1, 1, TimeUnit.SECONDS);  
+}
+
+17:20:40.430 [main] DEBUG c.TestTimer - start...
+17:20:41.481 [pool-1-thread-1] DEBUG c.TestTimer - running...
+17:20:43.489 [pool-1-thread-1] DEBUG c.TestTimer - running...
+17:20:45.491 [pool-1-thread-1] DEBUG c.TestTimer - running...
+```
+
+> scheduleWithFixedDelay 演示
+> - 上一个任务结束 <-> 延时 <-> 下一个任务开始
+
+```java
+private static void method4() {  
+    ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);  
+    log.debug("start...");  
+    pool.scheduleWithFixedDelay(() -> {  
+        log.debug("running...");  
+        sleep(2);  
+    }, 1, 1, TimeUnit.SECONDS);  
+}
+
+17:26:33.127 [main] DEBUG c.TestTimer - start...
+17:26:34.186 [pool-1-thread-1] DEBUG c.TestTimer - running...
+17:26:37.203 [pool-1-thread-1] DEBUG c.TestTimer - running...
+17:26:40.219 [pool-1-thread-1] DEBUG c.TestTimer - running...
+```
+
+#### 应用_定时任务
+
+#todo
+
+如何让每周四 18:00:00 定时执行任务？
+
+```java
+public static void main(String[] args) {  
+    //  获取当前时间  
+    LocalDateTime now = LocalDateTime.now();  
+    System.out.println(now);  
+    // 获取 周四18:00:00  
+    LocalDateTime time = now.withHour(18).withMinute(0).withSecond(0).withNano(0).with(DayOfWeek.THURSDAY);  
+    // 如果 当前时间 > 本周周四，必须找到下周周四  
+    if (now.compareTo(time) > 0) {  
+        time = time.plusWeeks(1);  
+    }  
+    System.out.println(time);  
+    // initailDelay 代表当前时间和周四的时间差  
+    // period 一周的间隔时间  
+    long initailDelay = Duration.between(now, time).toMillis();  
+    long period = 1000 * 60 * 60 * 24 * 7;  
+  
+    ScheduledExecutorService pool = Executors.newScheduledThreadPool(1);  
+    pool.scheduleAtFixedRate(() -> {  
+        System.out.println("running...");  
+    }, initailDelay, period, TimeUnit.MILLISECONDS);  
+}
+```
+
+### 处理执行任务异常
+
+1）try-catch 主动捉异常
+
+```java
+ExecutorService pool = Executors.newFixedThreadPool(1);
+
+pool.submit(() -> {
+	try {
+		log.debug("task1");
+		int i = 1 / 0;
+	} catch (Exception e) {
+		log.error("error:", e);
+	}
+});
+```
+
+2）使用 Future
+
+```java
+ExecutorService pool = Executors.newFixedThreadPool(1);
+
+Future<Boolean> f = pool.submit(() -> {
+	log.debug("task1");
+	int i = 1 / 0;
+	return true;
+});
+
+log.debug("result:{}", f.get());
+```
+
+### Tomcat 线程池
+
+#todo 
+
+## Fork/Join
+
+#todo
+
+# ---------- 共享模型_工具_J.U.C
+
+## AQS
+
+*AbstractQueuedSynchronizer*，翻译 抽象队列同步器，是 阻塞式锁 和 相关的同步器工具 的框架
+
+- 抽象类，为**构建锁和同步器**提供了一些通用功能的实现
+- 在 `java.util.concurrent.locks` 包下面
+
+![|250](assets/Pasted%20image%2020240314114025.png)
+
+特点：
+
+- 用 state 属性来表示**资源的状态**
+	- 独占模式：是只有一个线程能够访问资源，
+	- 共享模式：可以允许多个线程访问资源
+- 子类需要定义如何维护这个状态，从而控制 获取锁和释放锁
+	- *getState*：获取 state 状态
+	- *setState*：设置 state 状态
+	- *compareAndSetState*：cas 机制设置 state 状态
+- 提供了基于 FIFO（先进先出）的等待队列（类似于 Monitor 的 EntryList）
+- 支持**多条件变量**，实现等待、唤醒机制，（类似于 Monitor 的 WaitSet）
+
+> Monitor 是 c++实现，AQS 是纯 Java 实现
+
+AQS 使用了模板方法模式，自定义同步器时需要重写下面几个 AQS 提供的钩子方法
+
+> 钩子方法：一种被声明在**抽象类**中的方法，一般使用 `protected` 关键字修饰，它可以是空方法（由子类实现），也可以是默认实现的方法。模板设计模式通过钩子方法控制固定步骤的实现。
+
+```java
+//独占方式。尝试获取资源，成功则返回true，失败则返回false。
+protected boolean tryAcquire(int)
+
+//独占方式。尝试释放资源，成功则返回true，失败则返回false。
+protected boolean tryRelease(int)
+
+//共享方式。尝试获取资源。负数表示失败；0表示成功，但没有剩余可用资源；正数表示成功，且有剩余资源。
+protected int tryAcquireShared(int)
+
+//共享方式。尝试释放资源，成功则返回true，失败则返回false。
+protected boolean tryReleaseShared(int)
+
+//该线程是否正在独占资源。只有用到condition才需要去实现它。
+protected boolean isHeldExclusively()
+```
+
+- 默认实现都是抛出 UnsupportedOperationException
+- 除了上面的钩子方法外，AQS 类中的**其他方法都是 final**，无法被子类重写
+
+### 不可重入锁实现
+
+#todo 
+
+
+## ReentrantLock 原理
+
+![|500](assets/Pasted%20image%2020240314162557.png)
+
+### 非公平锁原理
+
+默认是非公平锁实现
+
+```java
+public ReentrantLock() {
+	// NonfairSync 继承自 AQS
+	sync = new NonfairSync();
+}
+
+ static final class NonfairSync extends Sync {
+	private static final long serialVersionUID = 7316153563782823691L;
+
+	/**
+	 * Performs lock.  Try immediate barge, backing up to normal
+	 * acquire on failure.
+	 */
+	final void lock() {
+		if (compareAndSetState(0, 1))
+			setExclusiveOwnerThread(Thread.currentThread());
+		else
+			acquire(1);
+	}
+
+	protected final boolean tryAcquire(int acquires) {
+		return nonfairTryAcquire(acquires);
+	}
+}
+```
+
+无竞争时，当前独占线程是 Thread-0
+
+![|500](assets/Pasted%20image%2020240314163224.png)
+
+第一个竞争出现时，
+
+![|500](assets/Pasted%20image%2020240314164351.png)
+
+- Thread-1 `compareAndSetState(0, 1)` 失败
+
+```java
+public final void acquire(int arg) {  
+    if (!tryAcquire(arg) &&  
+        acquireQueued(addWaiter(Node.EXCLUSIVE), arg))  
+        selfInterrupt();  
+}
+```
+
+## Semaphore
+
+#todo 
+
+
+## CountdownLatch
+
+> 翻译：倒计时锁
+
+用来进行线程同步协作，等待所有线程完成倒计时
+
+其中构造参数用来初始化等待计数值，await() 用来等待计数归零，countDown() 用来让计数减一
+
+
+
+
+## CyclicBarrier
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -3859,6 +4391,7 @@ JDK 中，**join** 的实现、**Future** 的实现，采用的就是此模式
 class GuardedObject {
 	// 存放需要传递的结果
     private Object response;
+
     private final Object lock = new Object();
 
     public Object get() {
@@ -4181,7 +4714,7 @@ class MessageQueue {
             return message;
         }
     }
-
+    
     // 存入消息
     public void put(Message message) {
         synchronized (list) {
@@ -4233,6 +4766,146 @@ public static void main(String[] args) {
 14:05:16.257 [消费者] DEBUG c.MessageQueue - 已消费消息 Message(id=2, value=值2)
 14:05:17.271 [消费者] DEBUG c.MessageQueue - 队列为空, 消费者线程等待
 ```
+
+## 异步模式_工作线程
+
+让有限的工作线程（Worker Thread）来轮流异步处理无限多的任务。也可以将其归类为分工模式，它的典型实现就是**线程池**，也体现了经典设计模式中的**享元模式**。
+
+> 例如，海底捞的服务员（线程），轮流处理每位客人的点餐（任务），如果为每位客人都配一名专属的服务员，那么成本就太高了（对比另一种多线程设计模式：Thread-Per-Message）
+
+注意，不同任务类型应该使用不同的线程池，这样能够避免饥饿，并能提升效率
+
+> 例如，如果一个餐馆的工人既要招呼客人（任务类型A），又要到后厨做菜（任务类型B）显然效率不咋地，分成服务员（线程池A）与厨师（线程池B）更为合理，当然你能想到更细致的分工
+
+### 饥饿
+
+**固定**大小线程池会有饥饿现象
+
+> 线程池中线程不足导致的饥饿现象
+> 
+> - 两个工人是同一个线程池中的两个线程
+> - 他们要做的事情是：为客人点餐和到后厨做菜，这是两个阶段的工作
+> 	- 客人点餐：必须先点完餐，等菜做好，上菜，在此期间处理点餐的工人必须等待
+> 	- 后厨做菜：没啥说的，做就是了
+> - 比如工人A 处理了点餐任务，接下来它要等着 工人B 把菜做好，然后上菜，他俩也配合的蛮好
+> - 但现在同时来了两个客人，这个时候工人A 和工人B **都去处理点餐了，这时没人做饭了**，饥饿
+
+```java
+public static void test1(){  
+    ExecutorService pool = Executors.newFixedThreadPool(2);  
+  
+    pool.execute(() -> {  
+        log.debug("处理点餐...");  
+        Future<String> f = pool.submit(() -> {  
+            log.debug("做菜");  
+            return cooking();  
+        });  
+        try {  
+            log.debug("上菜: {}", f.get());  
+        } catch (InterruptedException | ExecutionException e) {  
+            e.printStackTrace();  
+        }  
+    });  
+  
+    pool.execute(() -> {  
+        log.debug("处理点餐...");  
+        Future<String> f = pool.submit(() -> {  
+            log.debug("做菜");  
+            return cooking();  
+        });  
+        try {  
+            log.debug("上菜: {}", f.get());  
+        } catch (InterruptedException | ExecutionException e) {  
+            e.printStackTrace();  
+        }  
+    });  
+  
+    // 15:25:34.237 [pool-1-thread-1] DEBUG c.TestDeadLock - 处理点餐...  
+    // 15:25:34.237 [pool-1-thread-2] DEBUG c.TestDeadLock - 处理点餐...  
+}
+```
+
+增加线程池的大小，不是根本解决方案
+
+```java
+ExecutorService pool = Executors.newFixedThreadPool(3);  
+
+16:23:46.999 [pool-1-thread-1] DEBUG c.TestDeadLock - 处理点餐...
+16:23:46.999 [pool-1-thread-2] DEBUG c.TestDeadLock - 处理点餐...
+16:23:47.009 [pool-1-thread-3] DEBUG c.TestDeadLock - 做菜
+16:23:47.009 [pool-1-thread-3] DEBUG c.TestDeadLock - 做菜
+16:23:47.009 [pool-1-thread-2] DEBUG c.TestDeadLock - 上菜: 宫保鸡丁
+16:23:47.009 [pool-1-thread-1] DEBUG c.TestDeadLock - 上菜: 宫保鸡丁
+```
+
+不同的任务类型，采用不同的线程池
+
+```java
+public static void test2(){  
+    ExecutorService waiterPool = Executors.newFixedThreadPool(1);  
+    ExecutorService cookPool = Executors.newFixedThreadPool(1);  
+  
+    waiterPool.execute(() -> {  
+        log.debug("处理点餐...");  
+        Future<String> f = cookPool.submit(() -> {  
+            log.debug("做菜");  
+            return cooking();  
+        });  
+        try {  
+            log.debug("上菜: {}", f.get());  
+        } catch (InterruptedException | ExecutionException e) {  
+            e.printStackTrace();  
+        }  
+    });  
+  
+    waiterPool.execute(() -> {  
+        log.debug("处理点餐...");  
+        Future<String> f = cookPool.submit(() -> {  
+            log.debug("做菜");  
+            return cooking();  
+        });  
+        try {  
+            log.debug("上菜: {}", f.get());  
+        } catch (InterruptedException | ExecutionException e) {  
+            e.printStackTrace();  
+        }  
+    });  
+}
+
+16:32:37.009 [pool-1-thread-1] DEBUG c.TestDeadLock - 处理点餐...
+16:32:37.018 [pool-2-thread-1] DEBUG c.TestDeadLock - 做菜
+16:32:37.018 [pool-1-thread-1] DEBUG c.TestDeadLock - 上菜: 宫保鸡丁
+16:32:37.019 [pool-1-thread-1] DEBUG c.TestDeadLock - 处理点餐...
+16:32:37.019 [pool-2-thread-1] DEBUG c.TestDeadLock - 做菜
+16:32:37.019 [pool-1-thread-1] DEBUG c.TestDeadLock - 上菜: 烤鸡翅
+```
+
+### 创建多少线程合适？
+
+- 过小会导致程序不能充分地利用系统资源、容易导致饥饿
+- 过大会导致更多的线程上下文切换，占用更多内存
+
+1）CPU 密集型运算
+
+`cpu 核数 + 1` 能够实现最优的 CPU 利用率
+
+- +1 是保证当线程由于页缺失故障（操作系统）或其它原因导致暂停时，额外的这个线程就能顶上去，保证 CPU 时钟周期不被浪费
+
+2） I/O 密集型运算
+
+CPU 不总是处于繁忙状态，例如，当你执行业务计算时，这时候会使用 CPU 资源，但当你执行 I/O 操作时、远程RPC 调用时，包括进行数据库操作时，这时候 CPU 就闲下来了，你可以利用多线程提高它的利用率。
+
+公式：`线程数 = 核数 * 期望 CPU 利用率 * 总时间(CPU计算时间+等待时间) / CPU 计算时间`
+
+> 例如 4 核 CPU 计算时间是 50% ，其它等待时间是 50%，期望 cpu 被 100% 利用，套用公式 4 * 100% * 100% / 50% = 8
+> 
+> 例如 4 核 CPU 计算时间是 10% ，其它等待时间是 90%，期望 cpu 被 100% 利用，套用公式 4 * 100% * 100% / 10% = 40
+
+
+
+
+
+
 
 ## 终止模式_两阶段终止
 

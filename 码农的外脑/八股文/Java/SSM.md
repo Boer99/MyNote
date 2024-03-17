@@ -2,11 +2,11 @@
 
 Cookie 和 Session 的区别，Cookie 和 Session 有联系吗(2)
 
+![](assets/image%20(5).png)
 
 
 
-
-# ---------- Spring
+# -------------------- Spring
 
 
 ## Spring 属性注入有哪几种方式？
@@ -46,15 +46,13 @@ Cookie 和 Session 的区别，Cookie 和 Session 有联系吗(2)
 
 （自定义实例化的逻辑，进行一些Bean实例的定制操作）
 
-## 私有方法可以被代理吗(1)
+
 
 ## 讲一下你知道的模块
 
 #得物_24_实习_Java 
 
-## spring事务有哪些传播级别？
 
-#PDD_23_秋招_后端 
 
 ## Spring框架有哪些比较经典的设计模式
 
@@ -66,8 +64,18 @@ Cookie 和 Session 的区别，Cookie 和 Session 有联系吗(2)
 
 #PDD_23_秋招_后端 
 
+# ---------- 事务
 
-# ---------- Spring MVC
+## 事务失效
+
+### 私有方法可以被代理吗(1)
+
+## spring 事务有哪些传播级别？
+
+#PDD_23_秋招_后端 
+
+
+# -------------------- Spring MVC
 
 ## Spring MVC 的执行流程(1)
 
@@ -78,7 +86,7 @@ Cookie 和 Session 的区别，Cookie 和 Session 有联系吗(2)
 
 #PDD_23_秋招_后端 
 
-# ---------- SpringBoot
+# -------------------- SpringBoot
 
 ## Spring Boot 和 Spring 有哪些区别？(1)
 
