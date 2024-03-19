@@ -2323,8 +2323,7 @@ Java 虚拟机实现时必须保证下面提及的每一种操作都是**原子�
 > 
 > 由 Java 内存模型来直接保证的原子性变量操作包括 read、load、assign、use、store 和 write 这六个，我们大致可以认为，**基本数据类型的访问、读写都是具备原子性的**（例外就是 long 和 double 的非原子性协定，读者只要知道这件事情就可以了，无须太过在意这些几乎不会发生的例外情况）
 > 
-> 如果应用场景需要一个更大范围的原子性保证（经常会遇到），Java 内存模型还提
-> 供了 lock 和 unlock 操作来满足这种需求，尽管虚拟机未把 lock 和 unlock 操作直接开放给用户使用，但是却提供了更高层次的**字节码指令 monitorenter 和 monitorexit 来隐式地使用这两个操作**。这两个字节码指令反映到 Java 代码中就是同步块——**synchronized 关键字**，因此在 synchronized 块之间的操作也具备原子性。
+> 如果应用场景需要一个更大范围的原子性保证（经常会遇到），Java 内存模型还提供了 lock 和 unlock 操作来满足这种需求，尽管虚拟机未把 lock 和 unlock 操作直接开放给用户使用，但是却提供了更高层次的**字节码指令 monitorenter 和 monitorexit 来隐式地使用这两个操作**。这两个字节码指令反映到 Java 代码中就是同步块——**synchronized 关键字**，因此在 synchronized 块之间的操作也具备原子性。
 
 ## 可见性
 
@@ -2607,7 +2606,6 @@ volatile（易变关键字）：
 - 写 volatile 变量时，线程对应的本地内存中的**共享变量值立即刷新回主内存中**
 - 读 volatile 变量时，线程对应的本地内存设置为无效，**重新回到主内存中读取最新共享变量的值**
 
-
 ### 原理
 
 > 代码参考[诡异的结果](#诡异的结果)
@@ -2625,12 +2623,14 @@ volatile 的底层实现原理是【内存屏障】（Memory Barrier/Memory Fenc
 ```java
 boolean volatile ready;
 
+// Thread1
 public void actor2(I_Result r) {
 	num = 2;
 	ready = true; // ready 是 volatile 赋值带写屏障
 	// 写屏障
 }
 
+// Thread2
 public void actor1(I_Result r) {
 	// 读屏障
 	// ready 是 volatile 读取值带读屏障
@@ -2651,9 +2651,9 @@ public void actor1(I_Result r) {
 
 ![|600](assets/Pasted%20image%2020240310130758.png)
 
-不能解决指令交错：
+**不能解决指令交错**：
 
-- 写屏障仅仅是保证之后的读能够读到最新的结果，但**不能保证读跑到它前面去**
+- 写屏障仅仅是保证之后的读能够读到最新的结果，但不能保证读跑到它前面去
 - 而有序性的保证也只是保证了**本线程内**相关代码不被重排序
 
 ![|500](assets/Pasted%20image%2020240310132745.png)
@@ -2664,7 +2664,7 @@ public void actor1(I_Result r) {
 > 
 > Java 里面的运算操作符并非原子操作，这导致 volatile 变量的运算在并发下一样是不安全的
 
-> 无原子性演示：
+> 无原子性演示：多线程环境下 `inc++` 指令交错
 
 ```java
 public class VolatileSeeDemo2 {
@@ -2695,6 +2695,8 @@ public class VolatileSeeDemo2 {
 1. 读取 inc 的值。
 2. 对 inc 加 1。
 3. 将 inc 的值写回内存
+
+> 即便这三个操作可见性和有序性得到了保证，但是指令交错会导致无效的写操作
 
 volatile 是无法保证这三个操作是具有原子性的，可能导致两个线程分别对 inc 进行了一次自增操作后，inc 实际上只增加了 1
 
@@ -3070,7 +3072,8 @@ class AccountCas implements Account {
 }
 ```
 
----
+### 介绍
+
 > AtomicInteger 的解决方法，内部并没有用锁来保护共享变量的线程安全，
 
 其中的关键是 `compareAndSet()`，它的简称就是 CAS （也有 Compare And Swap 的说法），用于实现**乐观锁**
@@ -3212,12 +3215,48 @@ public final int getAndAccumulate(int x,
 J.U.C 并发包提供了：
 
 - `AtomicReference<V>`
-- AtomicMarkableReference
-- AtomicStampedReferenc
+- `AtomicMarkableReference<V>`
+- `AtomicStampedReferenc<V>`
 
 作用：自定义其他原子类型
 
 ### AtomicReference
+
+CAS 只对单个共享变量有效，当操作涉及跨多个共享变量时 CAS 无效。但是从 JDK 1.5 开始，提供了AtomicReference 类来保证引用对象之间的原子性，你可以把多个变量放在一个对象里来进行 CAS 操作
+
+```java
+@Slf4j  
+public class AtomicReferenceDemo {  
+    public static void main(String[] args) {  
+        User user1 = new User("user1", 22);  
+        User user2 = new User("user2", 33);  
+        User user3 = new User("user3", 33);  
+        AtomicReference<User> userAtomicReference = new AtomicReference<>(user1);  
+  
+        log.debug("{}, {}",  
+                userAtomicReference.compareAndSet(user1, user2),  
+                userAtomicReference.get().toString());  
+        //true, User(name=user2, age=33)  
+  
+        log.debug("{}, {}",  
+                userAtomicReference.compareAndSet(user1, user3),  
+                userAtomicReference.get().toString());  
+        //false, User(name=user2, age=33)  
+    }  
+}  
+  
+@Data  
+class User {  
+    private String name;  
+    private int age;  
+  
+    public User(String name, int age) {  
+        this.name = name;  
+        this.age = age;  
+    }  
+}
+```
+
 
 > 演示：多线程，每个线程对 BigDecimal 类型的 balance 减 10，初值为 10000 减为 0
 
@@ -3338,7 +3377,47 @@ private static void other() {
 
 ### AtomicStampedReference
 
+JDK 1.5 以后的 `AtomicStampedReference` 类就是用来解决 ABA 问题的，其中的 `compareAndSet()` 方法就是首先检查当前引用是否等于预期引用，并且当前标志是否等于预期标志，如果全部相等，则以原子方式将该引用和该标志的值设置为给定的更新值。
+
 AtomicStampedReference 可以给原子引用加上**版本号**，追踪原子引用整个的变化过程，知道引用变量中途被**更改了几次**
+
+```java
+public class AtomicStampedReference<V> {
+	private static class Pair<T> {
+        final T reference;
+        final int stamp;
+        private Pair(T reference, int stamp) {
+            this.reference = reference;
+            this.stamp = stamp;
+        }
+        static <T> Pair<T> of(T reference, int stamp) {
+            return new Pair<T>(reference, stamp);
+        }
+    }
+
+	private volatile Pair<V> pair;
+
+    public AtomicStampedReference(V initialRef, int initialStamp) {
+        pair = Pair.of(initialRef, initialStamp);
+    }
+
+	public boolean compareAndSet(V   expectedReference,
+                                 V   newReference,
+                                 int expectedStamp,
+                                 int newStamp) {
+        Pair<V> current = pair;
+        return
+            expectedReference == current.reference &&
+            expectedStamp == current.stamp &&
+            (
+            // 新的引用和stamp 和 current 都一样，不用改了
+            (newReference == current.reference &&
+              newStamp == current.stamp) 
+              ||
+             casPair(current, Pair.of(newReference, newStamp)));
+    }
+}
+```
 
 > ABA 问题解决
 
@@ -3614,7 +3693,7 @@ public class TestFinal {
 
 这种没有**任何成员变量的类**是线程安全的
 
-# ---------- 共享模型_工具_线程池
+# ---------- 共享模型_线程池
 
 ## 自定义线程池
 
@@ -3676,6 +3755,14 @@ public ThreadPoolExecutor(
 - 如果线程数到达 maximumPoolSize 仍然有新任务，会执行**拒绝策略**。
 - 当高峰过去后，超过 corePoolSize 的救急线程如果一段时间没有任务做，需要结束节省资源，这个时间由 keepAliveTime 和 unit 来控制
 
+### 拒绝策略
+
+```java
+public interface RejectedExecutionHandler {  
+    void rejectedExecution(Runnable r, ThreadPoolExecutor executor);  
+}
+```
+
 jdk 提供了 4 种：
 
 - *AbortPolicy*（默认）让调用者抛出 RejectedExecutionException
@@ -3705,10 +3792,10 @@ public static ExecutorService newFixedThreadPool(int nThreads, ThreadFactory thr
 
 特点：
 
-- 核心线程数 == 最大线程数（没有救急线程被创建），因此也无需超时时间
+- 核心线程数 `==` 最大线程数（没有救急线程被创建），因此也无需超时时间
 - 阻塞队列是无界的，可以放任意数量的任务
 
-使用场景：适用于任务量已知，相对耗时的任务
+适用场景：适用于任务量已知，相对耗时的任务
 
 ```java
 ExecutorService pool = Executors.newFixedThreadPool(2, new ThreadFactory() {  
@@ -3819,12 +3906,12 @@ public static ExecutorService newSingleThreadExecutor() {
 特点：
 
 - 线程数固定为 1，且不能修改
-	- FinalizableDelegatedExecutorService 应用的是装饰器模式，只对外暴露了 ExecutorService 接口，因此不能调用 ThreadPoolExecutor 中特有的方法
+	- FinalizableDelegatedExecutorService 应用的是**装饰器模式**，只对外暴露了 ExecutorService 接口，因此不能调用 ThreadPoolExecutor 中特有的方法
 - 任务数多于 1 时，会放入**无界**队列排队
 - 任务执行完毕，这唯一的线程也不会被释放
 - 如果任务执行失败而终止，线程池还会新建一个线程，保证池的正常工作
 
-使用场景：希望多个任务排队执行
+适用场景：希望多个任务排队执行
 
 > `Executors.newFixedThreadPool(1)` 初始时为1，以后还可以修改
 > 
@@ -4897,15 +4984,9 @@ CPU 不总是处于繁忙状态，例如，当你执行业务计算时，这时�
 
 公式：`线程数 = 核数 * 期望 CPU 利用率 * 总时间(CPU计算时间+等待时间) / CPU 计算时间`
 
-> 例如 4 核 CPU 计算时间是 50% ，其它等待时间是 50%，期望 cpu 被 100% 利用，套用公式 4 * 100% * 100% / 50% = 8
+> 例如 4 核 CPU 计算时间是 50% ，其它等待时间是 50%，期望 cpu 被 100% 利用，套用公式 `4 * 100% * 100% / 50% = 8`
 > 
-> 例如 4 核 CPU 计算时间是 10% ，其它等待时间是 90%，期望 cpu 被 100% 利用，套用公式 4 * 100% * 100% / 10% = 40
-
-
-
-
-
-
+> 例如 4 核 CPU 计算时间是 10% ，其它等待时间是 90%，期望 cpu 被 100% 利用，套用公式 `4 * 100% * 100% / 10% = 40`
 
 ## 终止模式_两阶段终止
 

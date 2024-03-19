@@ -2273,7 +2273,7 @@ public class RedissionTest {
 
 1）不可重入Redis分布式锁<br />原理：利用setnx的互斥性；利用ex避免死锁；释放锁时判断线程标示<br />缺陷：不可重入、无法重试、锁超时失效<br />2）可重入的Redis分布式锁<br />原理：利用hash结构，记录线程标示和重入次数；利用watchDog延续锁时间；利用信号量控制锁重试等待<br />缺陷：redis宕机引起锁失效问题<br />3）Redisson的multiLock<br />原理：多个独立的Redis节点，必须在所有节点都获取重入锁，才算获取锁成功<br />缺陷：运维成本高、实现复杂
 
-# Redis优化秒杀（消息队列）
+# Redis 优化秒杀（消息队列）
 
 用户响应速度不够
 
@@ -2290,7 +2290,7 @@ public class RedissionTest {
 
 阻塞队列可以用 JDK 原生的 BlockingQueue 实现，记得指定队列容量。
 
-## Redis消息队列
+## Redis 消息队列
 消息队列 (Message Queue)，字面意思就是存放消息的队列。最简单的消息队列模型包括3个角色
 
 1. 消息队列：存储和管理消息，也被称为消息代理(Message Broker)
@@ -2390,13 +2390,13 @@ Stream是Redis5.0引入的一种新数据类型，可以实现一个功能非常
 完善 blog 点赞功能：
 
 - 显示点赞数
-- 一个用户只能点赞一次 ，点赞/取消点赞
-- 如果当前用户已经点赞，则点赞按钮高亮显（前端已实现，判断字段 Blog 类的 isLike 属性）
+- 一个用户只能点赞一次 ，当前用户 点赞/取消点赞
 
 点赞功能实现步骤：
 
-- 利用 Redis 的 **set 集合**判断是否点赞过，未点赞 liked+1，已点赞 liked-1
-	- kv 设计：**key=blogId，value 存储点赞过的 userId**
+- 利用 Redis 的 **set 集合**判断 是否点赞过，
+	- db：未点赞 liked+1，已点赞 liked-1
+	- kv 设计：k=blogId，v 存放 userId
 	- `SISMEMBER k v` 判断 userId 是否在集合里存在
 		- `RedisTemplate.opsForSet().isMember(k,v)`
 
@@ -2460,71 +2460,99 @@ SortedSet 命令：
 
 实现思路：
 
-1）每个 blog 点赞的用户存入了 Redis 的 Set 集合里，改为存入 SortedSet 集合中，并将时间戳作为 score 排序
+1）当前用户 点赞/取消点赞  实现
 
-- `zadd  k score v` 添加 userId 到集合中
+每个 blog 点赞的用户改为存入 SortedSet，并将**时间戳作为 score 排序**
+
+- `ZSCORE k v`：查询集合里是否存在用户，**存在返回 score**
+	- 存在：`zadd k score v` 添加 userId 到集合中
+	- 不存在：`DEL k`
 
 ```java
-stringRedisTemplate.opsForZSet().add(key, userId.toString(), System.currentTimeMillis());
+/**  
+ * 当前用户 点赞/取消点赞  
+ */  
+@Override  
+public Result likeBlog(Long blogId) {  
+    Long userId = UserHolder.getUser().getId();  
+    String key = BLOG_LIKED_KEY + blogId;  
+    // zscore k，查询 ZSET 里是否存在 userId    Double score = stringRedisTemplate.opsForZSet().score(key, userId.toString());  
+    if (score == null) {  
+        // 没点赞点赞  
+        boolean isSuccess = update().setSql("liked = liked + 1").eq("id", blogId).update();  
+        if (isSuccess) {  
+            // zadd k v score，添加 userId 到 ZSET 中，score为时间戳  
+            stringRedisTemplate.opsForZSet()  
+                    .add(key, userId.toString(), System.currentTimeMillis());  
+        }  
+    } else {  
+        // 点赞了取消  
+        update().setSql("liked = liked - 1").eq("id", blogId).update();  
+        // zset 集合移除 userId        stringRedisTemplate.opsForZSet().remove(key, userId.toString());  
+    }  
+    return Result.ok();  
+}
 ```
 
-- `ZSCORE k v` 查询集合里是否存在用户，存在返回 score
+2）点赞排行榜 实现
+
+`ZRANGE k start end`：获取 top5 的 userId
 
 ```java
-Double score = stringRedisTemplate.opsForZSet().score(key, userId.toString());
-```
-
-2）`ZRANGE` 获取 top5的 userId
-
-```java
-@Override
-    public Result queryBlogLikes(Long blogId) {
-        // 1 查询top5的用户
-        String key = BLOG_LIKED_KEY + blogId;
-        Set<String> top5 = stringRedisTemplate.opsForZSet().range(key, 0, 4);
-        if (top5 == null || top5.isEmpty()) {
-            return Result.ok(Collections.emptyList());
-        }
-        // 2 解析userId
-        List<Long> ids = top5.stream().map(Long::valueOf).collect(Collectors.toList());
-        String strIds = StrUtil.join(",", ids);
-        // 3 userId查询user信息
-        // 注意：mysql的in不保证有序性，用order by field(id, id1, id2 ...) 保证有序
-        List<UserDTO> userDTOS = userService
-                .query().in("id", ids).last("ORDER BY FIELD(id," + strIds + ")").list()
-                .stream()
-                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
-                .collect(Collectors.toList());
-        // 4 返回用户信息
-        return Result.ok(userDTOS);
-    }
+/**  
+ * 点赞排行榜：获取最先点赞的top5用户  
+ */  
+@Override  
+public Result queryBlogLikes(Long blogId) {  
+    String key = BLOG_LIKED_KEY + blogId;  
+    // ZRANGE k start end，获取top5  
+    Set<String> top5 = stringRedisTemplate.opsForZSet().range(key, 0, 4);  
+    if (top5 == null || top5.isEmpty()) {  
+        return Result.ok(Collections.emptyList());  
+    }  
+    // userId，String-->Long  
+    List<Long> ids = top5.stream().map(Long::valueOf).collect(Collectors.toList());  
+    String strIds = StrUtil.join(",", ids);  
+    // db 查询用户信息  
+    List<UserDTO> userDTOS = userService  
+            // 注意：mysql的in不保证有序性，order by field(id, id1, id2 ...) 保证有序  
+            .query().in("id", ids).last("ORDER BY FIELD(id," + strIds + ")").list()  
+            .stream()  
+            .map(user -> BeanUtil.copyProperties(user, UserDTO.class))  
+            .collect(Collectors.toList());  
+  
+    return Result.ok(userDTOS);  
+}
 ```
 
 # 好友关注（SortedSet）
+
 ## 关注和取关
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696252400255-99b8c0b5-6087-45b4-9aac-3150f2e631c6.png#averageHue=%23e6e1dd&clientId=ucf2f1bc2-449d-4&from=paste&height=856&id=u2519c825&originHeight=1036&originWidth=1830&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=1337883&status=done&style=none&taskId=u1735487e-fd96-453f-ad9a-b2b31a927c1&title=&width=1512.3966465344186)<br />关注是User之间多对多的关系，需要一张表来维护关注关系<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696252948704-d91d1bc2-bb36-4842-89af-081578df9302.png#averageHue=%23eeeeeb&clientId=ucf2f1bc2-449d-4&from=paste&height=202&id=u33fdfc7f&originHeight=245&originWidth=1162&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=261918&status=done&style=none&taskId=u3973fa14-5c42-4cfb-9333-d51d20feac7&title=&width=960.3305482366089)
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696252400255-99b8c0b5-6087-45b4-9aac-3150f2e631c6.png#averageHue=%23e6e1dd&clientId=ucf2f1bc2-449d-4&from=paste&height=856&id=u2519c825&originHeight=1036&originWidth=1830&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=1337883&status=done&style=none&taskId=u1735487e-fd96-453f-ad9a-b2b31a927c1&title=&width=1512.3966465344186)
+
+关注是 User 之间多对多的关系，需要一张表 tb_follow 来维护关注关系
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696252948704-d91d1bc2-bb36-4842-89af-081578df9302.png#averageHue=%23eeeeeb&clientId=ucf2f1bc2-449d-4&from=paste&height=202&id=u33fdfc7f&originHeight=245&originWidth=1162&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=261918&status=done&style=none&taskId=u3973fa14-5c42-4cfb-9333-d51d20feac7&title=&width=960.3305482366089)
 
 关注和取关实现
+
 ```java
 /**
  * 关注和取关
- *
- * @param followUserId
- * @param isFollow     是否关注了
- * @return
  */
 @Override
 public Result follow(Long followUserId, Boolean isFollow) {
-    // 1 获取登录用户
+    // 获取登录用户
     Long userId = UserHolder.getUser().getId();
-    // 2 关注，新增关注数据
     if (isFollow) {
+	    // 关注，新增关注数据
         Follow follow = new Follow();
         follow.setUserId(userId);
         follow.setFollowUserId(followUserId);
         save(follow);
     } else {
-        // 3 取关，删除关注数据
+        // 取关，删除关注数据
         remove(new QueryWrapper<Follow>()
                 .eq("user_id", userId)
                 .eq("follow_user_id", followUserId));
@@ -2534,101 +2562,153 @@ public Result follow(Long followUserId, Boolean isFollow) {
 ```
 
 ## 共同关注
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696257266272-1c1ce2c6-571a-4c2b-a35d-92cfb6516f85.png#averageHue=%23f9f8f8&clientId=ueca89f5f-b08d-4&from=paste&height=763&id=u90793dab&originHeight=923&originWidth=1725&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=368321&status=done&style=none&taskId=u8a5994af-1a02-4f3c-9f19-9f7849bb5b9&title=&width=1425.6197897660502)
 
-实现思路：<br />1）关注用户以后，把关注用户id存入redis的Set集合<br />2）借助Redis的Set集合求交集功能，求共同关注（两个用户各自的关注用户Set集合求交集）
-```java
-// 2 求关注交集
-Set<String> intersectIds = stringRedisTemplate.opsForSet().intersect(key, key2);
-```
+![600](assets/image%20(36).png)
+
+实现思路：
+
+- 关注用户以后，把 关注用户 id 存入 redis 的 Set 集合
+- 借助 Set 集合**求交集**功能，求共同关注
+	- `SINTER k1 k2 ...`
 
 查找共同关注实现
+
 ```java
 /**
-     * 查找共同关注
-     *
-     * @param userId2
-     * @return
-     */
-    @Override
-    public Result followCommon(Long userId2) {
-        // 1 获取当前user
-        Long userId = UserHolder.getUser().getId();
-        String key = "follows:" + userId;
-        String key2 = "follows:" + userId2;
-        // 2 求关注交集
-        Set<String> intersectIds = stringRedisTemplate.opsForSet().intersect(key, key2);
-        // 2.1 无交集
-        if (intersectIds == null || intersectIds.isEmpty()) {
-            // 无交集
-            return Result.ok(Collections.emptyList());
-        }
-        // 3 有交集，解析id交集
-        List<Long> ids = intersectIds.stream().map(Long::valueOf).collect(Collectors.toList());
-        // 4 查询用户并封装
-        List<UserDTO> userDTOS = userService.listByIds(ids).stream()
-                .map(user -> BeanUtil.copyProperties(user, UserDTO.class))
-                .collect(Collectors.toList());
-        // 5 返回
-        return Result.ok(userDTOS);
-    }
+ * 查找共同关注
+ */
+@Override
+public Result followCommon(Long userId2) {
+	// 获取当前user
+	Long userId = UserHolder.getUser().getId();
+	String key = "follows:" + userId;
+	String key2 = "follows:" + userId2;
+	// SINTER k1 k2 ...，求关注交集
+	Set<String> intersectIds = stringRedisTemplate.opsForSet()
+		.intersect(key, key2);
+	if (intersectIds == null || intersectIds.isEmpty()) {
+		// 无交集
+		return Result.ok(Collections.emptyList());
+	}
+	// 封装获取共同关注用户信息
+	List<Long> ids = intersectIds.stream().map(Long::valueOf).collect(Collectors.toList());
+	List<UserDTO> userDTOS = userService.listByIds(ids).stream()
+			.map(user -> BeanUtil.copyProperties(user, UserDTO.class))
+			.collect(Collectors.toList());
+
+	return Result.ok(userDTOS);
 }
 ```
 
+> 取关以后要从 Redis 里删除
+
 ## 关注推送
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696301205007-61a93fa6-e98f-4105-9b0e-87a00e7b9ba3.png#averageHue=%23e9dede&clientId=uc4865e41-f4dd-4&from=paste&height=657&id=u7f8e920a&originHeight=904&originWidth=2035&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=453212&status=done&style=none&taskId=u22da3e70-11ac-4081-affe-755ca26cc01&title=&width=1480)
 
-Feed流产品有两种常见模式:<br />1）Timeline<br />不做内容筛选，简单的按照内容发布时间排序，常用于好友或关注。例如朋友圈
+### feed 流
 
+![](assets/image%20(37).png)
+
+Feed 流产品有两种常见模式：
+
+1）Timeline
+
+不做内容筛选，按照内容**发布时间排序**
+
+- 常用于好友或关注（例如朋友圈）
 - 优点：信息全面，不会有缺失。并且实现也相对简单
 - 缺点：信息噪音较多，用户不一定感兴趣，内容获取效率低
 
-2）智能排序<br />利用智能算法屏蔽掉违规的、用户不感兴趣的内容。推送用户感兴趣信息来吸引用户
+2）智能排序
+
+利用智能算法屏蔽掉违规的、用户不感兴趣的内容。推送用户感兴趣信息来吸引用户
 
 - 优点：投喂用户感兴趣信息，用户粘度很高，容易沉迷
 - 缺点：如果算法不精准，可能起到反作用
 
-本例中的个人页面，是基于关注的好友来做Feed流，因此采用Timeline的模式。该模式的实现方案有三种：<br />**1）拉模式**<br />也叫读扩散<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696300489737-9614df1e-eac1-40d0-a568-66092fd4eec5.png#averageHue=%23fbfbfb&clientId=uf6eea3f4-1efa-4&from=paste&height=331&id=u2497a1f2&originHeight=455&originWidth=1057&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=169638&status=done&style=none&taskId=u96c20df2-588a-411d-a7c8-b04448e7329&title=&width=768.7272727272727)<br />缺点：读取+排序耗时时间久
+### Timeline 模式
 
-**2）推模式**<br />也叫写扩散<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696300665303-92acddd4-d33f-4969-8225-ed7088f492e6.png#averageHue=%23f6f6f6&clientId=uf6eea3f4-1efa-4&from=paste&height=366&id=u227f8189&originHeight=503&originWidth=727&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=129564&status=done&style=none&taskId=ufa91eb6c-767e-4239-9a18-21a74db4d6c&title=&width=528.7272727272727)<br />缺点：发消息以后，每个粉丝都会收到消息，粉丝很多的情况下特别耗费空间
+本例中的个人页面，是基于关注的好友来做 Feed 流，因此采用 **Timeline** 的模式。该模式的实现方案有三种：
 
-**3）推拉结合**<br />也叫读写混合<br />普通人（粉丝少）发消息，直接采用推模式发送到收件箱<br />大V（粉丝多）发消息，对于活跃粉丝采用推模式，普通粉丝采用拉模式<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696301196217-7cdc14db-5b5d-4055-8481-f0a71d1029a3.png#averageHue=%23fafafa&clientId=uc4865e41-f4dd-4&from=paste&height=614&id=u7355c642&originHeight=844&originWidth=1760&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=442718&status=done&style=none&taskId=ud6c7f5a7-ecc2-44a4-88c9-eb93c58b6cb&title=&width=1280)
+1）拉模式（也叫读扩散）
 
-三种方案的对比![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696301733465-e19d8493-0c1e-4c22-8b6b-0e75bcef3167.png#averageHue=%23e5e4e2&clientId=u0e7bccfb-d4de-4&from=paste&height=621&id=u1f0f7c60&originHeight=854&originWidth=1954&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=298147&status=done&style=none&taskId=ue3c3aae5-78b7-48c7-82be-4fd0cf45f60&title=&width=1421.090909090909)
+- 缺点：读取+排序 耗时时间久
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696596401052-728792fb-8bb3-43ef-ad12-5de17ba1b65d.png#averageHue=%23e0d9d7&clientId=u14818403-b2ea-4&from=paste&height=384&id=uc0f31c72&originHeight=528&originWidth=944&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=317621&status=done&style=none&taskId=ucc998b1e-9c5c-4c14-a916-7a9f17f500d&title=&width=686.5454545454545)<br />微博、抖音都有类似的功能，关注页面下拉刷新
+![](assets/image%20(38).png)
 
-**基于推模式实现关注推送功能**<br />实现思路：<br />1）收件箱满足可以根据时间戳排序，用Redis的`SortedSet`实现<br />key为前缀+userId，value为blogId，score为时间戳<br />2）修改新增探店blog的业务，在保存blog到数据库的同时，推送到粉丝的收件箱<br />3）查询收件箱数据时，可以实现分页查询，滚动分页
+2）推模式（也叫写扩散）
 
-Feed流的分页问题<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696303340160-ba46df9a-1e15-4c88-9b7e-f72f1899113b.png#averageHue=%23f7f6f5&clientId=uaa1f8912-4175-4&from=paste&height=337&id=ue0e156f0&originHeight=464&originWidth=890&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=127198&status=done&style=none&taskId=u25b01fed-54c0-423f-b579-76a14700d81&title=&width=647.2727272727273)<br />**滚动分页**<br />lastId记录每次当前页查询到的最后一条数据的时间戳（类似游标）。查询下一页时，从当前时间戳的下一条开始查询即可<br />查询指令：`zrevrangebyscore key max min [WITHSCORES] [LIMIT offset count]`
+发消息以后，每个粉丝都会收到消息
 
-- 从大到小排序
-- max：分数最大值，<=，每次取上次查询的分数最小值。
-- min：分数最小值（不变，始终是0）。
-- offset：起始角标，取在上一次的结果中与最小值一样的元素个数
+- 缺点：粉丝很多的情况下特别耗费空间
+
+![500](assets/image%20(39).png)
+
+3）推拉结合（也叫读写混合）
+
+- 普通人（粉丝少）发消息，直接采用推模式发送到收件箱
+- 大V（粉丝多）发消息，对于活跃粉丝采用推模式，普通粉丝采用拉模式
+
+![](assets/image%20(40).png)
+
+三种方案的对比
+
+![](assets/image%20(41).png)
+
+### 拉模式实现
+
+![600](assets/image%20(42).png)
+
+> 微博、抖音、pyq 都有类似的功能，关注页面下拉刷新
+
+基于“推模式”实现关注推送功能
+
+- 1）收件箱用 Redis 的 **SortedSet** 实现
+	- kv 设计： key 为前缀+userId，value 存放 blogId，**score 为时间戳**
+
+- 2）保存 blog 到 db 的同时，推送到粉丝的收件箱
+
+- 3）查询收件箱数据时，可以实现分页查询，滚动分页
+
+Feed 流的分页问题：角标在不断变化
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696303340160-ba46df9a-1e15-4c88-9b7e-f72f1899113b.png#averageHue=%23f7f6f5&clientId=uaa1f8912-4175-4&from=paste&height=337&id=ue0e156f0&originHeight=464&originWidth=890&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=127198&status=done&style=none&taskId=u25b01fed-54c0-423f-b579-76a14700d81&title=&width=647.2727272727273)
+
+滚动分页
+
+lastId 记录每次**当前页查询到的最后一条数据的时间戳**（类似游标）。查询下一页时，从当前时间戳的下一条开始查询即可
+
+查询指令：`zrevrangebyscore key max min [WITHSCORES] [LIMIT offset count]`
+
+- rev：从大到小排序，时间从近到远
+- max：score 最大值，<=，每次取上次查询的 score 最小值
+- min：score 最小值（不变，始终是0）
+- offset：起始角标，取在上一次的结果中**与最小值一样**的元素个数
 - count：查询数量
+- WITHSCORES：显示分数值
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696303726556-5cdf21c3-7337-43d8-9f4d-f57474bd8255.png#averageHue=%23f7f6f6&clientId=uaa1f8912-4175-4&from=paste&height=311&id=u059f77b7&originHeight=427&originWidth=963&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=98864&status=done&style=none&taskId=u800134c6-5118-4cd5-bd44-6e37b3490d8&title=&width=700.3636363636364)<br />关注推送实现
+![](assets/image%20(43).png)
+
+关注推送实现
+
 ```java
 /**
  * 查询关注列表里，关注用户的最新博文，下拉（滚动）刷新
  *
- * @param max    最大的时间戳
+ * @param max    游标，最大的时间戳
  * @param offset 偏移量，从第几条开始查
- * @return
  */
 @Override
 public Result queryBlogOfFollow(long max, Integer offset) {
-    // 1 获取当前用户
+    // 获取当前用户
     Long userId = UserHolder.getUser().getId();
-    // 2 查询收件箱
+    // zset 查询收件箱
     String key = FEED_KEY + userId;
-    Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet().reverseRangeByScoreWithScores(key, 0, max, offset, 2);
-    // 3 非空判断
+    Set<ZSetOperations.TypedTuple<String>> typedTuples = stringRedisTemplate.opsForZSet()
+	    .reverseRangeByScoreWithScores(key, 0, max, offset, 2);
     if (typedTuples == null || typedTuples.isEmpty()) {
         return Result.ok();
     }
-    // 4 解析收件箱数据
+    // 解析收件箱数据
     // zset={5,5,5,5,3,3,2}
     // 第一次：max=6, offset=0, res={5,5}, offset=2,
     // 第二次：
@@ -2636,9 +2716,9 @@ public Result queryBlogOfFollow(long max, Integer offset) {
     int os = 1;
     List<Long> blogIds = new ArrayList<>(typedTuples.size());
     for (ZSetOperations.TypedTuple<String> typedTuple : typedTuples) {
-        // 4.2 获取分数（时间戳）
+        // 获取分数（时间戳）
         long time = typedTuple.getScore().longValue();
-        // 4.1 获取blogId
+        // 获取blogId
         blogIds.add(Long.valueOf(typedTuple.getValue()));
         // 获取最小时间戳、偏移量
         if (time == minTime) {
@@ -2648,15 +2728,15 @@ public Result queryBlogOfFollow(long max, Integer offset) {
             os = 1;
         }
     }
-    // 5 根据id查询blog
+    // db 查询blog
     String strIds = StrUtil.join(",", blogIds);
     List<Blog> blogs = query().in("id", blogIds).last("ORDER BY FIELD(id," + strIds + ")").list();
-    // 6 查询笔记的用户信息，被点赞信息
+    // db 查询blog的用户信息，被点赞信息
     for (Blog blog : blogs) {
         queryBlogUser(blog);
         isBlogLiked(blog);
     }
-    // 7 封装返回
+
     ScrollResult r = new ScrollResult();
     r.setList(blogs);
     r.setOffset(os);
@@ -2666,195 +2746,260 @@ public Result queryBlogOfFollow(long max, Integer offset) {
 ```
 
 # 附近商铺（GEO）
-## GEO
-GEO就是Geolocation的简写形式，代表地理坐标。Redis在3.2版本中加入了对GEO的支持，允许存储地理坐标信息，帮助我们根据经纬度来检索数据。常见的命令有:<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696663098878-c7bbaacc-108c-444a-9df7-4511ebb53508.png#averageHue=%23ececec&clientId=uea7f3b2e-47a7-4&from=paste&height=264&id=udcb5af30&originHeight=320&originWidth=1189&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=178726&status=done&style=none&taskId=u7859da94-2a4a-49fc-98a9-39c450c6e3b&title=&width=982.6445971199037)
-> 示例：
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696663425094-d7150e2c-1591-4fe6-9f87-ee6a66610d06.png#averageHue=%2311273b&clientId=uea7f3b2e-47a7-4&from=paste&height=47&id=u634f3a00&originHeight=57&originWidth=1225&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=71626&status=done&style=none&taskId=u1ba65b53-7a4d-42a6-900b-807c8f34af7&title=&width=1012.39666229763)
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696663404527-dd6735d7-2d79-4b2c-9957-bbf523b43e27.png#averageHue=%23efefef&clientId=uea7f3b2e-47a7-4&from=paste&height=112&id=u50ca16b6&originHeight=135&originWidth=883&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=26874&status=done&style=none&taskId=u4546ab27-af93-41f8-b9b8-3c21f74603a&title=&width=729.7520431092304)
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664137200-4d9f7e33-c933-4298-b995-ee0828237fc0.png#averageHue=%23162a3e&clientId=uea7f3b2e-47a7-4&from=paste&height=40&id=u1d03a498&originHeight=49&originWidth=440&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=30148&status=done&style=none&taskId=u93f6227f-cb53-4f8c-ad6f-e28597df471&title=&width=363.6363521722099)
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664224298-b27f5b74-19f9-4051-9840-1cc1fda12f04.png#averageHue=%23203346&clientId=uea7f3b2e-47a7-4&from=paste&height=63&id=uf2844529&originHeight=76&originWidth=375&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=55096&status=done&style=none&taskId=u3b0c3174-9ddf-49a3-9f87-0ff01a78bbe&title=&width=309.9173456013153)
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664247137-d89b976d-8a14-4415-bc9a-bddd5ae284b0.png#averageHue=%231c2f42&clientId=uea7f3b2e-47a7-4&from=paste&height=38&id=ue2fd12ab&originHeight=46&originWidth=378&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=29909&status=done&style=none&taskId=u726fa3d3-5600-48b7-b713-d693b5de29b&title=&width=312.3966843661258)
-> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664204137-f232ec32-d99f-4009-8ee4-78a2292b4bd8.png#averageHue=%23092135&clientId=uea7f3b2e-47a7-4&from=paste&height=152&id=u79284ecc&originHeight=184&originWidth=1042&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=102550&status=done&style=none&taskId=u31d9a723-5ce9-4399-b896-890b631f2f3&title=&width=861.1569976441881)
 
+## GEO
+
+GEO 就是 Geolocation 的简写形式，代表地理坐标。Redis 在 3.2 版本中加入了对 GEO 的支持，允许存储地理坐标信息，帮助我们根据经纬度来检索数据。常见的命令有:
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696663098878-c7bbaacc-108c-444a-9df7-4511ebb53508.png#averageHue=%23ececec&clientId=uea7f3b2e-47a7-4&from=paste&height=264&id=udcb5af30&originHeight=320&originWidth=1189&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=178726&status=done&style=none&taskId=u7859da94-2a4a-49fc-98a9-39c450c6e3b&title=&width=982.6445971199037)
+
+相关命令
+
+```bash
+# 添加一个地理位置坐标，[精度 纬度 位置名称]
+GEOADD key longitude latitude member [longitude latitude member ...]
+
+# 返回指定member的坐标
+GEOPOS key member [member ...]
+
+# 返回两个member间的距离，可选单位
+GEODIST key member1 member2 [m|km|ft|mi]
+
+# 指定圆心坐标、半径，返回给定点范围内的member
+GEORADIUS key longitude latitude radius m|km|ft|mi [WITHCOORD] [WITHDIST] [WITHHASH] [COUNT count] [ASC|DESC] [STORE key] [STOREDIST key]
+
+# 返回member的hash字符串
+GEOHASH key member [member ...]
+```
 
 ## 附近商户搜索
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664423482-812c6f96-c0a8-4910-bd0f-6de855fe35d1.png#averageHue=%23bda18c&clientId=uea7f3b2e-47a7-4&from=paste&height=448&id=ucf00cbc7&originHeight=542&originWidth=1209&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=500754&status=done&style=none&taskId=ubd495c47-1749-490b-a524-0de9a6067d9&title=&width=999.1735222186404)<br />实现流程<br />1）导入商铺信息到GEO<br />按照商户类型做分组，类型相同的商户作为同一组，以typeld为key存入同一个GEO集合中即可<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664622175-76871b4b-c5a9-4ff9-940b-7f07f89c7236.png#averageHue=%23d4c0bf&clientId=uea7f3b2e-47a7-4&from=paste&height=304&id=u4a4037bc&originHeight=368&originWidth=715&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=134933&status=done&style=none&taskId=u24ff9ff9-e062-430c-940a-c002b5f0e53&title=&width=590.9090722798411)
-```java
 
-  /**
-     * 将店铺地理信息存入Redis
-     */
-    @Test
-    public void loadShopData() {
-        // 1 查询店铺信息
-        List<Shop> shopList = shopService.list();
-        // 2 店铺按照typeId分组
-        Map<Long, List<Shop>> shopMap = shopList.stream().collect(Collectors.groupingBy(Shop::getTypeId));
-        // 3 分批写入Redis，同一类型商铺一批
-        for (Map.Entry<Long, List<Shop>> entry : shopMap.entrySet()) {
-            // 获取商铺类型id
-            Long typeId = entry.getKey();
-            // 获取同一类型的全部商铺
-            List<Shop> shops = entry.getValue();
-            // 将商铺的地理坐标存起来
-            List<RedisGeoCommands.GeoLocation<String>> locations = new ArrayList<>(shops.size());
-            for (Shop shop : shops) {
-                locations.add(new RedisGeoCommands.GeoLocation<String>(
-                        shop.getId().toString(),
-                        new Point(shop.getX(), shop.getY())
-                ));
-            }
-            String key = "shop:geo:" + typeId;
-            stringRedisTemplate.opsForGeo().add(key, locations);
-        }
-    }
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696664423482-812c6f96-c0a8-4910-bd0f-6de855fe35d1.png#averageHue=%23bda18c&clientId=uea7f3b2e-47a7-4&from=paste&height=448&id=ucf00cbc7&originHeight=542&originWidth=1209&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=500754&status=done&style=none&taskId=ubd495c47-1749-490b-a524-0de9a6067d9&title=&width=999.1735222186404)
+
+实现流程
+
+1）导入商铺信息到 GEO
+
+按照商户类型做分组，类型相同的商户作为同一组，以 typeld 为 key 存入同一个 GEO 集合中即可
+
+![400](assets/image%20(44).png)
+
+```java
+/**
+ * 将店铺地理坐标存入Redis
+ */
+@Test
+public void loadShopData() {
+	List<Shop> shopList = shopService.list();
+	// 店铺按照typeId分组
+	Map<Long, List<Shop>> shopMap = shopList.stream()
+		.collect(Collectors.groupingBy(Shop::getTypeId));
+	// 按照typeId，分批写入Redis
+	for (Map.Entry<Long, List<Shop>> entry : shopMap.entrySet()) {
+		Long typeId = entry.getKey();
+		List<Shop> shops = entry.getValue();
+		// 获取商铺的地理坐标
+		List<RedisGeoCommands.GeoLocation<String>> locations = new ArrayList<>(shops.size());
+		for (Shop shop : shops) {
+			locations.add(new RedisGeoCommands.GeoLocation<String>(
+					// member
+					shop.getId().toString(),
+					// 坐标
+					new Point(shop.getX(), shop.getY())
+			));
+		}
+		String key = "shop:geo:" + typeId;
+		stringRedisTemplate.opsForGeo().add(key, locations);
+	}
+}
 ```
- 2）根据坐标查询附近商铺<br />`GEOSEARCH`查出坐标(x,y)附近的商铺
+ 
+ 2）根据坐标查询附近商铺 `GEOSEARCH` 查出坐标 `(x,y)` 附近的商铺
+ 
 ```java
 GEOSEARCH key [FROMMEMBER member] [FROMLONLAT longitude latitude] [BYRADIUS radius m|km|ft|mi] [BYBOX width height m|km|ft|mi] [ASC|DESC] [COUNT count [ANY]] [WITHCOORD] [WITHDIST] [WITHHASH]
 ```
+
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696669325983-170ef964-0f11-425a-80b0-0d4d2c8f4769.png#averageHue=%23eaece8&clientId=uea7f3b2e-47a7-4&from=paste&height=608&id=ud504ccb6&originHeight=736&originWidth=1602&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=846125&status=done&style=none&taskId=u26f11a01-a715-4d79-b8d1-6afa7f0c169&title=&width=1323.966900408819)
 
 # 用户签到（BitMap）
+
 ## BitMap
-  ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696684374313-247c447b-8ecd-40ef-9f83-e493bbd6a2d7.png#averageHue=%23f2f2f2&clientId=uea7f3b2e-47a7-4&from=paste&height=330&id=ue5f2b4ef&originHeight=399&originWidth=913&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=245953&status=done&style=none&taskId=u6b5d750a-d1e0-477a-bc65-93cbb514244&title=&width=754.5454307573356)<br /> <br />bitmap用法<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696684732716-e1d8bd0a-472b-41fe-bd71-14f278aecd7d.png#averageHue=%23f3f3f3&clientId=uea7f3b2e-47a7-4&from=paste&height=343&id=u5eda6ac0&originHeight=415&originWidth=1075&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=100516&status=done&style=none&taskId=u39935152-c4e4-41b1-b41a-d000a1efec9&title=&width=888.4297240571038)<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696685634522-fc6ce376-3238-4767-a39f-57a91bdb2821.png#averageHue=%23eeeeee&clientId=uea7f3b2e-47a7-4&from=paste&height=293&id=u06e8cd25&originHeight=354&originWidth=844&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=130208&status=done&style=none&taskId=u30d7bdd2-4a56-473c-b7a1-5f0b3f75983&title=&width=698)<br /> 
+
+![600](assets/image%20(47).png)
+
+Redis 中利用 String 类型实现 BitMap
+
+![](assets/image%20(45).png)
+
+操作 String 的指令
+
+![500](assets/image%20(46).png)
+
 ## 签到功能
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696689708214-6335f243-bc16-4ff1-8082-5144870b8020.png#averageHue=%23eae4e3&clientId=uea7f3b2e-47a7-4&from=paste&height=389&id=u40705630&originHeight=471&originWidth=913&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=158612&status=done&style=none&taskId=u022e11eb-a326-4903-ad76-ddb46e54e2e&title=&width=754.5454307573356)<br />实现流程：<br />1）获取用户、签到的年月<br />2）存入Redis的BitMap结构
-```java
-help setbit
 
-SETBIT key offset value
-```
+![600](assets/image%20(48).png)
 
-   - key：前缀+userId+年月
-   - value：1
+实现流程：
+
+- 获取用户签到的年月日
+- 存入 Redis 的 BitMap 结构 
+	- `SETBIT key offset value`
+		- key：前缀+userId+年月
+		- offset：日
+		- value：1
 
 业务实现
+
 ```java
 /**
  * 用户签到
- * @return
  */
 @Override
 public Result sign() {
-    // 1 获取当前登录用户
+    // 获取当前登录用户
     Long userId = UserHolder.getUser().getId();
-    // 2 获取日期
+    // 获取日期
     LocalDateTime now = LocalDateTime.now();
-    // 3 拼接key：前缀+userId+年月
+    // 拼接key：前缀+userId+年月
     String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
     String key = USER_SIGN_KEY + userId + keySuffix;
-    // 4 获取今天是本月的第几天
+    // 获取今天是本月的第几天
     int dayOfMonth = now.getDayOfMonth();
-    // 5 写入Redis：SETBIT key offset 1
+    // 写入Redis：SETBIT key offset 1
     stringRedisTemplate.opsForValue().setBit(key, dayOfMonth - 1, true);
     return Result.ok();
 }
 ```
 
-## 签到统计
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696761254399-cd80adfa-3d7e-40eb-be97-dc05346ccf5a.png#averageHue=%23ded2d2&clientId=ub2e9aa43-995d-4&from=paste&height=207&id=bhFzC&originHeight=284&originWidth=719&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=64264&status=done&style=none&taskId=ud81e8d6f-1419-4883-b92c-34af1bfe5d2&title=&width=522.9090909090909)<br />1）连续签到天数：从最后一次签到开始向前统计，直到遇到第一次未签到为止，计算总的签到次数，就是连续签到天数
+## 月签到统计
 
-2）如何得到本月到今天的所有签到数据？<br />`BITFIELD`：操作(查询、修改、自增)BitMap中bit数组中的指定位置 (offset)的值
-```java
-help BITFIELD
+![500](assets/image%20(49).png)
 
-BITFIELD key [GET type offset]
-```
-下面是最常规的做法，循环获取redis key中的偏移值，但是这种写法看着确实不太优雅....
+1）*连续签到天数*：从最后一次签到开始向前统计，直到遇到**第一次未签到**为止，计算总的签到次数，就是连续签到天数
+
+2）如何得到本月到今天的所有签到数据？
+
+`BITFIELD key [GET type offset]`：操作 (type：查询、修改、自增) BitMap 中 bit 数组中指定位置（offset）的值
+
+第一种循环获取 redis key 中的偏移值，但是这种写法看着确实不太优雅....
+
 ```java
 long offset = 0;
 for (int i = 0; i < 10; i++) {
     redisTemplate.opsForValue().getBit("key", offset);
 }
 ```
-spring-boot-starter-data-redis早就考虑到了这一点，所以为我们提供了一种批量执行命令的方式。我们需要使用`BitFieldSubCommands`
 
-3）如何获取连续签到天数？<br />Redis返回的是10进制数<br />与1做与运算可以得到最后一个bit位<br />循环：右移，直到某一天与运算结果为0停止
+spring-boot-starter-data-redis 早就考虑到了这一点，所以为我们提供了一种批量执行命令的方式。我们需要使用 `BitFieldSubCommands`
 
-完整实现
+3）如何获取连续签到天数？
+
+- Redis 返回的是 10 进制数
+- 与 1 做与运算可以得到最后一个 bit 位（最后一次签到）
+- 循环：右移，直到某一天与运算结果为 0 停止（第一次未签到）
+
 ```java
 /**
-     * 统计签到天数
-     * @return
-     */
-    @Override
-    public Result signCount() {
-        // 1 获取当前登录用户
-        Long userId = UserHolder.getUser().getId();
-        // 2 获取日期
-        LocalDateTime now = LocalDateTime.now();
-        // 3 拼接key：前缀+userId+年月
-        String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
-        String key = USER_SIGN_KEY + userId + keySuffix;
-        // 4 获取今天是本月的第几天
-        int dayOfMonth = now.getDayOfMonth();
-        // 5 获取本月截止到今天的所有签到记录，返回的是一个10进制数字
-        // BITFIELD sign:5:202203 GET u14
-        List<Long> result = stringRedisTemplate.opsForValue().bitField(
-                key,
-                BitFieldSubCommands.create() // 这里采用批量执行命令的方式
-                        .get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)) // 无符号、截止到dayOfMonth
-                        .valueAt(0) // 从角标0开始
-        );
-        if (result == null || result.isEmpty()) {
-            // 没有签到结果
-            return Result.ok(0);
-        }
-        Long num = result.get(0);
-        if (num == null || num == 0) {
-            // 十进制0代表没签到
-            return Result.ok(0);
-        }
-        // 6 获取连续签到天数
-        int count = 0;
-        while (true) {
-            // 和1做与运算，得到数字最后一个bit位
-            if ((num & 1) == 0) {
-                // 最后一位为0，改天未签到
-                break;
-            } else {
-                count++;
-            }
-            // 右移，到前一天
-            num >>>= 1;
-        }
-        return Result.ok(count);
-    }
+ * 统计签到天数
+ * @return
+ */
+@Override
+public Result signCount() {
+	// 1 获取当前登录用户
+	Long userId = UserHolder.getUser().getId();
+	// 2 获取日期
+	LocalDateTime now = LocalDateTime.now();
+	// 3 拼接key：前缀+userId+年月
+	String keySuffix = now.format(DateTimeFormatter.ofPattern(":yyyyMM"));
+	String key = USER_SIGN_KEY + userId + keySuffix;
+	// 4 获取今天是本月的第几天
+	int dayOfMonth = now.getDayOfMonth();
+	// 5 获取本月截止到今天的所有签到记录，返回的是一个10进制数字
+	// BITFIELD sign:5:202203 GET u14
+	List<Long> result = stringRedisTemplate.opsForValue().bitField(
+			key,
+			BitFieldSubCommands.create() // 这里采用批量执行命令的方式
+					.get(BitFieldSubCommands.BitFieldType.unsigned(dayOfMonth)) // 无符号、截止到dayOfMonth
+					.valueAt(0) // 从角标0开始
+	);
+	if (result == null || result.isEmpty()) {
+		// 没有签到结果
+		return Result.ok(0);
+	}
+	Long num = result.get(0);
+	if (num == null || num == 0) {
+		// 十进制0代表没签到
+		return Result.ok(0);
+	}
+	// 6 获取连续签到天数
+	int count = 0;
+	while (true) {
+		// 和1做与运算，得到数字最后一个bit位
+		if ((num & 1) == 0) {
+			// 最后一位为0，改天未签到
+			break;
+		} else {
+			count++;
+		}
+		// 右移，到前一天
+		num >>>= 1;
+	}
+	return Result.ok(count);
+}
 ```
 
-# UV统计（HyperLogLog）
-## HyperLogLog用法
+# UV 统计（HyperLogLog）
 
-1. UV：全称Unique Visitor，也叫独立访客量，是指通过互联网访问、浏览这个网页的自然人。1天内同一个用户多次问该网站，只记录1次。
-2. PV：全称Page View，也叫页面访问量或点击量，用户每访问网站的一个页面，记录1次PV，用户多次打开页面，则记录多次PV。往往用来衡量网站的流量。
+- UV：全称 Unique Visitor，也叫独立访客量，是指通过互联网访问、浏览这个网页的自然人。**1 天内同一个用户多次问该网站，只记录 1 次。**
+- PV：全称 Page View，也叫页面访问量或点击量，用户每访问网站的一个页面，记录 1 次 PV，用户多次打开页面，则记录多次 PV。往往用来衡量网站的流量。
 
-UV统计在服务端做会比较麻烦，因为要判断该用户是否已经统计过了，需要将统计过的用户信息保存。但是如果每个访问的用户都保存到Redis中，数据量会非常恐怖。
+UV 统计在服务端做会比较麻烦，因为要判断该用户是否已经统计过了，需要将统计过的用户信息保存。但是如果每个访问的用户都保存到 Redis 中，数据量会非常恐怖。
 
-Hyperloglog(HLL)是从Loglog算法派生的概率算法，用于确定非常大的集合的基数，而不需要存储其所有值。相关算法原理可以参考: <br />[HyperLogLog 算法的原理讲解以及 Redis 是如何应用它的 - 掘金](https://juejin.cn/post/6844903785744056333#heading-0Redis)<br />Redis中的HLL是基于string结构实现的，单个HLL的内存永远小于16kb，内存占用低的令人发指！作为代价，其测量结果是概率性的，有小于0.81%的误差。不过对于UV统计来说，这完全可以忽略。
+## HyperLogLog
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696769581371-07f02f41-0160-4267-ab7d-e767102d9299.png#averageHue=%230b2236&clientId=ufa1e98a6-3214-4&from=paste&height=231&id=u2a6193b7&originHeight=317&originWidth=939&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=229402&status=done&style=none&taskId=u5352be5c-a548-41a2-86db-cff1807595a&title=&width=682.9090909090909)<br />重复元素只记录一次<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696769665540-cc485f2b-574f-45f4-b467-b0eaac304a49.png#averageHue=%23102839&clientId=ufa1e98a6-3214-4&from=paste&height=151&id=u0440561c&originHeight=207&originWidth=504&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115575&status=done&style=none&taskId=u455154a0-0b12-4820-8a02-32e0181f197&title=&width=366.54545454545456)
+> 相关算法原理可以参考：[HyperLogLog 算法的原理讲解以及 Redis 是如何应用它的 - 掘金](https://juejin.cn/post/6844903785744056333#heading-0Redis)
 
-## UV统计实现
-向HyperLogLog中添加100万条数据，看内存占用和统计效果
+Hyperloglog (HLL) 是从 Loglog 算法派生的概率算法，用于确定非常大的集合的基数（元素个数），且不需要存储元素本身的全部，所以 HLL 不能像集合那样，返回输入的各个元素。
+
+- Redis 中的 HLL 是基于 **string** 结构实现的
+- **单个 HLL 的内存永远小于 16kb**，内存占用低的令人发指！
+- 作为代价，**其测量结果是概率性的**，有小于 0.81%的误差。不过对于 UV 统计来说，这完全可以忽略。
+
+常见指令：
+
+![image.png|650](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696769581371-07f02f41-0160-4267-ab7d-e767102d9299.png#averageHue=%230b2236&clientId=ufa1e98a6-3214-4&from=paste&height=231&id=u2a6193b7&originHeight=317&originWidth=939&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=229402&status=done&style=none&taskId=u5352be5c-a548-41a2-86db-cff1807595a&title=&width=682.9090909090909)
+
+重复元素只记录一次
+
+![image.png|400](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696769665540-cc485f2b-574f-45f4-b467-b0eaac304a49.png#averageHue=%23102839&clientId=ufa1e98a6-3214-4&from=paste&height=151&id=u0440561c&originHeight=207&originWidth=504&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115575&status=done&style=none&taskId=u455154a0-0b12-4820-8a02-32e0181f197&title=&width=366.54545454545456)
+
+## UV 统计实现
+
+向 HyperLogLog 中添加 100 万条数据，看内存占用和统计效果
+
 ```java
  @Test
-    public void testHyperLogLog() {
-        String[] users = new String[1000];
-        // 数组角标
-        int index = 0;
-        for (int i = 1; i <= 1000000; i++) {
-            users[index++] = "user_" + i;
-            if (i % 1000 == 0) {
-                index = 0;
-                stringRedisTemplate.opsForHyperLogLog().add("hll1", users);
-            }
-        }
-        Long size = stringRedisTemplate.opsForHyperLogLog().size("hll1");
-        System.out.println("size=" + size);
-    }
+public void testHyperLogLog() {
+	String[] users = new String[1000];
+	// 数组角标
+	int index = 0;
+	for (int i = 1; i <= 1000000; i++) {
+		users[index++] = "user_" + i;
+		if (i % 1000 == 0) {
+			index = 0;
+			stringRedisTemplate.opsForHyperLogLog().add("hll1", users);
+		}
+	}
+	Long size = stringRedisTemplate.opsForHyperLogLog().size("hll1");
+	System.out.println("size=" + size);
+}
 ```
-1）输出：`size=997593`，和100万差距很小<br />2）内存占用前后对比，`info memory`查看内存占用情况<br />只占用了14KB
+
+查看误差：打印 size=997593，和 100 万差距很小
+
+内存占用前后对比，`info memory` 查看内存占用情况，只占用了 14KB
+
 ```
 used_memory:1527480
 used_memory_human:1.46M
@@ -2863,6 +3008,7 @@ used_memory:1541896
 used_memory_human:1.47M
 ```
 
+`memory usage key` 查看字节数大小 --> 14384B
 
 # -------------------- 高级篇
 
@@ -2877,14 +3023,16 @@ used_memory_human:1.47M
 4. 存储能力问题：Redis基于内存，单节点能存储的数据量难以满足海量数据需求
    1. 搭建分片集群，利用插槽机制实现动态扩容
 
-# Redis持久化
-## RDB持久化
-### 使用和配置
-RDB全称Redis Database Backup file (Redis数据备份文件)，也被叫做Redis数据快照。简单来说就是把内存中的所有数据都记录到磁盘中。当Redis实例故障重启后，从磁盘读取快照文件，恢复数据
+# Redis 持久化
 
----
+## RDB 持久化
 
-修改redis.conf文件，将其中的持久化模式改为默认的RDB模式，AOF保持关闭状态。
+RDB 全称 *Redis Database Backup file* (Redis 数据备份文件)，也被叫做 Redis 数据快照。简单来说就是**把内存中的所有数据都记录到磁盘中**。当 Redis 实例故障重启后，从磁盘读取快照文件，恢复数据
+
+### 使用 & 配置
+
+修改 redis.conf 文件，将其中的持久化模式改为默认的 RDB 模式，AOF 保持关闭状态。
+
 ```properties
 # 开启RDB
 # save ""
@@ -2898,11 +3046,19 @@ appendonly no
 
 ---
 
-快照文件称为RDB文件，默认是保存在当前运行目录<br />两种执行RDB的方式<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696819323538-3a64bd9f-fdc8-4000-a60d-8272c15fe80a.png#averageHue=%230c3049&clientId=u09d4932f-1b94-4&from=paste&height=117&id=uf7712e66&originHeight=161&originWidth=741&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=107699&status=done&style=none&taskId=u21c90b49-c8da-4d2d-a2bd-4da6e9ab8e6&title=&width=538.9090909090909)
+快照文件称为 RDB 文件，默认是保存在当前运行目录
 
-Redis停机时会自动执行一次RDB，但如果遇到宕机的情况，会造成数据丢失<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696819735458-de82b368-76d7-4558-bc16-7a28adbf5474.png#averageHue=%2366685c&clientId=u09d4932f-1b94-4&from=paste&height=93&id=uf279e0c7&originHeight=128&originWidth=953&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=165813&status=done&style=none&taskId=u90408c3e-df8d-4f31-b4e0-22ab4f48d5d&title=&width=693.0909090909091)
+两种执行 RDB 的方式
 
-Redis内部有触发RDB的机制，在Redis.conf文件中配置
+- `save` 命令：由 Redis 主进程来执行 RDB，会阻塞所有命令
+- `bgsave` 命令：开启子进程执行 RDB，避免主进程收到影响
+
+Redis **停机时会自动执行一次 RDB**，但如果遇到宕机的情况，会造成数据丢失
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696819735458-de82b368-76d7-4558-bc16-7a28adbf5474.png#averageHue=%2366685c&clientId=u09d4932f-1b94-4&from=paste&height=93&id=uf279e0c7&originHeight=128&originWidth=953&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=165813&status=done&style=none&taskId=u90408c3e-df8d-4f31-b4e0-22ab4f48d5d&title=&width=693.0909090909091)
+
+Redis 内部有**触发 RDB 的机制**，在 Redis.conf 文件中配置
+
 ```bash
 # 禁用rdb
 # save ""
@@ -2912,7 +3068,9 @@ save 900 1
 save 300 10
 save 60 10000
 ```
+
 其他配置
+
 ```bash
 # 是否压缩，建议不开启，压缩也会消耗cpu，磁盘不值钱
 rdbcompression yes
@@ -2924,37 +3082,42 @@ dbfilename dump.rdb
 dir ./
 ```
 
-### fork原理
-bgsave开始时会fork主进程得到子进程，子进程共享主进程的内存数据。完成fork后读取内存数据并写入RDB 文件。异步持久化
+### fork 原理
+
+**bgsave** 开始时会 fork 主进程得到子进程，子进程共享主进程的内存数据。完成 fork 后读取内存数据并写入 RDB 文件。**异步**持久化
 
 - 当主进程执行读操作时，访问共享内存
-- 当主进程执行写操作时，则会拷贝一份数据，执行写操作
+- 当主进程执行写操作时，则会**拷贝**一份数据，执行写操作
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696823584775-60473194-aba1-4fcc-bb1c-3020c8fbc0c4.png#averageHue=%23f3eceb&clientId=u09d4932f-1b94-4&from=paste&height=272&id=uff99dd9c&originHeight=374&originWidth=1052&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=211653&status=done&style=none&taskId=u05c447e6-2cd9-4ad5-b77a-7a0904a8069&title=&width=765.0909090909091)
+![](assets/image%20(50).png)
 
 ### 总结
-1）RDB方式bgsave的基本流程?
 
-- fork主进程得到一个子进程，共享内存空间
-- 子进程读取内存数据并写入新的RDB
-- 文件用新RDB文件替换旧的RDB文件
+1）RDB 方式 bgsave 的基本流程?
 
-2）RDB会在什么时候执行？save 60 1000代表什么含义？
+- fork 主进程得到一个子进程，共享内存空间
+- 子进程读取内存数据并写入新的 RDB
+- 文件用新 RDB 文件替换旧的 RDB 文件
+
+2）RDB 会在什么时候执行？save 60 1000 代表什么含义？
 
 - 默认是服务停止时
-- 代表60秒内至少执行1000次修改则触发RDB
+- 代表 60 秒内至少执行 1000 次修改则触发 RDB
 
-3）RDB的缺点?
+3）RDB 的缺点?
 
-- RDB执行间隔时间长（短了可能第一次RDB还没结束，就开始第二次RDB了），两次RDB之间写入数据有丢失的风险
-- fork子进程、压缩、写出RDB文件都比较耗时
+- RDB 执行间隔时间长（短了可能第一次 RDB 还没结束，就开始第二次 RDB 了），两次 RDB 之间写入数据有丢失的风险
+- fork 子进程、压缩、写出 RDB 文件都比较耗时
 
 
 ## AOF
-### 使用
-AOF全称为Append 0nly File (追加文件)。Redis处理的每一个写命令都会记录在AOF文件，可以看做是命令日志文件
 
-AOF默认是关闭的，需要修改redis.conf开启
+AOF 全称为 *Append 0nly File* (追加文件)。Redis 处理的每一个**写命令都会记录在 AOF 文件**，可以看做是命令日志文件
+
+### 使用 & 配置
+
+AOF **默认是关闭**的，需要修改 redis.conf 开启
+
 ```bash
 # 是否开启AOF，默认是no
 appendonly yes
@@ -2962,7 +3125,9 @@ appendonly yes
 # AOF文件的名称
 appendfilename "appendonly.aof"
 ```
-AOF的命令记录的频率也可以通过redis.conf文件来配
+
+AOF 的命令记录的频率也可以通过 redis.conf 文件来配
+
 ```bash
 # 每执行一次写命令，立即记录到AOF文件
 appendfsync always
@@ -2973,10 +3138,19 @@ appendfsync everysec
 # 写命令执行完先放入AOF缓冲区，由操作系统决定何时将缓冲区内容写回磁盘
 appendfsync no
 ```
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696831023594-9e322c1d-95a3-4e78-8351-651c0af6fbca.png#averageHue=%23c2a9a8&clientId=u09d4932f-1b94-4&from=paste&height=118&id=u9d9fa883&originHeight=162&originWidth=941&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=79534&status=done&style=none&taskId=u7900e969-d381-48a1-9250-68cca247dc9&title=&width=684.3636363636364)
 
-### aof文件重写
-因为是记录命令，AOF文件会比RDB文件大的多。而且AOF会记录对同一个key的多次写操作，但只有最后一次写操作才有意义。通过执行`**bgrewriteaof**`命令，可以让AOF文件执行重写功能，用最少的命令达到相同效果。<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696832332515-773796b8-e850-4334-87fa-423cb29c0b67.png#averageHue=%23141729&clientId=u09d4932f-1b94-4&from=paste&height=33&id=ufb6a6729&originHeight=46&originWidth=463&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=5210&status=done&style=none&taskId=u6f501757-d978-4f57-a121-648839712c2&title=&width=336.72727272727275)<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696831784030-5c4c989f-e578-4751-a302-0f903baa623e.png#averageHue=%23e2e2dc&clientId=u09d4932f-1b94-4&from=paste&height=81&id=u062cddc6&originHeight=112&originWidth=873&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=45237&status=done&style=none&taskId=uf5cf1ee0-0654-4778-8e9e-8ef467ca188&title=&width=634.9090909090909)<br />  Redis也会在触发闯值时自动去重写AOF文件。闻值也可以在redis.conf中配置
+![](assets/image%20(51).png)
+
+### AOF 文件重写
+
+因为是记录命令，**AOF 文件会比 RDB 文件大的多**
+
+AOF 会记录对同一个 key 的多次写操作，但只有最后一次写操作才有意义。通过执行 `bgrewriteaof` 命令，可以让 AOF 文件**执行重写功能**，用最少的命令达到相同效果
+
+![](assets/image%20(52).png)
+
+Redis 也会在触发阈值时自动去重写 AOF 文件，阈值可以在 redis.conf 中配置
+
 ```bash
 # aof文件比上次文件，增长超过多少百分比则触发重写
 auto-aof-rewrite-percentage 100
@@ -2984,15 +3158,26 @@ auto-aof-rewrite-percentage 100
 auto-aof-rewrite-min-size 64mb
 ```
 
-## RDB和AOF对比
-RDB和AOF各有自己的优缺点，如果对数据安全性要求较高，在实际开发中往往会结合两者使用<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696837784755-ac3e52ae-17f7-4d09-93d7-60ff8e8dc8a1.png#averageHue=%23cacac8&clientId=u09d4932f-1b94-4&from=paste&height=295&id=u9ae0f93a&originHeight=406&originWidth=1117&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=182295&status=done&style=none&taskId=u0ec7b542-8b57-4c2e-820f-f4b05d55b21&title=&width=812.3636363636364)
+## RDB 和 AOF 对比
 
-# Redis主从
- 单节点Redis的并发能力是有上限的，要进一步提高Redis的并发能力，就需要搭建主从集群，实现读写分离<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696838433752-350bb64b-e3d8-4057-b3f1-ad4e9d7bdbe7.png#averageHue=%23f9f3f2&clientId=u09d4932f-1b94-4&from=paste&height=312&id=u29aa49e1&originHeight=429&originWidth=906&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115993&status=done&style=none&taskId=u32a04d01-64b4-42b7-b030-829abd93c23&title=&width=658.9090909090909)
+RDB 和 AOF 各有自己的优缺点，如果对数据安全性要求较高，在实际开发中往往会结合两者使用
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696837784755-ac3e52ae-17f7-4d09-93d7-60ff8e8dc8a1.png#averageHue=%23cacac8&clientId=u09d4932f-1b94-4&from=paste&height=295&id=u9ae0f93a&originHeight=406&originWidth=1117&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=182295&status=done&style=none&taskId=u0ec7b542-8b57-4c2e-820f-f4b05d55b21&title=&width=812.3636363636364)
+
+# Redis 主从
+
+ 单节点 Redis 的并发能力是有上限的，要进一步提高 Redis 的并发能力，就需要搭建主从集群，实现读写分离
+ ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696838433752-350bb64b-e3d8-4057-b3f1-ad4e9d7bdbe7.png#averageHue=%23f9f3f2&clientId=u09d4932f-1b94-4&from=paste&height=312&id=u29aa49e1&originHeight=429&originWidth=906&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115993&status=done&style=none&taskId=u32a04d01-64b4-42b7-b030-829abd93c23&title=&width=658.9090909090909)
 ## 搭建主从架构
-我们搭建的主从集群结构如图：共包含三个节点，一个主节点，两个从节点。<br />7001端口作为master，7002和7003作为slave
 
-1）配置文件<br />统一使用rdb
+我们搭建的主从集群结构如图：共包含三个节点，一个主节点，两个从节点。
+
+7001 端口作为 master，7002 和 7003 作为 slave
+
+1）配置文件
+
+统一使用 rdb
+
 ```properties
 # 开启RDB
 # save ""
@@ -3003,13 +3188,18 @@ save 60 10000
 # 关闭AOF
 appendonly no
 ```
-修改三个端口号为7001、7002、7003<br />虚拟机本身有多个IP，为了避免将来混乱，我们需要在redis.conf文件中指定每一个实例的绑定ip信息，格式如下：
+
+修改三个端口号为7001、7002、7003
+
+虚拟机本身有多个 IP，为了避免将来混乱，我们需要在 redis.conf 文件中指定每一个实例的绑定 ip 信息，格式如下：
+
 ```properties
 # redis实例的声明 IP
 replica-announce-ip 192.168.111.154
 ```
 
 2）docker搭建集群
+
 ```bash
 docker run --name redis7001 -p 7001:7001 \
 -v /mydata/redis/7001/conf/:/usr/local/etc/redis \
@@ -3026,18 +3216,23 @@ docker run --name redis7003 -p 7003:7003 \
 -v /mydata/redis/7003/data/:/data \
 -d redis:6.2.7 redis-server /usr/local/etc/redis/redis.conf
 ```
+
 进入Redis客户端
+
 ```bash
 docker exec -it redis7001 redis-cli -p 7001
 docker exec -it redis7002 redis-cli -p 7002
 docker exec -it redis7003 redis-cli -p 7003
 ```
 
-3）开启主从关系<br />有临时和永久两种模式：
+3）开启主从关系
+
+有临时和永久两种模式：
 
 -  修改配置文件（永久生效） 
    - 在redis.conf中添加一行配置：`slaveof <masterip> <masterport>`
--  使用redis-cli客户端连接到redis服务，执行slaveof命令（重启后失效）： 
+-  使用redis-cli客户端连接到redis服务，执行slaveof命令（重启后失效）：
+
 ```properties
 slaveof <masterip> <masterport>
 
@@ -3088,57 +3283,68 @@ Redis主从同步的第一次同步是**全量同步**
    - 适当提高repl baklog的大小，发现slave宕机时尽快实现故障恢复
 - 限制一个master上的slave节点数量，如果实在是太多slave，则可以采用主-从-从链式结构，减少master压力
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696852511863-577e7997-57ca-488f-8d60-14d6df309fe3.png#averageHue=%23f4e7e7&clientId=u09d4932f-1b94-4&from=paste&height=223&id=uca7bf5d4&originHeight=306&originWidth=980&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=152156&status=done&style=none&taskId=u22de1312-68e8-4304-b52e-9d8b5430eb5&title=&width=712.7272727272727)<br /> 
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696852511863-577e7997-57ca-488f-8d60-14d6df309fe3.png#averageHue=%23f4e7e7&clientId=u09d4932f-1b94-4&from=paste&height=223&id=uca7bf5d4&originHeight=306&originWidth=980&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=152156&status=done&style=none&taskId=u22de1312-68e8-4304-b52e-9d8b5430eb5&title=&width=712.7272727272727)
+
 ### 总结
+
 简述全量同步和增量同步区别?
 
-- 全量同步：master将完整内存数据生成RDB，发送RDB到slave。后续命令则记录在repl_baklog，逐个发送给slave
-- 增量同步：slave提交自己的offset到master，master获取repl baklog中从offset之后的命令给slave
+- 全量同步：master 将完整内存数据生成 RDB，发送 RDB 到 slave。后续命令则记录在 repl_baklog，逐个发送给 slave
+- 增量同步：slave 提交自己的 offset 到master，master 获取 repl baklog 中从 offset 之后的命令给 slave
 
 什么时候执行全量同步?
 
-- slave节点第一次连接master节点时
-- slave节点断开时间太久，repl baklog中的offset已经被覆盖时
+- slave 节点第一次连接 master 节点时
+- slave 节点断开时间太久，repl baklog 中的 offset 已经被覆盖时
 
 什么时候执行增量同步?
 
-- slave节点断开又恢复，并且在repl_baklog中能找到offset时
+- slave 节点断开又恢复，并且在 repl_baklog 中能找到 offset 时
 
-# Redis哨兵
-slave节点宕机恢复后可以找master节点同步数据，那master节点宕机怎么办?
+# Redis 哨兵
+
+slave 节点宕机恢复后可以找 master 节点同步数据，那 master 节点宕机怎么办?
+
 ## 哨兵的作用和原理
-1）Redis提供了哨兵(Sentinel)机制来实现主从集群的自动故障恢复。哨兵的结构和作用如下
 
-- 监控：Sentinel 会不断检查您的master和slave是否按预期工作
-- 自动故障恢复（故障转移）：如果master故障，Sentinel会将一个slave提升为master。当故障实例恢复后也以新的master为主
-- 通知：Sentinel充当Redis客户端的服务发现来源，当集群发生故障转移时，会将最新信息推送给Redis的客户端
+1）Redis 提供了哨兵(Sentinel)机制来实现主从集群的自动故障恢复。哨兵的结构和作用如下
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696854208629-2c94bf54-42db-41b7-b7ee-9337367cb7ff.png#averageHue=%23f2dcd2&clientId=u09d4932f-1b94-4&from=paste&height=332&id=ub1c32957&originHeight=456&originWidth=570&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=177771&status=done&style=none&taskId=u1c6fecec-2690-47ec-9313-ed0f3607cd8&title=&width=414.54545454545456)<br />2）Sentinal如何判断一个Redis实例是否健康？<br />Sentinel基于心跳机制监测服务状态，每隔1秒向集群的每个实例发送ping命令：
+- 监控：Sentinel 会不断检查您的 master 和 slave 是否按预期工作
+- 自动故障恢复（故障转移）：如果 master 故障，Sentinel 会将一个 slave 提升为 master。当故障实例恢复后也以新的 master 为主
+- 通知：Sentinel 充当 Redis 客户端的服务发现来源，当集群发生故障转移时，会将最新信息推送给 Redis 的客户端
 
-- 主观下线：如果某sentinel节点发现某实例未在规定时间响应，则认为该实例主观下线。
-- 客观下线（挂了）：若**超过指定数量(quorum)的sentinel都认为该实例主观下线**，则该实例客观下线。quorum值最好超过Sentinel实例数量的一半
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696854208629-2c94bf54-42db-41b7-b7ee-9337367cb7ff.png#averageHue=%23f2dcd2&clientId=u09d4932f-1b94-4&from=paste&height=332&id=ub1c32957&originHeight=456&originWidth=570&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=177771&status=done&style=none&taskId=u1c6fecec-2690-47ec-9313-ed0f3607cd8&title=&width=414.54545454545456) 
+
+2）Sentinal 如何判断一个 Redis 实例是否健康？
+
+Sentinel 基于心跳机制监测服务状态，每隔 1 秒向集群的每个实例发送 ping 命令：
+
+- 主观下线：如果某 sentinel 节点发现某实例未在规定时间响应，则认为该实例主观下线。
+- 客观下线（挂了）：若**超过指定数量(quorum)的 sentinel 都认为该实例主观下线**，则该实例客观下线。quorum 值最好超过 Sentinel 实例数量的一半
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696854495226-be36cd39-31ce-49e8-9df7-2e78000d8cd9.png#averageHue=%23f1d5c9&clientId=u09d4932f-1b94-4&from=paste&height=264&id=uee3dc7c0&originHeight=363&originWidth=563&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=176693&status=done&style=none&taskId=u5d5222fb-5035-4b77-be47-e29dc367416&title=&width=409.45454545454544)
 
-3）一旦发现master故障，sentinel需要在salve中选择一个作为新的master，**选择依据**是：
+3）一旦发现 master 故障，sentinel 需要在 salve 中选择一个作为新的 master，**选择依据**是：
 
-- 首先会判断slave节点与master节点断开时间长短，如果超过指定值(down-after-milliseconds*10)则会排除该slave节点
-- 然后判断slave节点的slave-priority值，越小优先级越高，如果是0则永不参与选举
-- 如果slave-prority一样，则判断slave节点的offset值，越大说明数据越新，优先级越高
-- 最后是判断slave节点的运行id大小，越小优先级越高。
+- 首先会判断 slave 节点与 master 节点断开时间长短，如果超过指定值(down-after-milliseconds*10)则会排除该 slave 节点
+- 然后判断 slave 节点的 slave-priority 值，越小优先级越高，如果是 0 则永不参与选举
+- 如果 slave-prority 一样，则判断 slave 节点的 offset 值，越大说明数据越新，优先级越高
+- 最后是判断 slave 节点的运行 id 大小，越小优先级越高。
 
-4）当选中了其中一个slave为新的master后(例如slave1)，**故障的转移的步骤**如下：
+4）当选中了其中一个 slave 为新的 master 后(例如 slave1)，**故障的转移的步骤**如下：
 
-- sentinel给备选的slave节点发送`slaveof no one`命令，让该节点成为master
-- sentinel给所有其它slave发送`slaveof 192.168.150.101 7002`命令，让这些slave成为新master的从节点，开始从新的master上同步数据。
-- 最后，sentinel将故障节点标记为slave（强行修改配置文件），当故障节点恢复后会自动成为新的master的slave节点
+- sentinel 给备选的 slave 节点发送 `slaveof no one` 命令，让该节点成为 master
+- sentinel 给所有其它 slave 发送 `slaveof 192.168.150.101 7002` 命令，让这些 slave 成为新 master 的从节点，开始从新的 master 上同步数据。
+- 最后，sentinel 将故障节点标记为 slave（强行修改配置文件），当故障节点恢复后会自动成为新的 master 的 slave 节点
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696855044177-04250e7d-0b0a-43e9-b0eb-ce87522a9680.png#averageHue=%23e9d8d5&clientId=u09d4932f-1b94-4&from=paste&height=281&id=uc11a2201&originHeight=387&originWidth=559&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=130605&status=done&style=none&taskId=ufe499654-b7e8-46dc-afa7-dd0b2f1f497&title=&width=406.54545454545456)
 
 ## 搭建哨兵集群
-[docker环境搭建redis sentinel哨兵集群_docker redis sentinel_抹香鲸之海的博客-CSDN博客](https://blog.csdn.net/u010797364/article/details/122561349)
 
-1）配置文件sentinel-27001.conf，其他两个节点同理，把sentinel实例的端口号改了就行（别把主节点的改了）
+> [docker环境搭建redis sentinel哨兵集群_docker redis sentinel_抹香鲸之海的博客-CSDN博客](https://blog.csdn.net/u010797364/article/details/122561349)
+
+1）配置文件 sentinel-27001.conf，其他两个节点同理，把 sentinel 实例的端口号改了就行（别把主节点的改了）
+
 ```properties
 # sentinel实例的端口
 port 27001
@@ -3154,7 +3360,9 @@ sentinel down-after-milliseconds mymaster 5000
 sentinel failover-timeout mymaster 60000
 sentinel parallel-syncs mymaster 1
 ```
-2）Docker创建哨兵
+
+2）Docker 创建哨兵
+
 ```bash
 docker run -p 27001:27001 --restart=always --name sentinel-27001 \
 -v /mydata/redis/sentinel/sentinel-27001/conf/sentinel-27001.conf:/etc/redis/sentinel.conf \
@@ -3175,19 +3383,29 @@ docker run -p 27003:27003 --restart=always --name sentinel-27003 \
 -d redis:6.2.7 redis-sentinel /etc/redis/sentinel.conf
 ```
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696861017453-d86c4bc2-fba0-44b1-8cd7-62834bc825aa.png#averageHue=%23252422&clientId=u09d4932f-1b94-4&from=paste&height=688&id=u3c0292cc&originHeight=832&originWidth=1670&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=203005&status=done&style=none&taskId=uc1952535-f588-49b6-bfac-c752e16efbe&title=&width=1380.165245744524)<br />7002日志<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696864345824-72f98a2c-10ec-4381-9fd8-d7870bf62536.png#averageHue=%232d2a27&clientId=u4e88a21d-c6bf-4&from=paste&height=369&id=uaa28e3c2&originHeight=446&originWidth=914&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=66503&status=done&style=none&taskId=ue2664476-0670-4073-8dc6-801cd27a6b7&title=&width=755.3718770122724)<br />7003日志<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696864353045-2a2b5ae3-2a98-41fc-aa01-60e5cd234c81.png#averageHue=%232d2a27&clientId=u4e88a21d-c6bf-4&from=paste&height=307&id=u27fc9494&originHeight=371&originWidth=950&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=67652&status=done&style=none&taskId=u0f963ced-2302-4fc0-b377-ff56445bcbb&title=&width=785.1239421899987)
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696861017453-d86c4bc2-fba0-44b1-8cd7-62834bc825aa.png#averageHue=%23252422&clientId=u09d4932f-1b94-4&from=paste&height=688&id=u3c0292cc&originHeight=832&originWidth=1670&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=203005&status=done&style=none&taskId=uc1952535-f588-49b6-bfac-c752e16efbe&title=&width=1380.165245744524)
 
-## RedisTemplate的哨兵模式
+7002日志
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696864345824-72f98a2c-10ec-4381-9fd8-d7870bf62536.png#averageHue=%232d2a27&clientId=u4e88a21d-c6bf-4&from=paste&height=369&id=uaa28e3c2&originHeight=446&originWidth=914&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=66503&status=done&style=none&taskId=ue2664476-0670-4073-8dc6-801cd27a6b7&title=&width=755.3718770122724)<br />7003日志<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696864353045-2a2b5ae3-2a98-41fc-aa01-60e5cd234c81.png#averageHue=%232d2a27&clientId=u4e88a21d-c6bf-4&from=paste&height=307&id=u27fc9494&originHeight=371&originWidth=950&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=67652&status=done&style=none&taskId=u0f963ced-2302-4fc0-b377-ff56445bcbb&title=&width=785.1239421899987)
+
+## RedisTemplate 的哨兵模式
+
 在Sentinel集群监管下的Redis主从集群，其节点会因为自动故障转移而发生变化，Redis的客户端必须感知这种变化及时更新连接信息。Spring的RedisTemplate底层利用lettuce实现了节点的感知和自动切换。
 
-使用流程<br />1）依赖
+使用流程
+
+1）依赖
+
 ```xml
 <dependency>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-data-redis</artifactId>
 </dependency>
 ```
+
 2）配置sentinal相关信息
+
 ```yaml
 spring:
   redis:
@@ -3198,7 +3416,9 @@ spring:
         - 192.168.111.154:27002
         - 192.168.111.154:27003
 ```
+
 3）配置读写分离，在任意配置类中，这里以主启动类
+
 ```java
 @SpringBootApplication
 public class RedisDemoApplication {
@@ -3219,14 +3439,16 @@ public class RedisDemoApplication {
     }
 }
 ```
+
 这里的ReadFrom是配置Redis的读取策略，是一个枚举，包括下面选择:
 
 - `MASTER`：从主节点读取
-- `MASTER PREFERRED`：优先从master节点读取，master不可用才读取replica
-- `REPLICA`：从slave (replica)节点读取
-- `REPLICA PREFERRED（推荐）`：优先从slave (replica)节点读取，所有的slave都不可用才读取master
+- `MASTER PREFERRED`：优先从 master 节点读取，master 不可用才读取 replica
+- `REPLICA`：从 slave (replica)节点读取
+- `REPLICA PREFERRED（推荐）`：优先从 slave (replica)节点读取，所有的 slave 都不可用才读取 master
 
-# Redis分片集群
+# Redis 分片集群
+
 主从和哨兵可以解决高可用、高并发读的问题。但是依然有两个问题没有解决
 
 1. 海量数据存储问题
