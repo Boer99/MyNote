@@ -1252,11 +1252,49 @@ if( table.get("key") == null) {
 
 ### 不可变类线程安全性
 
-> （摘自 Java 工具宝典）不可变类，简单来说就是其实例无法被修改
+String、Integer 等都是**不可变类**，因为其内部的状态不可以改变，因此它们的**方法都是线程安全的**
 
-String、Integer 等都是不可变类，因为其内部的状态不可以改变，因此它们的方法都是**线程安全**的
+不可变：**对象**一旦被创建后，对象所有的状态及属性在其生命周期内不会发生任何变化
 
-String 有 `replace()`、`substring()` 等方法【可以】改变值，这些方法怎么保证线程安全？
+> Immutable 类中，value 是私有的，没有提供 setter 方法，即调用构造创建实例之后，value 的值无法被改变
+
+```java
+public class Immutable{
+	private int value = 0;
+	
+	public Immutable(int value){
+		this.value = value;
+	}
+	
+	public int getValue(){
+		return this.value;
+	}
+}
+```
+
+> String 有 `replace()`、`substring()` 等方法【可以】改变值，这些方法怎么保证线程安全？
+
+如果想增加一个增加的方法呢？
+
+```java
+public class Immutable{
+	private int value = 0;
+	
+	public Immutable(int value){
+		this.value = value;
+	}
+	
+	public int getValue(){
+		return this.value;
+	}
+	
+	public Immutable add(int v){
+		return new Immutable(this.value + v);
+	} 
+}
+```
+
+
 
 ### 实例分析
 
@@ -3576,7 +3614,10 @@ new Thread(() -> {
  }).start();
 ```
 
-如果一个对象在**不能够修改其内部状态（属性）**，那么它就是线程安全的，因为不存在并发修改，例如在 Java 8 后，提供了一个新的日期格式化类
+---
+如果一个**对象**，**不能够修改其内部状态**（属性），那么它就是线程安全的，因为不存在并发修改
+
+例如在 Java 8 后，提供了一个新的日期格式化类
 
 ```java
 DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -3633,7 +3674,7 @@ public String substring(int beginIndex) {
 }
 ```
 
-构造新字符串对象时，会生成新的 `char[] value`，对内容进行复制。这种通过创建副本对象来避免共享的手段称之为【**保护性拷贝**（defensive copy）】
+构造新字符串对象时，会生成新的 `char[] value`，对内容进行复制。这种通过**创建副本对象来避免共享**的手段称之为【**保护性拷贝**（defensive copy）】
 
 ```java
 public String(char value[], int offset, int count) {  
@@ -4337,12 +4378,12 @@ log.debug("result:{}", f.get());
 	- *getState*：获取 state 状态
 	- *setState*：设置 state 状态
 	- *compareAndSetState*：cas 机制设置 state 状态
-- 提供了基于 FIFO（先进先出）的等待队列（类似于 Monitor 的 EntryList）
+- 提供了基于 FIFO（先进先出）的**等待队列**（类似于 Monitor 的 EntryList）
 - 支持**多条件变量**，实现等待、唤醒机制，（类似于 Monitor 的 WaitSet）
 
 > Monitor 是 c++实现，AQS 是纯 Java 实现
 
-AQS 使用了模板方法模式，自定义同步器时需要重写下面几个 AQS 提供的钩子方法
+AQS 使用了**模板方法模式**，自定义同步器时需要重写下面几个 AQS 提供的钩子方法
 
 > 钩子方法：一种被声明在**抽象类**中的方法，一般使用 `protected` 关键字修饰，它可以是空方法（由子类实现），也可以是默认实现的方法。模板设计模式通过钩子方法控制固定步骤的实现。
 
@@ -4363,7 +4404,7 @@ protected boolean tryReleaseShared(int)
 protected boolean isHeldExclusively()
 ```
 
-- 默认实现都是抛出 UnsupportedOperationException
+- 默认实现都是 `throw UnsupportedOperationException`。必须要实现
 - 除了上面的钩子方法外，AQS 类中的**其他方法都是 final**，无法被子类重写
 
 ### 不可重入锁实现

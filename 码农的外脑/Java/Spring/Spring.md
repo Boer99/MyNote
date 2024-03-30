@@ -672,10 +672,22 @@ ctx.registerShutdownHook();
 ## 容器操作
 
 核心容器，可以简单地理解为 `ApplicationContext`
-- 如何创建容器? 
-- 创建好容器后，如何从容器中获取 bean 对象?
-- 容器类的层次结构是什么?
-- BeanFactory 是什么?
+
+> - 如何创建容器? 
+> - 创建好容器后，如何从容器中获取 bean 对象?
+> - 容器类的层次结构是什么?
+> - BeanFactory 是什么?
+
+### 容器类层次结构
+
+![](assets/Pasted%20image%2020240208231338.png)
+
+- BeanFactory 接口是 IoC 容器的顶层接口
+- ApplicationContext 接口是 Spring 容器的核心接口
+	- 提供基础的 bean 操作相关方法，通过其他接口扩展其功能
+	- 常用初始化类
+		- ClassPathXmlApplicationContext
+		- FileSystemXmlApplicationContext（了解）
 
 ### 容器的创建
 
@@ -718,17 +730,6 @@ BookDao bookDao = ctx.getBean("bookDao"，BookDao.class);
 ```java
 BookDao bookDao = ctx.getBean(BookDao.class);
 ```
-
-### 容器类层次结构
-
-![](assets/Pasted%20image%2020240208231338.png)
-
-- BeanFactory 接口是 IoC 容器的顶层接口
-- ApplicationContext 接口是 Spring 容器的核心接口
-	- 提供基础的 bean 操作相关方法，通过其他接口扩展其功能
-	- 常用初始化类
-		- ClassPathXmlApplicationContext
-		- FileSystemXmlApplicationContext（了解）
 
 ### BeanFactory
 
@@ -934,7 +935,7 @@ public class BookServiceImpl implements BookService{
 - 实际开发过程中还要根据实际情况分析，如果受控对象没有提供 setter 方法就必须使用构造器注入
 - **自己开发的模块推荐使用 setter 注入**
 
-## 自动配置
+## 自动装配
 
 依赖自动装配：IoC 容器根据 bean 所依赖的资源在容器中自动查找并注入到 bean 中的过程称为自动装配
 
@@ -2442,7 +2443,7 @@ public class SpringConfig {
 
 业务层添加 Spring 事务管理注解
 - `@Transactional` 可以写在接口类上、接口方法上、实现类上和实现类方法上
-	- 加在类或接口上代表所有方法或实现类方法都会有事务
+	- 加在类或接口上代表所有 **public** 方法或实现类方法都会有事务
 - 通常添加在**业务层接口**中而不是实现类中，降低耦合
 
 ```java
@@ -4439,11 +4440,11 @@ public class BookController {
 
 ![](assets/Pasted%20image%2020240219175345.png)
 
-|名称|`@ExceptionHandler` |
-|---|---|
-|类型|方法注解|
-|位置|专用于异常处理的控制器方法上方|
-|作用|设置指定异常的处理方案，功能等同于控制器方法， 出现异常后终止原始控制器执行，并转入当前方法执行 |
+| 名称  | `@ExceptionHandler`                              |
+| --- | ------------------------------------------------ |
+| 类型  | 方法注解                                             |
+| 位置  | 专用于异常处理的控制器方法上方                                  |
+| 作用  | 设置指定异常的处理方案，功能等同于控制器方法， 出现异常后终止原始控制器执行，并转入当前方法执行 |
 - 此类方法可以根据处理的异常不同，制作多个方法分别处理对应的异常
 
 ```java
@@ -4510,7 +4511,7 @@ public class ProjectExceptionAdvice {
 ---
 自定义异常
 - 让自定义异常类**继承 `RuntimeException`** ，好处是后期在抛出自定义异常的时候，就不用显示处理了
-- 自定义异常类中添加`code`属性的原因是为了更好的区分异常是来自哪个业务的
+- 自定义异常类中添加 `code` 属性的原因是为了更好的区分异常是来自哪个业务的
 
 > RuntimeException 允许编译期不进行显示处理的
 > 

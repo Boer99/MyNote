@@ -31,10 +31,6 @@
 
 # 通用问题
 
-## mybatisX插件生成模板代码
-
-![](https://cdn.nlark.com/yuque/0/2023/png/12496339/1698395131913-b5150639-9623-42b6-be64-e5cccf06f1ec.png#averageHue=%233d4144&clientId=u49d80f0e-0646-4&from=paste&height=415&id=TR26P&originHeight=578&originWidth=1164&originalType=url&ratio=1.2540000677108765&rotation=0&showTitle=false&status=done&style=none&taskId=udc7804f1-5bb7-4037-910c-747b02162bc&title=&width=835.9940185546875)
-
 ## 跨域
 
 origins存储一个数组

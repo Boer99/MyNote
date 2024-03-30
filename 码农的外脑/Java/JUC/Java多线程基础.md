@@ -291,34 +291,7 @@ class MyYield implements Runnable {
     }
 }
 ```
-### 线程强制执行（join）
-`public final void join() throws InterruptedException`
 
-- Join 合并线程，待此线程执行完成后，再执行其他线程，其他线程阻塞
-- 可以想象成插队
-```java
-public class TestJoin implements Runnable{
-    @Override
-    public void run() {
-        for (int i = 0; i < 500; i++) {
-            System.out.println("线程vip来了" + i);
-        }
-    }
-
-    public static void main(String[] args) throws InterruptedException {
-        // 启动我们的线程
-        Thread vipThread = new Thread(new TestJoin());
-        vipThread.start();
-        // 主线程
-        for (int i = 0; i < 500; i++) {
-            if (i == 200) {
-                vipThread.join(); // 插队，该线程全部执行完再轮到主线程
-            }
-            System.out.println("main" + i);
-        }
-    }
-}
-```
 ### 线程状态观测（getState）
 线程状态`Thread.State`，Thread类中的枚举类`public enum State{}`<br />获取当前线程的状态`public State getState();`<br />线程可以处于以下状态之一：
 
@@ -363,7 +336,10 @@ public class TestState {
 }
 ```
 ### 线程优先级（PRIORITY）
-Java提供一个线程调度器来监控程序中启动后进入就绪状态的所有线程，线程调度器按照优先级决定应该调度哪个线程来执行。<br />线程的优先级用数字表示，范围从1~10
+
+Java提供一个线程调度器来监控程序中启动后进入就绪状态的所有线程，线程调度器按照优先级决定应该调度哪个线程来执行
+
+线程的优先级用数字表示，范围从1~10
 
 - `Thread.MIN_PRIORITY= 1;`
 - `Thread.MAX_PRIORITY =10;`
@@ -374,7 +350,10 @@ Java提供一个线程调度器来监控程序中启动后进入就绪状态的�
 public final void setPriority(int newPriority)
 public final int getPriority()
 ```
-优先级低只是意味着获得调度的概率低，并不是优先级低就不会被调用了，这都是看CPU的调度<br />优先级的设定建议在`start()`调度前
+
+优先级低只是意味着获得调度的概率低，并不是优先级低就不会被调用了，这都是看CPU的调度
+
+优先级的设定建议在`start()`调度前
 
 测试线程的优先级
 ```java
