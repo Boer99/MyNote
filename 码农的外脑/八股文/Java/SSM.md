@@ -615,14 +615,17 @@ public class UserDaoFactoryBean implements FactoryBean<UserDao> {
 }
 ```
 
+## 三级缓存(2)
+
+#饿了么
+
+循环依赖问题？
+
 # ---------- 未知
 ## spring 怎么去做监控，错误码体系？
 
 #PDD_23_秋招_后端 
 
-## 三级缓存
-
-#饿了么
 
 # -------------------- Spring MVC
 
