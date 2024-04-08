@@ -485,13 +485,106 @@ AOF 的命令记录的频率配置
 
 # ---------- 集群
 
-## 主从复制过程(1)
+## 主从复制
 
+如何保证 Redis 服务高可用? 最简单的一种办法就是==基于 主从复制 搭建一个 Redis 集群==，master（主节点）要负责处理写请求，slave（从节点）主要负责处理读请求
+
+### 什么是主从复制？
+
+简单来说，主从复制 就是==将一台 Redis 主节点的数据复制到其他的 Redis 从节点中==，尽**最大可能**保证 Redis 主节点和从节点的数据是一致的。
+
+- 主从复制这种方案不仅保障了 Redis 服务的高可用，还实现了**读写分离**，提高了系统的并发量，尤其是读并发量。
+- Redis Sentinel 以及 Redis Cluster 都**依赖**于主从复制
+
+在指定从节点执行 replicaof 命令开启主从关系
+
+```properties
+replicaof <masterip> <masterport>
+
+# 7002和7003执行
+replicaof 192.168.111.154 7001
+```
+
+### 主从复制下从节点会主动删除过期数据吗?
+
+#todo
+
+### 主从复制过程(1)
+
+- *全量同步*：master 将完整内存数据生成 RDB，发送 RDB 到 slave。后续命令则记录在 `repl_baklog`，逐个发送给 slave
+- *增量同步*：slave 提交自己的 offset 到 master，master 获取 repl baklog 中从 offset 之后的命令给 slave
+
+每一个 master 都有唯一的 replid，slave 则会**继承** master 节点的 replid（第一次 master 会把 replid 给 slave）
+
+流程
+
+- slave 节点执行 `replicaof`，请求数据同步，把 replid 和 offset 传给 master
+- master 节点判断 replid，
+	- replid 不一致，说明是第一次同步数据，**全量同步**
+		- master 将完整内存数据生成 RDB（bgsave），发送 RDB 到 slave
+		- slave 清空本地数据，加载 master 的 RDB
+		- master 将 RDB 期间的命令记录在 `repl baklog`，并持续将 log 中的命令发送给 slave
+		- slave 执行接收到的命令，保持与 master 之间的同步
+	- replid 一致，master 查看 slave 传来的 offset，master 的同步进度必须比 slave 更快并且两者的同步进度必须在规定范围，
+		- 未超过 `repl backlog` 的大小（能在 `repl_baklog` 中能找到 offset 时），**增量同步**
+		- 否则，**全量同步**操作
+
+### 为什么主从全量复制使用 RDB 而不是 AOF?
+
+- RDB 文件更节省带宽，传输速度快
+- 恢复大数据集的时候，RDB 速度更快
+- AOF 需要选择合适的刷盘策略，如果刷盘策略选择不当的话，会影响 Redis 的正常运行。并且，根据所使用的刷盘策略，AOF 的速度可能会慢于 RDB。
+
+## 哨兵
+
+### 什么是哨兵，有什么用？
+
+Sentinel 只是 Redis 的一种**运行模式**，
+
+- 不提供读写服务，
+- 默认运行在 26379 端口上，
+- 依赖于 Redis 工作
+
+Redis Sentinel 实现 Redis 集群高可用，只是在主从复制实现集群的**基础**上，多了一个 Sentinel 角色来帮助我们
+
+- _监控_：Sentinel 会不断检查 redis 节点状态
+- _自动故障恢复_（故障转移）：如果 master 故障，Sentinel 会将一个 slave 提升为 master。当故障实例恢复后也以新的 master 为主
+- _通知_：Sentinel 充当 Redis 客户端的服务发现来源，当集群发生故障转移时，会将最新信息推送给 Redis 的客户端
+
+### 如何检测节点是否下线
+
+Sentinel 基于**心跳机制**监测服务状态，每隔 1 秒向集群的每个实例发送 **ping 命令**：
+
+- _主观下线_：sentinel 发现某实例未在规定时间（down-after-milliseconds）响应，则认为该实例主观下线
+- _客观下线_：若**超过指定数量**（quorum）的 sentinel 都认为该实例主观下线，则该实例客观下线（quorum 最好超过总数量一半）
+
+如果被认定为主观下线的是 slave 的话， sentinel不会做什么事情
+
+如果是 master 被认定为主观下线，所有 sentinel 节点要以每秒一次的频率确认 master 的确下线了，当法定数量的 sentine 节点认定 master 已经下线， master 才被判定为 客观下线
+
+### 哨兵选主过程(1)
+
+sentinel 如何在 slave 中选择一个新的 master？
+
+- *筛选出在线的 slave*：判断 slave 节点与 master 节点断开时间长短，如果超过指定值(`down-after-milliseconds*10`)则会排除该 slave 节点
+- *slave-prority 优先级*：slave 节点的 slave-priority 越小优先级越高（特殊值 0 表示永不参与选举）
+- *复制进度 offset*：如果 slave-prority 一样，则判断 slave 节点的 offset 值，越大说明数据越新，优先级越高
+- *runid*：最后判断 slave 节点的运行 id 大小，越小优先级越高
+
+当选中了其中一个 slave 为新的 master 后，**故障转移的步骤**如下：
+
+- sentinel 给**备选 slave** 节点发送 `slaveof no one` 命令，让该节点成为 master
+- sentinel 给所有**其它 slave** 发送 `slaveof <masterip> <masterport>` 命令，让这些 slave 成为新 master 的从节点，开始从新的 master 上同步数据。
+- 最后，sentinel 将**故障节点**标记为 slave（强行修改配置文件），当故障节点恢复后会自动成为新的 master 的 slave 节点
+
+### sentinel 可以防止脑裂吗？
+
+#todo
 
 ## 分片(1)
 
+#todo
 
-## 哨兵选主过程(1)
 
 
 ## redis 集群，批量获取 key 会有什么问题
@@ -499,9 +592,6 @@ AOF 的命令记录的频率配置
 > 如果保证了相同业务场景的key都写入了一个主节点，这是再使用mget，会不会有什么问题
 > 
 > 解决集群中批量获取的问题，应该怎么做？
-
-
-
 
 
 # ---------- 未知

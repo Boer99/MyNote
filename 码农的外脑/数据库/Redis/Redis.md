@@ -3166,11 +3166,13 @@ RDB 和 AOF 各有自己的优缺点，如果对数据安全性要求较高，�
 
 # Redis 主从
 
- 单节点 Redis 的并发能力是有上限的，要进一步提高 Redis 的并发能力，就需要搭建主从集群，实现读写分离
- ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696838433752-350bb64b-e3d8-4057-b3f1-ad4e9d7bdbe7.png#averageHue=%23f9f3f2&clientId=u09d4932f-1b94-4&from=paste&height=312&id=u29aa49e1&originHeight=429&originWidth=906&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115993&status=done&style=none&taskId=u32a04d01-64b4-42b7-b030-829abd93c23&title=&width=658.9090909090909)
+单节点 Redis 的并发能力是有上限的，要进一步提高 Redis 的并发能力，就需要搭建主从集群，实现**读写分离**
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696838433752-350bb64b-e3d8-4057-b3f1-ad4e9d7bdbe7.png#averageHue=%23f9f3f2&clientId=u09d4932f-1b94-4&from=paste&height=312&id=u29aa49e1&originHeight=429&originWidth=906&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=115993&status=done&style=none&taskId=u32a04d01-64b4-42b7-b030-829abd93c23&title=&width=658.9090909090909)
+
 ## 搭建主从架构
 
-我们搭建的主从集群结构如图：共包含三个节点，一个主节点，两个从节点。
+搭主从集群结构如图：共包含三个节点，一个主节点，两个从节点。
 
 7001 端口作为 master，7002 和 7003 作为 slave
 
@@ -3230,8 +3232,8 @@ docker exec -it redis7003 redis-cli -p 7003
 有临时和永久两种模式：
 
 -  修改配置文件（永久生效） 
-   - 在redis.conf中添加一行配置：`slaveof <masterip> <masterport>`
--  使用redis-cli客户端连接到redis服务，执行slaveof命令（重启后失效）：
+	   - 在 `redis.conf` 中添加一行配置：`slaveof <masterip> <masterport>`
+-  使用 redis-cli 客户端连接到 redis 服务，执行 slaveof 命令（重启后失效）：
 
 ```properties
 slaveof <masterip> <masterport>
@@ -3239,49 +3241,75 @@ slaveof <masterip> <masterport>
 # 7002和7003执行
 SLAVEOF 192.168.111.154 7001
 ```
-`info replication`查看集群状态信息
-> **注意**：在5.0以后新增命令replicaof，与salveof效果一致。
 
+`info replication` 查看集群状态信息
 
-4）测试<br />主节点执行`set num 666`，从节点`get num`都能获取到<br />从结点`set num`会失败<br />实现了读写分离
+> **注意**：在 5.0 以后新增命令 replicaof，与 slaveof 效果一致。
+
+4）测试
+
+主节点执行 `set num 666`，从节点 `get num` 都能获取到
+
+从结点 `set num` 会失败
 
 ## 主从数据同步原理
+
 ### 全量同步
-Redis主从同步的第一次同步是**全量同步**
+
+Redis 主从同步的**第一次**同步是全量同步
 
 1. 第一阶建立连接，完成了初步沟通，保存版本信息
-2. 第二阶段master执行`bgsave`，生成RDB，发送给slave；同时记录生成rdb期间的所有命令到`repl_baklog`
-3. master将`repl_baklog`中的命令发送给slave
+2. 第二阶段 master 执行 `bgsave`，生成 RDB，发送给 slave；同时记录生成 rdb 期间的所有命令到 `repl_baklog`
+3. master 将 `repl_baklog` 中的命令发送给 slave
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696842806491-353d7b37-da3b-4a60-bc69-c9130c134a22.png#averageHue=%23e8edde&clientId=u09d4932f-1b94-4&from=paste&height=367&id=uab496b92&originHeight=505&originWidth=1033&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=183365&status=done&style=none&taskId=u9514190e-0fb9-4804-84f4-f01ca6eba35&title=&width=751.2727272727273)
 
 在第一阶段涉及到两个概念
 
-1. `Replication ld`: 简称replid，是数据集的标记，id一致则说明是同一数据集。每一个master都有唯一的replid，slave则会继承master节点的replid。（第一次master会把replid给slave）
-2. `offset`：偏移量，随着记录在repl_baklog中的数据增多而逐渐增大。slave完成同步时也会记录当前同步的offset。如果slave的offset小于master的offset，说明slave数据落后于master，需要更新。  
+- `Replication ld`：简称 replid，是数据集的标记，
+	- id 一致则说明是同一数据集
+	- 每一个 master 都有唯一的 replid，slave 则会**继承** master 节点的 replid。（第一次 master 会把 replid 给 slave）
 
-因此slave做数据同步，必须向master声明自己的replication id 和offset，master才可以判断到底需要同步哪些数据<br /> ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696849373813-438c548b-b301-4cf4-a128-0d9a6592fc4c.png#averageHue=%23e9d4d3&clientId=u09d4932f-1b94-4&from=paste&height=148&id=ue38bcd2a&originHeight=204&originWidth=846&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=61100&status=done&style=none&taskId=u34cc37e1-3807-46cf-9703-a50ab8991ff&title=&width=615.2727272727273)<br />**master如何判断slave是不是第一次来同步数据? **<br />replid不一样就是第一次
+- `offset`：偏移量
+	- 随着记录在 `repl_baklog` 中的数据增多而逐渐增大。
+	- slave 完成同步时也会记录当前同步的 offset。
+	- 如果 slave 的 offset 小于 master 的 offset，说明 slave 数据落后于 master，需要更新。
 
-**全量同步的流程**
+> Replication 复制
 
-1. slave节点请求增量同步
-2. master节点判断replid，发现不一致，拒绝增量同步
-3. master将完整内存数据生成RDB，发送RDB到slave
-4. slave清空本地数据，加载master的RDB
-5. master将RDB期间的命令记录在repl baklog，并持续将log中的命令发送给slave
-6. slave执行接收到的命令，保持与master之间的同步
+因此 slave 做数据同步，必须向 master 声明自己的 `replication id` 和 offset，master 才可以判断到底需要同步哪些数据
+
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696849373813-438c548b-b301-4cf4-a128-0d9a6592fc4c.png#averageHue=%23e9d4d3&clientId=u09d4932f-1b94-4&from=paste&height=148&id=ue38bcd2a&originHeight=204&originWidth=846&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=61100&status=done&style=none&taskId=u34cc37e1-3807-46cf-9703-a50ab8991ff&title=&width=615.2727272727273)
+
+> master 如何判断 slave 是不是第一次来同步数据? 
+> 
+> - replid 不一样就是第一次
+
+全量同步的流程
+
+1. slave 节点请求增量同步
+2. master 节点判断 replid，发现不一致，**拒绝**增量同步
+3. master 将完整内存数据生成 RDB，发送 RDB 到 slave
+4. slave 清空本地数据，加载 master 的 RDB
+5. master 将 RDB 期间的命令记录在 `repl baklog`，并持续将 log 中的命令发送给 slave
+6. slave 执行接收到的命令，保持与 master 之间的同步
 
 ### 增量同步
- 主从第一次同步是全量同步，但如果slave重启后同步，则执行增量同步<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696852120879-f84f2cdb-9bc3-4254-afb4-423cb5b2941a.png#averageHue=%23ede7de&clientId=u09d4932f-1b94-4&from=paste&height=263&id=u98f44995&originHeight=362&originWidth=1186&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=167520&status=done&style=none&taskId=u980f6e24-1e5d-46c9-a8a1-0dea27795b7&title=&width=862.5454545454545)<br />repl_baklog大小有上限，写满后会覆盖最早的数据。如果slave断开时间过久致尚未备份的数据被覆盖，则无法基于log做增量同步，只能再次全量同步。
 
- 可以从以下几个方面来优化Redis主从就集群
+ 主从第一次同步是全量同步，但如果 slave 重启后同步，则执行增量同步
+ 
+![](assets/image%20(53).png)
+
+`repl_baklog` 大小有上限，写满后会覆盖最早的数据。如果 slave 断开时间过久致尚未备份的数据被覆盖，则无法基于 log 做增量同步，只能再次全量同步。
+
+ 可以从以下几个方面来优化 Redis 主从集群
 
 - 提高全量同步的性能
-   - 在master中配置repl-diskless-sync yes启用无磁盘复制，避免全量同步时的磁盘IO
-   - Redis单节点上的内存占用不要太大，减少RDB导致的过多磁盘IO
+	- 在 master 中配置 `repl-diskless-sync yes` 启用无磁盘复制，避免全量同步时的磁盘 IO
+	- Redis 单节点上的内存占用不要太大，减少 RDB 导致的过多磁盘 IO
 - 减少、避免全量同步
-   - 适当提高repl baklog的大小，发现slave宕机时尽快实现故障恢复
-- 限制一个master上的slave节点数量，如果实在是太多slave，则可以采用主-从-从链式结构，减少master压力
+	- 适当提高 `repl baklog` 的大小，发现 slave 宕机时尽快实现故障恢复
+- 限制一个 master 上的 slave 节点数量，如果实在是太多 slave，则可以采用主-从-从链式结构，减少 master 压力
 
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696852511863-577e7997-57ca-488f-8d60-14d6df309fe3.png#averageHue=%23f4e7e7&clientId=u09d4932f-1b94-4&from=paste&height=223&id=uca7bf5d4&originHeight=306&originWidth=980&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=152156&status=done&style=none&taskId=u22de1312-68e8-4304-b52e-9d8b5430eb5&title=&width=712.7272727272727)
 
@@ -3290,7 +3318,7 @@ Redis主从同步的第一次同步是**全量同步**
 简述全量同步和增量同步区别?
 
 - 全量同步：master 将完整内存数据生成 RDB，发送 RDB 到 slave。后续命令则记录在 repl_baklog，逐个发送给 slave
-- 增量同步：slave 提交自己的 offset 到master，master 获取 repl baklog 中从 offset 之后的命令给 slave
+- 增量同步：slave 提交自己的 offset 到 master，master 获取 repl baklog 中从 offset 之后的命令给 slave
 
 什么时候执行全量同步?
 
@@ -3307,31 +3335,31 @@ slave 节点宕机恢复后可以找 master 节点同步数据，那 master 节�
 
 ## 哨兵的作用和原理
 
-1）Redis 提供了哨兵(Sentinel)机制来实现主从集群的自动故障恢复。哨兵的结构和作用如下
+1）Redis 提供了哨兵(Sentinel)机制来实现主从集群的**自动故障恢复**。哨兵的结构和作用如下
 
-- 监控：Sentinel 会不断检查您的 master 和 slave 是否按预期工作
-- 自动故障恢复（故障转移）：如果 master 故障，Sentinel 会将一个 slave 提升为 master。当故障实例恢复后也以新的 master 为主
-- 通知：Sentinel 充当 Redis 客户端的服务发现来源，当集群发生故障转移时，会将最新信息推送给 Redis 的客户端
+- *监控*：Sentinel 会不断检查您的 master 和 slave 是否按预期工作
+- *自动故障恢复*（故障转移）：如果 master 故障，Sentinel 会将一个 slave 提升为 master。当故障实例恢复后也以新的 master 为主
+- *通知*：Sentinel 充当 Redis 客户端的服务发现来源，当集群发生故障转移时，会将最新信息推送给 Redis 的客户端
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696854208629-2c94bf54-42db-41b7-b7ee-9337367cb7ff.png#averageHue=%23f2dcd2&clientId=u09d4932f-1b94-4&from=paste&height=332&id=ub1c32957&originHeight=456&originWidth=570&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=177771&status=done&style=none&taskId=u1c6fecec-2690-47ec-9313-ed0f3607cd8&title=&width=414.54545454545456) 
+![500](assets/image%20(54).png)
 
 2）Sentinal 如何判断一个 Redis 实例是否健康？
 
-Sentinel 基于心跳机制监测服务状态，每隔 1 秒向集群的每个实例发送 ping 命令：
+Sentinel 基于**心跳机制**监测服务状态，每隔 1 秒向集群的每个实例发送 **ping 命令**：
 
-- 主观下线：如果某 sentinel 节点发现某实例未在规定时间响应，则认为该实例主观下线。
-- 客观下线（挂了）：若**超过指定数量(quorum)的 sentinel 都认为该实例主观下线**，则该实例客观下线。quorum 值最好超过 Sentinel 实例数量的一半
+- *主观下线*：如果某 sentinel 节点发现某实例未在规定时间响应，则认为该实例主观下线
+- *客观下线*（挂了）：若**超过指定数量**(quorum)的 sentinel 都认为该实例主观下线，则该实例客观下线。quorum 值最好超过 Sentinel 实例数量的一半
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696854495226-be36cd39-31ce-49e8-9df7-2e78000d8cd9.png#averageHue=%23f1d5c9&clientId=u09d4932f-1b94-4&from=paste&height=264&id=uee3dc7c0&originHeight=363&originWidth=563&originalType=binary&ratio=1.375&rotation=0&showTitle=false&size=176693&status=done&style=none&taskId=u5d5222fb-5035-4b77-be47-e29dc367416&title=&width=409.45454545454544)
+![500](assets/image%20(55).png)
 
 3）一旦发现 master 故障，sentinel 需要在 salve 中选择一个作为新的 master，**选择依据**是：
 
-- 首先会判断 slave 节点与 master 节点断开时间长短，如果超过指定值(down-after-milliseconds*10)则会排除该 slave 节点
+- 首先会判断 slave 节点与 master 节点断开时间长短，如果超过指定值(`down-after-milliseconds*10`)则会排除该 slave 节点
 - 然后判断 slave 节点的 slave-priority 值，越小优先级越高，如果是 0 则永不参与选举
 - 如果 slave-prority 一样，则判断 slave 节点的 offset 值，越大说明数据越新，优先级越高
 - 最后是判断 slave 节点的运行 id 大小，越小优先级越高。
 
-4）当选中了其中一个 slave 为新的 master 后(例如 slave1)，**故障的转移的步骤**如下：
+4）当选中了其中一个 slave 为新的 master 后，**故障转移的步骤**如下：
 
 - sentinel 给备选的 slave 节点发送 `slaveof no one` 命令，让该节点成为 master
 - sentinel 给所有其它 slave 发送 `slaveof 192.168.150.101 7002` 命令，让这些 slave 成为新 master 的从节点，开始从新的 master 上同步数据。
@@ -3440,7 +3468,7 @@ public class RedisDemoApplication {
 }
 ```
 
-这里的ReadFrom是配置Redis的读取策略，是一个枚举，包括下面选择:
+这里的 ReadFrom 是配置 Redis 的读取策略，是一个枚举，包括下面选择:
 
 - `MASTER`：从主节点读取
 - `MASTER PREFERRED`：优先从 master 节点读取，master 不可用才读取 replica
@@ -3456,27 +3484,33 @@ public class RedisDemoApplication {
 
 使用分片集群可以解决上述问题，分片集群特征
 
-- 集群中有多个master，每个master保存不同数据
-- 每个master都可以有多个slave节点
-- master之间通过ping监测彼此健康状态 
+- 集群中有多个 master，每个 master 保存不同数据
+- 每个 master 都可以有多个 slave 节点
+- master 之间通过 ping 监测彼此健康状态 
 - 客户端请求可以访问集群任意节点，最终都会被转发到正确节点
 
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696906237717-f163bf58-6cf4-4411-89ed-2b318d65d175.png#averageHue=%23f3e3de&clientId=ue8397173-0857-4&from=paste&height=379&id=u17ff3a52&originHeight=458&originWidth=451&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=153522&status=done&style=none&taskId=u1959bced-ec9d-4d39-8b59-a6a768447d8&title=&width=372.7272609765152)
-## 搭建分片集群
-搭建的分片集群结构：3个master节点，每个master包含一个slave节点<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696906422303-b143143d-4182-481f-82cb-83fedd146610.png#averageHue=%23f7ebea&clientId=ue8397173-0857-4&from=paste&height=492&id=ub3df273a&originHeight=595&originWidth=518&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=52966&status=done&style=none&taskId=u26dab5d9-765c-4bd6-95d6-97de73e4402&title=&width=428.0991600572835)
+![450](assets/image%20(56).png)
 
-| **IP** | **PORT** | **角色** |
-| --- | --- | --- |
+## 搭建分片集群
+
+搭建的分片集群结构：3 个 master 节点，每个 master 包含一个 slave 节点
+
+![450](assets/image%20(57).png)
+
+| IP              | PORT | 角色     |
+| --------------- | ---- | ------ |
 | 192.168.111.154 | 7001 | master |
 | 192.168.111.154 | 7002 | master |
 | 192.168.111.154 | 7003 | master |
-| 192.168.111.154 | 8001 | slave |
-| 192.168.111.154 | 8002 | slave |
-| 192.168.111.154 | 8003 | slave |
+| 192.168.111.154 | 8001 | slave  |
+| 192.168.111.154 | 8002 | slave  |
+| 192.168.111.154 | 8003 | slave  |
 
+1）配置文件，端口号要修改
 
-1）配置文件，端口号要修改<br />![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696945158986-47830297-4ddc-45cf-ad10-4c672d8b6c45.png#averageHue=%23f5f4f2&clientId=ue8397173-0857-4&from=paste&height=245&id=u907ed774&originHeight=297&originWidth=461&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=49222&status=done&style=none&taskId=u100cf27f-a62f-4475-9ad8-45014865a40&title=&width=380.9917235258836)
-```
+![image.png](https://cdn.nlark.com/yuque/0/2023/png/12496339/1696945158986-47830297-4ddc-45cf-ad10-4c672d8b6c45.png#averageHue=%23f5f4f2&clientId=ue8397173-0857-4&from=paste&height=245&id=u907ed774&originHeight=297&originWidth=461&originalType=binary&ratio=1.2100000381469727&rotation=0&showTitle=false&size=49222&status=done&style=none&taskId=u100cf27f-a62f-4475-9ad8-45014865a40&title=&width=380.9917235258836)
+
+```properties
 port 7001
 
 # 开启集群功能（重要）
@@ -3515,7 +3549,10 @@ databases 1
 logfile "redis.log"
 ```
 
-2）docker创建Redis节点<br />-p开启两个端口映射，一个外网交互，一个集群间通信
+2）docker 创建 Redis 节点
+
+`-p` 开启两个端口映射，一个外网交互，一个集群间通信
+
 ```bash
 docker run --name redis7001 -p 7001:7001 -p 17001:17001 \
 -v /mydata/redis/sharding/7001/conf/:/usr/local/etc/redis \
@@ -3557,11 +3594,12 @@ docker exec -it redis7001 /bin/sh
 redis-cli --cluster create --cluster-replicas 1 192.168.111.154:7001 192.168.111.154:7002 192.168.111.154:7003 192.168.111.154:7004 192.168.111.154:7005 192.168.111.154:7006
 ```
 
-- `redis-cli --cluster`或者`./redis-trib.rb`：代表集群操作命令
+- `redis-cli --cluster` 或者 `./redis-trib.rb`：代表集群操作命令
 - `create`：代表是创建集群
-- `--replicas 1`或者`--cluster-replicas 1` ：指定集群中每个master的副本个数为1，此时`节点总数 ÷ (replicas + 1)` 得到的就是master的数量。因此节点列表中的前n个就是master，其它节点都是slave节点，随机分配到不同master
+- `--replicas 1` 或者 `--cluster-replicas 1` ：指定集群中每个 master 的副本个数为1，此时 `节点总数 ÷ (replicas + 1)` 得到的就是 master 的数量。因此节点列表中的前 n 个就是 master，其它节点都是 slave 节点，随机分配到不同 master
 
 日志：
+
 ```bash
 >>> Performing hash slots allocation on 6 nodes...
 Master[0] -> Slots 0 - 5460
@@ -3615,7 +3653,10 @@ M: 6651dc848be04e1077fb6004549a79489b4e160e 192.168.111.154:7002
 [OK] All 16384 slots covered.
 ```
 
-4）查看集群状态<br />随便进入一个结点`cluster nodes`
+4）查看集群状态
+
+随便进入一个结点 `cluster nodes`
+
 ```bash
 127.0.0.1:7002> cluster nodes
 6651dc848be04e1077fb6004549a79489b4e160e 192.168.111.154:7002@17002 myself,master - 0 1696948517000 2 connected 5461-10922
@@ -3627,7 +3668,9 @@ bce0b3c7c108c35e828cb492d21c55c8336471f7 192.168.111.154:7004@17004 slave 6651dc
 ```
 
 ## 散列插槽
-Redis会把每一个master节点映射到0~16383共16384个插槽(hash slot)上，查看集群信息时就能看到:
+
+Redis 会把每一个 master 节点映射到 0~16383 共 16384 个插槽(hash slot)上，查看集群信息时就能看到:
+
 ```bash
 M: 4a36e8ea09638830252f8fd893f1074f25330504 192.168.111.154:7001
    slots:[0-5460] (5461 slots) master
@@ -3639,12 +3682,13 @@ M: 6651dc848be04e1077fb6004549a79489b4e160e 192.168.111.154:7002
    slots:[5461-10922] (5462 slots) master
    1 additional replica(s)
 ```
-数据key不是与节点绑定，而是与插槽绑定。redis会根据key的有效部分计算插槽值，分两种情况:
 
-- key中包含"{}”，且“0”中至少包含1个字符，“{}”中的部分是有效部分
-- key中不包含“{}”，整个key都是有效部分p
+数据 key 不是与节点绑定，而是与插槽绑定。redis 会根据 key 的有效部分计算插槽值，分两种情况:
 
-例如: key是num，那么就根据num计算，如果是{itcast}num，则根据itcast计算。计算方式是利用CRC16算法得到一个hash值，然后对16384取余，得到的结果就是slot值。
+- key 中包含"`{}`”，且“0”中至少包含 1 个字符，“`{}`”中的部分是有效部分
+- key 中不包含“`{}`”，整个 key 都是有效部分 p
+
+例如: key 是 num，那么就根据 num 计算，如果是{itcast}num，则根据 itcast 计算。计算方式是利用 CRC16 算法得到一个 hash 值，然后对 16384 取余，得到的结果就是 slot 值。
 
 ## 集群伸缩
 

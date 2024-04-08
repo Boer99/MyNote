@@ -1,4 +1,4 @@
-        
+
 # 类和对象_基础
 ## 包
 
@@ -1372,12 +1372,1070 @@ class Outer {
 }
 ```
 
+# 集合
+
+数组的弊端：
+
+- 长度开始时必须指定且不能更改
+- 保存的必须为同一类型的元素
+- 增删元素比较麻烦
+
+集合的好处：
+
+- 可以动态保存任意多个对象
+- 提供了一系列方便的操作对象的方法
+- 增删方便
+
+继承图：
+
+![](assets/Pasted%20image%2020240406171506.png)
+
+集合主要是两组，Collection 接口有两个重要子接口 List、Set，他们实现的集合都是单列集合，Map 接口实现的子类都是双列集合
+
+## Collection 接口
+
+实现类特点：
+
+- 可以存放多个元素，每个元素可以是 Object
+- 有些可以存放重复的元素，有些不可以，
+- 有些是有序的（List），有些不是（Set）
+- Collection 接口没有直接实现子类，是通过子接口 Set 和 List 实现的
+
+### Collection 接口常用方法
+
+这里以实现子类ArrayList来演示
+
+```java
+public static void main(String[] args) throws Exception {
+    List list = new ArrayList();
+    /**
+     * add() 添加单个元素
+     */
+    list.add("jack");
+    list.add(10); //相当于 list.add(new Integer(10))
+    list.add(true); //同理
+
+    /**
+     * remove(Object o) 删除指定元素
+     */
+    list.remove("jack");
+
+    /**
+     * boolean contains(Object o) 查找元素是否存在
+     */
+    boolean contains = list.contains(true);
+
+    /**
+     * int size() 获取元素个数
+     */
+    int size = list.size();
+
+    /**
+     * boolean isEmpty() 判断是否为空
+     */
+    boolean empty = list.isEmpty();
+
+    /**
+     * void clear() 清空
+     */
+    list.clear();
+
+    /**
+     * boolean addAll(Collection<? extends E> c) 添加多个元素
+     */
+    List list1 = new ArrayList();
+    list.addAll(list1);
+
+    /**
+     * boolean containsAll(Collection<?> c) 查找多个元素是否都存在
+     */
+    boolean containsAll = list.containsAll(list1);
+
+    /**
+     * boolean removeAll(Collection<?> c) 删除多个元素
+     */
+    list.removeAll(list1);
+}
+```
+
+### Collection 遍历元素方式
+
+#### 方式一：Iterator
+
+Iterator对象称为迭代器，主要用于遍历Collection集合中的元素
+
+所有实现了Collection接口的集合类都有一个iterator()方法，用以返回一个实现了Iterator接口的对象，即可以返回一个迭代器
+
+Iterator仅用于遍历集合，本身并不存放对象
+
+```java
+class Book {
+    private String name;
+    private String author;
+    private double price;
+		//有参、toString()
+}
+```
+
+```java
+public static void main(String[] args) throws Exception {
+    Collection col = new ArrayList();
+    col.add(new Book("三国演义", "罗贯中", 10.1));
+    col.add(new Book("红楼梦", "曹雪芹", 10.1));
+    col.add(new Book("小李飞刀", "古龙", 10.1));
+
+    //得到col对应的迭代器
+    Iterator iterator = col.iterator();
+    while (iterator.hasNext()) {
+        //next() 下移，并将下移以后集合位置上元素返回
+        Object obj = iterator.next();
+        System.out.println(obj);
+    }
+    //如果没有更多的元素，会抛出NoSuchElementException
+    iterator.next();
+    //如果想再次遍历，需要重置迭代器
+    iterator = col.iterator();
+}
+```
+
+#### 方式二：增强for循环
+
+就是简化版iterator，底层仍然是迭代器
+
+```java
+public static void main(String[] args) throws Exception {
+    Collection col = new ArrayList();
+    col.add(new Book("三国演义", "罗贯中", 10.1));
+    col.add(new Book("红楼梦", "曹雪芹", 10.1));
+    col.add(new Book("小李飞刀", "古龙", 10.1));
+
+    //增强for循环
+    for (Object o : col) {
+        System.out.println(o);
+    }
+}
+```
+
+## List 接口
+
+Collection 接口的子接口
+
+- List 集合中元素 
+	- 有序（添加顺序和取出顺序一致）
+	- 可重复
+- 支持索引
+- List 集合可以添加null（多个）
+
+### List 接口常用方法
+
+List集合支持索引，并添加了一些==根据索引来操作集合元素的方法==
+
+```java
+public static void main(String[] args) throws Exception {
+    List list = new ArrayList();
+    list.add("aa");
+    list.add("bb");
+
+    /**
+     * void add(int index, E element) 在index位置插入元素
+     */
+    list.add(1, "add1");
+
+    /**
+     * boolean addAll(int index, Collection<? extends E> c) 从index位置开始将eles所有元素插入
+     * boolean addAll(Collection<? extends E> c) 从表尾将eles所有元素插入
+     */
+    List list1 = new ArrayList();
+    list1.add("addAll1");
+    list1.add("addAll2");
+    list.addAll(list1);
+    list.addAll(2, list1);
+
+    /**
+     * int indexOf(Object o) 返回o在当前集合首次出现的位置
+     * int lastIndexOf(Object o) 返回o在当前集合末次出现的位置
+     */
+    int indexOf = list.indexOf("aa");
+    int lastIndexOf = list.lastIndexOf("aa");
+
+    /**
+     * E set(int index, E element) 替换index位置的元素
+     */
+    Object o = list.set(1, "set");
+
+    /**
+     * List<E> subList(int fromIndex, int toIndex) 返回从fromIndex~toIndex位置的子集合
+     */
+    List list2 = list.subList(0, 2);
+}
+```
+
+### List 集合遍历方式
+
+迭代器、增强for循环、普通for循环，前两种和Collection
+
+普通for循环：
+
+```java
+List list = new ArrayList();
+//List list = new LinkedList();
+//List list = new Vector();
+list.add("aa");
+list.add("bb");
+list.add("cc");
+
+for (int i = 0; i < list.size(); i++) {
+    System.out.println(list.get(i));
+}
+```
+
+## ArrayList
+
+特点：
+
+- List 集合的主要实现类
+- 由数组实现存储，底层是一个对象数组
+- 基本等同于 Vector，除了线程不安全（没有 synchronized），故多线程不建议使用 ArrayList
+
+### 底层结构和扩容机制（重要）
+
+- ArrayList 维护了一个 `transient Object[] elementData` 数组（transient：表示该属性不会被序列化，为什么见引用部分）
+- 当创建 ArrayList 对象时，如果使用无参构造，则初始 elementData 容量为 0，第一次添加则扩容 elementData 为 10，如需再次扩容，则 elementData 容量为原先的 1.5 倍
+- 如果使用的是指定大小的构造器，则初始 elementData 容量为指定大小，之后扩容为原先的 1.5 倍
+
+### 分析add()源码
+
+> Debug下面的代码，并分析底层扩容机制 https://www.bilibili.com/video/BV1fh411y7R8?p=511&spm_id_from=pageDriver
+
+> 注意：需要设置一下，不然 debug 的时候默认看不到数组中的 null 元素
+> 
+> ![](assets/image-20220501215058049.png)
+
+```java
+public static void main(String[] args) {
+    List list = new ArrayList();
+    for (int i = 1; i <=10; i++) {
+        list.add(i);
+    } //容量为10
+    for (int i = 11; i <=15; i++) {
+        list.add(i);
+    }
+    list.add(16);
+    list.add(17);
+    list.add(null);
+}
+```
+
+**源码解析：**
+
+1、调用ArrayList的无参构造函数，创建了一个空数组 或者 调用ArrayList的有参构造函数，指明初始容量
+
+```java
+//无参构造
+public ArrayList() {
+  	//创建一个空数组，DEFAULTCAPACITY_EMPTY_ELEMENTDATA就是个空数组
+    this.elementData = DEFAULTCAPACITY_EMPTY_ELEMENTDATA;
+}
+```
+
+```java
+//有参构造
+public ArrayList(int initialCapacity) {
+    if (initialCapacity > 0) {
+        this.elementData = new Object[initialCapacity];
+    } else if (initialCapacity == 0) {
+        this.elementData = EMPTY_ELEMENTDATA;
+    } else {
+        throw new IllegalArgumentException("Illegal Capacity: "+ initialCapacity);
+    }
+}
+```
+
+2、将int自动装箱为Integer
+
+```java
+public static Integer valueOf(int i) {
+    if (i >= IntegerCache.low && i <= IntegerCache.high)
+        return IntegerCache.cache[i + (-IntegerCache.low)];
+    return new Integer(i);
+}
+```
+
+3、add()加入元素
+
+```java
+public boolean add(E e) {
+  	//size是elementData中实际存放元素的个数，elementData.length是数组的容量
+    ensureCapacityInternal(size + 1); 
+  	//加入元素
+    elementData[size++] = e;
+    return true;
+}
+
+//确定好数组的容量，该扩容扩容
+private void ensureCapacityInternal(int minCapacity) {
+  	//minCapacity=size+1
+  	//确定真正的容量
+    ensureExplicitCapacity(calculateCapacity(elementData, minCapacity));
+}
+
+//计算当前需要的容量
+private static int calculateCapacity(Object[] elementData, int minCapacity) {
+  	//elementData是不是空数组？是空的话返回10（初始容量为10）
+    if (elementData == DEFAULTCAPACITY_EMPTY_ELEMENTDATA) {
+      	//DEFAULT_CAPACITY = 10，返回10和minCapacity中更大的那个
+        return Math.max(DEFAULT_CAPACITY, minCapacity);
+    }
+  	//不是空数组就返回minCapacity，minCapacity为当前size+1
+    return minCapacity;
+}
+
+//根据当前需要的容量，扩容或者不扩容
+private void ensureExplicitCapacity(int minCapacity) {
+  	//记录当前集合被修改的次数
+    modCount++; 
+		//当前需要的容量大于实际的容量，则需要扩容，执行grow()
+  	//因为之前可能扩容过，所以不是每次add元素都需要扩容
+    if (minCapacity - elementData.length > 0) 
+      	//执行扩容
+        grow(minCapacity);
+}
+
+//真的执行扩容
+private void grow(int minCapacity) {
+  	//获取当前数组容量
+    int oldCapacity = elementData.length; 
+  	//newCapacity=1.5*oldCapacity
+    int newCapacity = oldCapacity + (oldCapacity >> 1); 
+  	//空数组才能进去该if oldCapacity=0 newCapacity=0*1.5=0
+    if (newCapacity - minCapacity < 0)
+      	//初始容量minCapacity=10
+        newCapacity = minCapacity; 
+  	//如果newCapacity比数组最大容量还大
+    if (newCapacity - MAX_ARRAY_SIZE > 0)
+        newCapacity = hugeCapacity(minCapacity);
+    //扩容
+    elementData = Arrays.copyOf(elementData, newCapacity); 
+}
+```
+
+<img src="assets/image-20220501212224733.png" alt="image-20220501212224733" style="zoom: 33%;" />
+
+> 1、为什么elementData要用transient修饰？
+>
+> ​	 ArrayList在序列化的时候会调用writeObject，直接将size和element写入ObjectOutputStream；反序列化时调用readObject，从ObjectInputStream获取size和element，再恢复到elementData。
+> ​    为什么不直接用elementData来序列化，而采用上诉的方式来实现序列化呢？原因在于elementData是一个缓存数组，它通常会预留一些容量，等容量不足时再扩充容量，那么有些空间可能就没有实际存储元素，采用上诉的方式来实现序列化时，就可以保证只序列化实际存储的那些元素，而不是整个数组，从而节省空间和时间
+>
+> ​	[(9条消息) ArrayList中elementData为什么被transient修饰？_hy_zzzzz的博客-CSDN博客](https://blog.csdn.net/u011679955/article/details/94365543)
+>
+> 2、arraylist存入的是对象还是引用呢？
+>
+> ​	[arraylist存入的是对象还是引用呢？？ - 走看看 (zoukankan.com)](http://t.zoukankan.com/Kiro-p-2337996.html)
+
+## Vector
+
+特点
+
+- List 集合的古老实现类
+- 线程安全
+- 扩容机制和 arraylist 不同，其他和 arraylist 基本等同
+
+### 扩容机制
+
+如果是无参，默认容量是10，容量满后按照两倍扩容
+
+如果是指定大小，每次直接按两倍扩
+
+> 源码和arraylist有所不同，完全看得懂，自己debug一下
+>
+> 区别是vector有一个capacityIncrement属性，可以自增容量，该属性在构造函数中赋值
+>
+> ```java
+> /**
+>  * The amount by which the capacity of the vector is automatically
+>  * incremented when its size becomes greater than its capacity.  If
+>  * the capacity increment is less than or equal to zero, the capacity
+>  * of the vector is doubled each time it needs to grow.
+>  *
+>  * @serial
+>  */
+> protected int capacityIncrement;
+> ```
+>
+> ```java
+> public Vector(int initialCapacity, int capacityIncrement) {
+>     super();
+>     if (initialCapacity < 0)
+>         throw new IllegalArgumentException("Illegal Capacity: "+
+>                                            initialCapacity);
+>     this.elementData = new Object[initialCapacity];
+>     this.capacityIncrement = capacityIncrement;
+> }
+> ```
+>
+> ```java
+> private void grow(int minCapacity) {
+>     // overflow-conscious code
+>     int oldCapacity = elementData.length;
+>     int newCapacity = oldCapacity + ((capacityIncrement > 0) ?
+>                                      capacityIncrement : oldCapacity);
+>     if (newCapacity - minCapacity < 0)
+>         newCapacity = minCapacity;
+>     if (newCapacity - MAX_ARRAY_SIZE > 0)
+>         newCapacity = hugeCapacity(minCapacity);
+>     elementData = Arrays.copyOf(elementData, newCapacity);
+> }
+> ```
+
+## LinkedList
+
+特点
+
+- 底层实现了双向链表和双端队列特点
+- 线程不安全
+
+### 底层结构
+
+- 底层维护了一个双向链表，维护了两个属性first和last分别指向首节点和尾结点
+- 每个节点（Node对象）里面又维护了prev、next、item三个属性，其中通过prev指向前一个，通过next指向后一个节点
+- 元素的添加和删除不是通过数组完成的，相对效率较高
+
+```java
+transient Node<E> first;
+transient Node<E> last;
+//双向链表
+private static class Node<E> {
+    E item;
+    Node<E> next;
+    Node<E> prev;
+
+    Node(Node<E> prev, E element, Node<E> next) {
+        this.item = element;
+        this.next = next;
+        this.prev = prev;
+    }
+}
+```
+
+### add() 源码解析
+
+在表尾添加新元素，链表也不需要考虑扩容的问题
+
+```java
+//debug
+public static void main(String[] args) {
+    LinkedList list = new LinkedList();		
+    for (int i = 0; i < 5; i++) {
+        list.add(i); //add 添加
+    }
+}
+```
+
+进入add方法()
+
+```java
+public boolean add(E e) {
+    linkLast(e);
+    return true;
+}
+
+//在表尾加入新元素
+void linkLast(E e) {
+    final Node<E> l = last;
+  	//为新元素创建节点 newNode
+    final Node<E> newNode = new Node<>(l, e, null);
+  	//让表尾指向 newNode
+    last = newNode;
+  	//如果原先表尾是null，即第一次加入元素的时候才能进入这个if
+    if (l == null)
+      	//表头和表尾都指向 newNode
+        first = newNode;
+    else
+        l.next = newNode;
+    size++;
+    modCount++;
+}
+```
+
+### remove()源码解析
+
+```java
+//debug
+public static void main(String[] args) {
+    LinkedList list = new LinkedList();
+    for (int i = 0; i < 5; i++) {
+        list.add(i);
+    }
+    /**
+     * remove 删除并返回删除的元素
+     * public E remove() 删除第一个
+     * public E remove(int index) 删除指定索引的元素
+     */
+    list.remove();
+    list.remove(2);
+}
+```
+
+remove() 没有参数，默认删除第一个元素
+
+```java
+public E remove() {
+    return removeFirst();
+}
+
+//删除第一个元素，先判断能不能删
+public E removeFirst() {
+    final Node<E> f = first;
+  	//如果是空表，直接抛异常
+    if (f == null)
+        throw new NoSuchElementException();
+    return unlinkFirst(f);
+}
+//执行删除
+private E unlinkFirst(Node<E> f) {
+  	//获取删除节点的元素，用于返回
+    final E element = f.item;
+  	//获取删除节点的后一个节点 next
+    final Node<E> next = f.next;
+    f.item = null;
+    f.next = null; // help GC
+    first = next;
+  	//只有一个节点
+    if (next == null)
+        last = null;
+    else
+        next.prev = null;
+    size--;
+    modCount++;
+    return element;
+}
+```
+
+remove(int index) 删除指定索引的元素
+
+```java
+public E remove(int index) {
+    checkElementIndex(index);
+    return unlink(node(index));
+}
+
+//检查索引的合法性
+private void checkElementIndex(int index) {
+    if (!isElementIndex(index))
+        throw new IndexOutOfBoundsException(outOfBoundsMsg(index));
+}
+private boolean isElementIndex(int index) {
+    return index >= 0 && index < size;
+}
+
+//通过index找到节点，这个方法复用性很强，get和set都会用到，所以get和set不讲了，比remove简单太多了
+Node<E> node(int index) {
+  	//size>>1就是size/2，前半段从表头往后找，后半段从表尾往前找
+    if (index < (size >> 1)) {
+        Node<E> x = first;
+        for (int i = 0; i < index; i++)
+            x = x.next;
+        return x;
+    } else {
+        Node<E> x = last;
+        for (int i = size - 1; i > index; i--)
+            x = x.prev;
+        return x;
+    }
+}
+
+//执行删除
+E unlink(Node<E> x) {
+    final E element = x.item;
+  	//获取删除节点的前一个结点和后一个节点
+    final Node<E> next = x.next;
+    final Node<E> prev = x.prev;
+		//前一个结点为null，说明删的是表头
+    if (prev == null) {
+        first = next;
+    } else {
+        prev.next = next;
+        x.prev = null;
+    }
+		//后一个节点为null，说明删的是表尾
+    if (next == null) {
+        last = prev;
+    } else {
+        next.prev = prev;
+        x.next = null;
+    }
+    x.item = null;
+    size--;
+    modCount++;
+    return element;
+}
+```
+
+## List 集合选择
+
+[Java集合常见知识点&面试题总结(上) | JavaGuide](https://javaguide.cn/java/collection/java-collection-questions-01.html#arraylist-与-linkedlist-区别)
+
+我们在项目中一般是不会使用到 LinkedList 的，需要用到 LinkedList 的场景几乎都可以使用 ArrayList 来代替，并且性能通常会更好！就连 LinkedList 的作者约书亚·布洛克（Josh Bloch）自己都说从来不会使用 LinkedList
+
+另外，不要下意识地认为 LinkedList 作为链表就最适合元素增删的场景。LinkedList 仅仅在头尾插入或者删除元素的时候时间复杂度近似 O(1)，其他情况增删元素的时间复杂度都是 O(n)
+
+## Set 接口
+
+特点
+
+- 无序（添加和取出顺序不一致，但取出的顺序是固定的，每次都一样）
+- 不能通过索引操作
+- 不允许重复元素，最多包含一个 null
+
+```java
+public static void main(String[] args) {
+    Set set = new HashSet();
+    set.add("lucy");
+    set.add("jack");
+    set.add("john");
+    set.add("john"); //重复
+    set.add(null);
+    set.add(null); //再次添加 null
+    //每次取出顺序都一样过
+    for (int i = 0; i < 10; i++) {
+        System.out.println("set=" + set);
+    }
+}
+```
+
+### Set 集合常用方法
+
+Set 接口也是 Collection 的子接口，因此常用方法和 Collection 接口一样
+
+### 遍历方式
+
+迭代器 和 增强for循环，和Collection一样
+不能使用索引的方式来获取，所以不能用普通for循环遍历
+
+## HashSet
+
+特点
+
+- 底层是是HashMap，就是把元素作为HashMap的key存放，HashMap的key不会重复；HashMap的value用一个常量present
+
+  ```java
+  public HashSet() {
+      map = new HashMap<>();
+  }
+  
+  private static final Object PRESENT = new Object();
+  ```
+
+- 不保证取出顺序和存放顺序一致，取决于hash后确定索引的结果
+
+### 存储结构
+
+> 底层是是HashMap，所以就是分析HashMap
+
+HashMap的存储结构是 数组+链表/红黑树
+
+HashMap具体存储结构的实现：
+
+```java
+//数组
+transient Node<K,V>[] table;
+
+//链表或者红黑树的节点
+static class Node<K,V> implements Map.Entry<K,V> {
+    final int hash;
+    final K key;
+    V value;
+    Node<K,V> next;
+
+    Node(int hash, K key, V value, Node<K,V> next) {
+        this.hash = hash;
+        this.key = key;
+        this.value = value;
+        this.next = next;
+    }
+
+    public final K getKey()        { return key; }
+    public final V getValue()      { return value; }
+    public final String toString() { return key + "=" + value; }
+
+    public final int hashCode() {
+        return Objects.hashCode(key) ^ Objects.hashCode(value);
+    }
+
+    public final V setValue(V newValue) {
+        V oldValue = value;
+        value = newValue;
+        return oldValue;
+    }
+
+    public final boolean equals(Object o) {
+        if (o == this)
+            return true;
+        if (o instanceof Map.Entry) {
+            Map.Entry<?,?> e = (Map.Entry<?,?>)o;
+            if (Objects.equals(key, e.getKey()) &&
+                Objects.equals(value, e.getValue()))
+                return true;
+        }
+        return false;
+    }
+}
+```
+
+### 添加元素流程
+
+- HashSet 中有一个 HashMap，会把元素作为 HashMap 的 key 值存放
+- 添加一个元素时会先得到 hash 值（hashcode 方法）
+- 通过 hash 值 和 数组当前容量 n 计算出元素在数组中存放的索引位置：`(n - 1) & hash`
+- 看这个位置是否已经存放有元素
+  - 如果没有，直接加入；
+  - 如果有调用equals()比较，相同不添加，不同添加到最后
+
+### 扩容机制
+
+- 第一次添加时，table 数组扩容到 16，临界值 `threshold=16 * 0.75`，加载因子 `loadFactor =0.75`
+- 如果 table 数组超过临界值，就按两倍扩容，临界值也为原来的两倍（元素个数超过12，扩容到 `16 * 2=32`，新的临界值就是 `12 * 2=24`）
+- 在 java8 中，如果一条链表的元素个数超过 `TREEIFY_THREHOLD` (默认是 8)，并且 table 的大小>= `MIN_TREEIFY_CAPCITY` (默认 64)，就会树化（红黑树），否则仍然采用数组扩容机制
+
+### 源码解析
+
+```java
+//debug
+public static void main(String[] args) {
+    Set set = new HashSet();
+    set.add("java");
+    set.add("php");
+    set.add("java");
+}
+```
+
+1、调用构造方法
+
+```java
+public HashSet() {
+    map = new HashMap<>();
+}
+```
+
+2、进入add()方法
+
+```java
+public boolean add(E e) {
+  	//private static final Object PRESENT = new Object();
+  	//PRESENT主要是起到占位的作用，所有的key共享这个PRESENT
+  	//返回null，表示成功
+    return map.put(e, PRESENT)==null;
+}
+
+-------------------进入hashmap的方法中了--------------------
+
+public V put(K key, V value) { //key="java"
+  	//插入成功putVal返回null
+    return putVal(hash(key), key, value, false, true);
+}
+
+//计算哈希值
+static final int hash(Object key) {
+    int h;
+    return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
+}
+
+//核心方法
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+               boolean evict) {
+    Node<K,V>[] tab; Node<K,V> p; int n, i; //辅助变量
+  	//table就是HashMap的一个数组 transient Node<K,V>[] table;
+    if ((tab = table) == null || (n = tab.length) == 0)
+      	//这里会进入resize()方法
+      	//第一次扩容，大小为16，并计算出临界值threshold=12（防止突然变满）
+        n = (tab = resize()).length; //获取扩容后新数组的长度 
+  	//通过之前得到的key的hash值，计算出当前key存放在数组中的位置
+  	//p为null，表示未存放元素
+    if ((p = tab[i = (n - 1) & hash]) == null)
+      	//，创建一个Node(key="java",value=PRESENT)放在该位置
+        tab[i] = newNode(hash, key, value, null);
+  	//p不为空，该位置已有元素，hash冲突
+    else {
+        Node<K,V> e; K k; 
+        if (p.hash == hash && //hash值是否一样，hash值都不一样肯定不是一个对象
+            //两个key是同一个对象 或者 经过equals()比较后是同一个对象
+            ((k = p.key) == key || (key != null && key.equals(k))))
+            e = p;
+      	//再判断p是不是一棵红黑树
+        else if (p instanceof TreeNode)
+          	//putTreeVal太复杂，先不追了
+            e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+      	//for循环与链表的元素逐个比较
+        else {
+            for (int binCount = 0; ; ++binCount) {
+              	//获取到表尾结点，新建节点
+                if ((e = p.next) == null) {
+                    p.next = newNode(hash, key, value, null);
+                  	//判断链表是否达到8个结点 static final int TREEIFY_THRESHOLD = 8;
+                    if (binCount >= TREEIFY_THRESHOLD - 1) //-1是没比第一个节点
+                      	//treeifyBin里还会判断数组的长度是否超过 static final int MIN_TREEIFY_CAPACITY = 64; 
+                      	//满足才将链表转换为红黑树，否则调用resize()对数组扩容
+                        treeifyBin(tab, hash); 
+                    break;
+                }
+              	//遇到重复元素了，退出循环
+                if (e.hash == hash &&
+                    ((k = e.key) == key || (key != null && key.equals(k))))
+                    break;          
+                p = e; //指针后移
+            }
+        }
+      	//成功添加，e=null，这个if没啥好看的
+        if (e != null) { 
+            V oldValue = e.value;
+            if (!onlyIfAbsent || oldValue == null)
+                e.value = value;
+            afterNodeAccess(e);
+            return oldValue;
+        }
+    }
+    ++modCount;
+  	//放入数据之后size+1，并判断是否超过临界值
+    if (++size > threshold)
+        resize(); //扩容
+    afterNodeInsertion(evict); //空方法，留给子类实现
+    return null; //表示成功
+} 
+
+//数组扩容的核心方法
+final Node<K,V>[] resize() {
+    Node<K,V>[] oldTab = table;
+    int oldCap = (oldTab == null) ? 0 : oldTab.length;
+    int oldThr = threshold; //int threshold; 当前数组的临界值
+    int newCap, newThr = 0;
+    if (oldCap > 0) {
+      	//超过最大值就不再扩充了，就只好随你碰撞去吧
+        if (oldCap >= MAXIMUM_CAPACITY) {
+            threshold = Integer.MAX_VALUE;
+            return oldTab;
+        }
+      	//没超过最大值，就扩充为原来的2倍
+        else if ((newCap = oldCap << 1) < MAXIMUM_CAPACITY &&
+                 oldCap >= DEFAULT_INITIAL_CAPACITY)
+            newThr = oldThr << 1; //临界值也为原来2倍
+    }
+    else if (oldThr > 0) // initial capacity was placed in threshold
+        newCap = oldThr;
+  	//第一次初始化数组
+    else {
+      	//static final int DEFAULT_INITIAL_CAPACITY = 1 << 4; 默认的初始化容量
+        newCap = DEFAULT_INITIAL_CAPACITY; //newCap=16
+      	//static final float DEFAULT_LOAD_FACTOR = 0.75f; 默认的加载因子
+      	//0.75*16=12 即新的临界值，数组有12个元素就要开始扩容了
+        newThr = (int)(DEFAULT_LOAD_FACTOR * DEFAULT_INITIAL_CAPACITY);
+    }
+    if (newThr == 0) {
+        float ft = (float)newCap * loadFactor;
+        newThr = (newCap < MAXIMUM_CAPACITY && ft < (float)MAXIMUM_CAPACITY ?
+                  (int)ft : Integer.MAX_VALUE);
+    }
+    threshold = newThr; //将临界值更新
+    @SuppressWarnings({"rawtypes","unchecked"})
+        Node<K,V>[] newTab = (Node<K,V>[])new Node[newCap]; //创建扩容后的数组，
+    table = newTab;
+    if (oldTab != null) {
+      	//把每个bucket都移动到新的buckets中
+        for (int j = 0; j < oldCap; ++j) {
+            Node<K,V> e;
+            if ((e = oldTab[j]) != null) {
+                oldTab[j] = null;
+                if (e.next == null)
+                    newTab[e.hash & (newCap - 1)] = e;
+                else if (e instanceof TreeNode)
+                    ((TreeNode<K,V>)e).split(this, newTab, j, oldCap);
+                else { // preserve order
+                    Node<K,V> loHead = null, loTail = null;
+                    Node<K,V> hiHead = null, hiTail = null;
+                    Node<K,V> next;
+                    do {
+                        next = e.next;
+                        if ((e.hash & oldCap) == 0) {
+                            if (loTail == null)
+                                loHead = e;
+                            else
+                                loTail.next = e;
+                            loTail = e;
+                        }
+                        else {
+                            if (hiTail == null)
+                                hiHead = e;
+                            else
+                                hiTail.next = e;
+                            hiTail = e;
+                        }
+                    } while ((e = next) != null);
+                    if (loTail != null) {
+                        loTail.next = null;
+                        newTab[j] = loHead;
+                    }
+                    if (hiTail != null) {
+                        hiTail.next = null;
+                        newTab[j + oldCap] = hiHead;
+                    }
+                }
+            }
+        }
+    }
+    return newTab; 
+}
+```
+
+
+
+### 最佳实践：重写equals和hashCode方法
+
+重写equals()方法后必须重写hashCode()方法，否则不能保证equals相等的两个对象，hashCode一定相等
+
+由前面的源码分析可得出，如果hash值不同直接就认为不是相同的对象，更不会调用equals()方法，会导致equals()判断相同的对象出现在hashmap中
+
+```java
+if (p.hash == hash && //hash值是否一样，hash值都不一样肯定不是一个对象
+    //两个key是同一个对象 或者 经过equals()比较后是同一个对象
+    ((k = p.key) == key || (key != null && key.equals(k))))
+    e = p;
+//再判断p是不是一棵红黑树
+else if (p instanceof TreeNode)
+    //putTreeVal太复杂，先不追了
+    e = ((TreeNode<K,V>)p).putTreeVal(this, tab, hash, key, value);
+//for循环与链表的元素逐个比较 equals()
+else {...}
+```
+
+示例：
+
+```java
+public class Test8 {
+    public static void main(String[] args) {
+        HashSet set=new HashSet();
+        set.add(new Person("aa",18));
+        set.add(new Person("aa",18));
+        System.out.println(set);
+    }
+}
+
+class Person{
+    String name;
+    int age;
+
+    public Person(String name, int age) {
+        this.name = name;
+        this.age = age;
+    }
+
+    @Override
+    public String toString() {
+        return "Person{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Person person = (Person) o;
+        return age == person.age && Objects.equals(name, person.name);
+    }
+
+    //必须重写
+  	//如果 name 和 age 值相同，则返回相同的hash值
+    @Override
+    public int hashCode() {
+        return Objects.hash(name, age);
+    }
+}
+```
+
+## LinkedHashSet
+
+特点
+
+- LinkedHashSet 是 HashSet 的子类
+- 底层是一个 LinkedHashMap（HashMap 的子类）
+- 在 hashset 的基础上保证元素添加顺序和取出顺序一致
+
+### 存储结构
+
+LinkedHashMap 底层是数组+双向链表，这个双向链表结点就是在 hashset 的 Node 结点的基础上增加以下属性
+
+```java
+//这个table直接继承的父类HashMap的table
+transient Node<K,V>[] table;
+
+//内部节点继承了父类HashMap的静态内部类Node，并增加了before, after两个指针
+//table能直接存放Entry就是多态
+static class Entry<K,V> extends HashMap.Node<K,V> {
+    Entry<K,V> before, after;
+    Entry(int hash, K key, V value, Node<K,V> next) {
+      	//调用node的构造
+        super(hash, key, value, next);
+    }
+}
+
+//双向链表的表头和表尾
+transient LinkedHashMap.Entry<K,V> head;
+transient LinkedHashMap.Entry<K,V> tail;
+```
+
+### 源码分析
+
+以 `add()` 方法为例：
+
+和HashSet的区别就是，每次新加入结点的时候维护一下双向链表，即Entry中的before、after两个指针，记录好表尾节点
+
+具体体现在 LinkedHashMap 重写了 HashMap 的 `NewNode()` 方法
+
+```java
+//debug
+public static void main(String[] args) {
+    LinkedHashSet set = new LinkedHashSet();
+    for (int i = 0; i < 50; i++) {
+        set.add(i);
+    }
+}
+```
+
+```java
+//新建一个LinkedHashMap.Entry结点，存入元素
+Node<K,V> newNode(int hash, K key, V value, Node<K,V> e) {
+    LinkedHashMap.Entry<K,V> p =
+        new LinkedHashMap.Entry<K,V>(hash, key, value, e);
+    linkNodeLast(p);
+    return p;
+}
+//连接新结点
+private void linkNodeLast(LinkedHashMap.Entry<K,V> p) {
+    LinkedHashMap.Entry<K,V> last = tail;
+    //记录好新表尾
+    tail = p;
+    //第一个结点，作为头节点
+    if (last == null)
+        head = p;
+    //维护before, after两个指针
+    else {
+        p.before = last;
+        last.after = p;
+    }
+}
+```
+
 # 异常
+
 ## 基本概念
-将程序执行过程中发生的不正常情况称为“异常”<br />执行过程中发生的异常事件可分为两类
+
+将程序执行过程中发生的不正常情况称为“异常”
+
+执行过程中发生的异常事件可分为两类
 
 1. `Error`：java虚拟机无法解决的严重问题，如JVM系统内部错误、资源耗尽等严重情况。比如`StackOverflow`（栈溢出）和`OOM`（out of memory，内存不足），Error是严重错误，程序会崩溃
 2. `Exception`：因编程错误或偶然的外在因素导致的一般性问题，可以使用针对性的代码处理。如空指针访问、试图读取不存在的文件、网络连接中断，分为两大类，运行时异常和编译时异常
+
 ## 异常体系结构
 
 java.lang. `Throwable`：Java 语言中所有错误和异常的超类。只有类的实例(或它的一个子类)的对象才会被 Java 虚拟机抛出，或者可以被 Java throw 语句抛出。
@@ -1647,6 +2705,919 @@ public String getLocalizedMessage() { //返回异常对象的本地化信息
 //如果子类没有覆盖该方法，则该方法返回的信息与 getMessage()返回的结果相同
 
 public void printStackTrace() //在控制台上打印 Throwable 对象封装的异常信息
+```
+
+## 文件File类
+
+### 创建文件
+
+```java
+public class Test1 {
+    //方式1 new File(String pathname)
+    @Test
+    public void create01() {
+        String filePath = "src/test.txt";
+        //只是在内存中
+        File file = new File(filePath);
+        try {
+            //真正创建在磁盘中
+            file.createNewFile();
+            System.out.println("文件创建成功");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //方式2 new File(File parent,String child) //根据父目录文件+子路径构建
+    @Test
+    public void create02() {
+        File parentFile = new File("d:\\");
+        String filename = "news.txt";
+        File file = new File(parentFile, filename);
+        try {
+            file.createNewFile();
+            System.out.println("文件创建成功");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    //方式3 new File(String parent,String child) //根据父目录+子路径构建
+    @Test
+    public void create03() {
+        String parentPath = "e:\\";
+        String fileName = "news4.txt";
+        File file = new File(parentPath, fileName);
+        try {
+            file.createNewFile();
+            System.out.println("创建成功~");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+
+
+### 常用文件操作
+
+获取文件信息
+
+```java
+//先创建文件对象
+File file = new File("src/test.txt");
+//调用相应的方法，得到对应信息
+System.out.println("文件名字=" + file.getName());
+System.out.println("文件绝对路径=" + file.getAbsolutePath());
+System.out.println("文件父级目录=" + file.getParent());
+System.out.println("文件大小(字节)=" + file.length());
+System.out.println("文件是否存在=" + file.exists());//T
+System.out.println("是不是一个文件=" + file.isFile());//T
+System.out.println("是不是一个目录=" + file.isDirectory());//F
+```
+
+**目录操作：**创建、删除
+
+目录也被当做文件
+
+```java
+//判断 D:\\demo02 目录是否存在，存在就删除，否则提示不存在
+//这里我们需要体会到，在java编程中，目录也被当做文件
+@Test
+public void m2() {
+    String filePath = "D:\\demo02";
+    File file = new File(filePath);
+    if (file.exists()) {
+        if (file.delete()) {
+            System.out.println(filePath + "删除成功");
+        } else {
+            System.out.println(filePath + "删除失败");
+        }
+    } else {
+        System.out.println("该目录不存在...");
+    }
+}
+```
+
+mkdir()、mkdirs()
+
+```java
+//判断 D:\\demo\\a\\b\\c 目录是否存在，如果存在就提示已经存在，否则就创建
+@Test
+public void m3() {
+
+    String directoryPath = "D:\\demo\\a\\b\\c";
+    File file = new File(directoryPath);
+    if (file.exists()) {
+        System.out.println(directoryPath + "存在..");
+    } else {
+        if (file.mkdirs()) { //创建一级目录使用mkdir() ，创建多级目录使用mkdirs()
+            System.out.println(directoryPath + "创建成功..");
+        } else {
+            System.out.println(directoryPath + "创建失败...");
+        }
+    }
+}
+```
+
+
+# IO 流
+
+java 程序中，对于数据的 输入/输出 操作以流的方式进行
+
+流的分类：
+
+| 操作数据单位     | 数据的流向 | 流的角色 |
+| :--------- | :---- | ---- |
+| 字节流（二进制文件） | 输入流   | 节点流  |
+| 字符流（文本文件）  | 输出流   | 处理流  |
+
+IO 流共涉及 40 多个类，实际上非常规则，都是从如下四个抽象基类派生：
+
+|     | 字节流          | 字符流    |
+| --- | ------------ | ------ |
+| 输入流 | InputStream  | Reader |
+| 输出流 | OutputStream | Writer |
+
+## InputStream
+
+`InputStream` 用于从源头（通常是文件）读取数据（字节信息）到内存中，`java.io.InputStream` 抽象类是所有字节输入流的父类。
+
+常用方法：
+
+- `read()`：
+	- 作用：返回输入流中**下一个字节**的数据。返回的值介于 0 到 255 之间。
+		- 如果**未读取**任何字节，则代码返回 `-1` ，表示文件结束 
+	- 特点：单字节读取，**效率比较低**
+- `read(byte b[])` : 
+	- 作用：从输入流中读取一些字节存储到数组 b 中
+		- 如果数组 b 的长度为零，则不读取
+		- 如果没有可用字节读取，返回 `-1`
+		- 如果有可用字节读取，则读取的字节数**最多**等于 `b.length` ， 返回读取的字节数。
+	- 特点：**提高效率**
+	- 这个方法等价于 `read(b, 0, b.length)`
+- `read(byte b[], int off, int len)`：
+	- `off` 参数（偏移量）
+	- `len` 参数（要读取的最大字节数）
+- `skip(long n)`：忽略输入流中的 n 个字节，返回实际忽略的字节数。
+- `available()`：返回输入流中可以读取的字节数。
+- `close()`：关闭输入流释放相关的系统资源。
+
+## OutputStream
+
+`OutputStream` 用于将数据（字节信息）写入到目的地（通常是文件），`java.io.OutputStream` 抽象类是所有字节输出流的父类。
+
+常用方法：
+
+- `write(int b)`：将特定字节写入输出流
+- `write(byte b[ ])` : 将数组 `b` 写入到输出流，等价于 `write(b, 0, b.length)` 。
+- `write(byte[] b, int off, int len)` : 在 `write(byte b[ ])` 方法的基础上增加了 `off` 参数（偏移量）和 `len` 参数（要读取的最大字节数）。
+- `flush()`：刷新此输出流并**强制写出**所有缓冲的输出字节。
+- `close()`：关闭输出流释放相关的系统资源。
+
+## Reader
+
+`Reader` 用于从源头（通常是文件）读取数据（字符信息）到内存中，`java.io.Reader` 抽象类是所有字符输入流的父类。
+
+`Reader` 用于读取文本， `InputStream` 用于读取原始字节
+
+`Reader` 常用方法：
+
+- `read()` : 从输入流读取**一个**字符
+- `read(char[] cbuf)` : 从输入流中读取一些字符，并将它们存储到字符数组 `cbuf` 中，等价于 `read(cbuf, 0, cbuf.length)`
+- `read(char[] cbuf, int off, int len)`：在 `read(char[] cbuf)` 方法的基础上增加了 `off` 参数（偏移量）和 `len` 参数（要读取的最大字符数）
+- `skip(long n)`：忽略输入流中的 n 个字符，返回实际忽略的字符数
+- `close()` : 关闭输入流并释放相关的系统资源
+
+`InputStreamReader` 是字节流转换为字符流的桥梁，其子类 `FileReader` 是基于该基础上的封装，可以直接操作字符文件
+
+```java
+// 字节流转换为字符流的桥梁
+public class InputStreamReader extends Reader {
+}
+// 用于读取字符文件
+public class FileReader extends InputStreamReader {
+}
+```
+
+## 节点流——文件流
+
+### FileInputStream
+
+> 一般不会直接单独使用 `FileInputStream` ，通常会配合 `BufferedInputStream` 来使用。
+
+`FileInputStream` 是一个比较常用的字节输入流对象，可直接指定文件路径，可以直接读取单字节数据，也可以读取至字节数组中
+
+> 演示 `read()` 读取文件，由于中文一个字符三个字节，所以用字节流读会乱码
+
+```java
+public static void main(String[] args) throws IOException {  
+    String filePath = "input.txt";  
+    int readData = 0; // 接受是否读取成功，控制循环  
+    FileInputStream fis = null;  
+    try {  
+        fis = new FileInputStream(filePath);  
+        while ((readData = fis.read()) != -1) {  
+            System.out.print((char) readData); // 转成char显示  
+        }  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        fis.close();  
+    }  
+}
+```
+
+> 演示 `read(byte[] b)` 读取文件，中文还是会乱码
+
+```java
+public static void main(String[] args) throws IOException {  
+    String filePath = "input.txt";  
+    byte[] buf = new byte[8]; //一次读取8个字节  
+    int readLen = 0; //实际读取的字节数  
+    FileInputStream fis = null;  
+    try {  
+        fis = new FileInputStream(filePath);  
+        while ((readLen = fis.read(buf)) != -1) {  
+            System.out.print(new String(buf, 0, readLen));  
+        }  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        fis.close();  
+    }  
+}
+```
+
+### FileOutputStream
+
+> `FileOutputStream` 通常配合 `BufferedOutputStream` 来使用
+
+`FileOutputStream` 是最常用的字节输出流对象，可直接指定文件路径，可以直接输出单字节数据，也可以输出指定的字节数组。
+
+注意：FileOutputStream 的两种构造，write()的两种参数形式
+
+```java
+public static void main(String[] args) throws IOException {  
+    String filePath = "output.txt";  
+    FileOutputStream fos = null;  
+    String str = "ello world!\n";  
+    try {  
+        // 1. new FileOutputStream(filePath) 创建方式，覆盖原来的内容  
+        // 2. new FileOutputStream(filePath, true) 创建方式，追加到文件后面  
+        fos = new FileOutputStream(filePath, true);  
+  
+        // 写入一个字节  
+        fos.write('H');  
+  
+        // 写入字符串  
+        // fos.write(str.getBytes(), 0, str.length()); // 全部写入  
+        fos.write(str.getBytes()); // 全部写入  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        fos.close();  
+    }  
+}
+```
+
+### 实例：拷贝文件
+
+边读边写
+
+```java
+public static void main(String[] args) {
+    //完成 文件拷贝，将 e:\\Koala.jpg 拷贝 c:\\
+    //思路分析
+    //1. 创建文件的输入流 , 将文件读入到程序
+    //2. 创建文件的输出流， 将读取到的文件数据，写入到指定的文件.
+    String srcFilePath = "src/test.txt";
+    String destFilePath = "src/test2.txt";
+    FileInputStream fileInputStream = null;
+    FileOutputStream fileOutputStream = null;
+
+    try {
+        fileInputStream = new FileInputStream(srcFilePath);
+        fileOutputStream = new FileOutputStream(destFilePath);
+        byte[] buf = new byte[1024];
+        int readLen = 0;
+        while ((readLen = fileInputStream.read(buf)) != -1) {
+            //一定要使用这个方法
+            fileOutputStream.write(buf, 0, readLen);
+        }
+
+    } catch (IOException e) {
+        e.printStackTrace();
+    } finally {
+        try {
+            //等于空说明流没有创建
+            if (fileInputStream != null) {
+                fileInputStream.close();
+            }
+            if (fileOutputStream != null) {
+                fileOutputStream.close();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+}
+```
+
+### FileReader
+
+单个字符读取文件
+
+```java
+public static void main(String[] args) throws IOException {  
+    String filePath = "input.txt";  
+    FileReader fileReader = null;  
+    int data = 0;  
+  
+    try {  
+        fileReader = new FileReader(filePath);  
+        while ((data = fileReader.read()) != -1) {  
+            System.out.print((char) data);  
+        }  
+  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        if (fileReader != null) {  
+            fileReader.close();  
+        }  
+    }  
+}
+```
+
+字符数组读取文件
+
+```java
+public static void main(String[] args) throws IOException {  
+    String filePath = "output.txt";  
+    FileReader fileReader = null;  
+    int readLen = 0;  
+    char[] buf = new char[8];  
+  
+    try {  
+        fileReader = new FileReader(filePath);  
+        //循环读取到buf数组中, 返回的是实际读取到的字符数  
+        while ((readLen = fileReader.read(buf)) != -1) {  
+            System.out.print(new String(buf, 0, readLen));  
+        }  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        if (fileReader != null) {  
+            fileReader.close();  
+        }  
+    }  
+}
+```
+
+### FileWriter
+
+注意：一定要关闭流，或者 flush 才能真正的把数据写入到文件
+
+```java
+public static void main(String[] args) {  
+    String filePath = "output.txt";  
+    FileWriter fileWriter = null;  
+    char[] chars = {'a', 'b', 'c'};  
+    try {  
+        fileWriter = new FileWriter(filePath); // 覆盖写入  
+        //write(int)：写入单个字符  
+        fileWriter.write('H');  
+        //write(char[])：写入指定数组  
+        fileWriter.write(chars);  
+        //write(char[],off,len)：写入指定数组的指定部分  
+        fileWriter.write("你好世界，世界你好".toCharArray(), 0, 4);  
+        //write（string）：写入整个字符串  
+        fileWriter.write("你好北京~");  
+        //write(string,off,len)：写入字符串的指定部分  
+        fileWriter.write("上海天津", 0, 2);  
+    } catch (IOException e) {  
+        e.printStackTrace();  
+    } finally {  
+        try {  
+            //关闭文件流，等价 flush() + 关闭  
+            fileWriter.close();  
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        }  
+    }  
+}
+```
+
+## 节点流与处理流
+
+*节点流*：可以从一个特定的数据类型读写数据，如 FileReader、FileWriter
+
+*处理流*：也叫包装流，==“连接”在已存在的流（节点流或处理流）之上==，为程序提供更为强大的读写功能，如 BufferedReader、BufferedWriter
+
+*联系与区别*：
+
+- 节点流是底层流/低级流，直接和数据源相关
+- 处理流包装节点流，既可以消除不同节点流的实现差异，也可以提供更方便的方法来完成输入输出
+- 处理流使用了**装饰器**设计模式，不会直接与数据源相连
+
+*功能主要体现*：
+
+- 性能的提高：主要以增加缓冲的方式来提高输入输出的效率
+- 操作的便捷：处理流可以提供一系列便捷的方法来一次输入输出大批量的数据，使用更加灵敏方便
+
+模拟包装流的设计模式（装饰器设计模式）
+
+```java
+public abstract class Reader_ { //抽象类
+    public void readFile() {
+    }
+
+    public void readString() {
+    }
+    //在Reader_ 抽象类，使用read方法统一管理.
+    //后面在调用时，利用对象动态绑定机制，绑定到对应的实现子类即可.
+    //public abstract void read();
+}
+```
+
+```java
+//节点流
+public class FileReader_ extends Reader_ {
+    public void readFile() {
+        System.out.println("对文件进行读取...");
+    }
+}
+//节点流
+public class StringReader_ extends Reader_ {
+    public void readString() {
+        System.out.println("读取字符串..");
+    }
+}
+```
+
+```java
+//包装流
+public class BufferedReader_ extends Reader_ {
+    private Reader_ reader_; //属性是 Reader_类型
+
+    //接收Reader_ 子类对象
+    public BufferedReader_(Reader_ reader_) {
+        this.reader_ = reader_;
+    }
+
+    //封装一层，调用本身的方法
+    public void readFile() {
+        reader_.readFile();
+    }
+
+    //让方法更加灵活，多次读取文件, 或者加缓冲byte[] ....
+    public void readFiles(int num) {
+        for (int i = 0; i < num; i++) {
+            reader_.readFile();
+        }
+    }
+
+    //扩展 readString, 批量处理字符串数据
+    public void readStrings(int num) {
+        for (int i = 0; i < num; i++) {
+            reader_.readString();
+        }
+    }
+}
+```
+
+```java
+BufferedReader_ bufferedReader_ = new BufferedReader_(new FileReader_());
+bufferedReader_.readFiles(10);
+//bufferedReader_.readFile(); //调用本身的方法
+
+//通过 BufferedReader_ 多次读取字符串
+BufferedReader_ bufferedReader_2 = new BufferedReader_(new StringReader_());
+bufferedReader_2.readStrings(5);
+```
+
+## 处理流——缓冲流
+
+IO 操作是很消耗性能的，缓冲流将数据加载至缓冲区，一次性读取/写入多个字节，从而避免频繁的 IO 操作，提高流的传输效率。
+
+字节缓冲流这里采用了**装饰器模式**来增强 `InputStream` 和 `OutputStream` 子类对象的功能
+
+字节流和字节缓冲流的性能差别主要体现：
+
+- 如果都是调用 `write(int b)` 和 `read()` 这两个一次只操作一个字节的方法时，由于“字节缓冲流”内部有**缓冲区（字节数组）**，因此，字节缓冲流会先将读取到的字节存放在缓存区，大幅减少 IO 次数，提高读取效率。
+
+- 如果是调用 `read(byte b[])` 和 `write(byte b[], int off, int len)` 这两个写入一个“字节数组”的方法的话，只要字节数组的**大小合适**，两者的性能**差距不大**，基本可以忽略。
+
+### BufferedInputStream & BufferedOutputStream
+
+`BufferedInputStream` 从源头（通常是文件）读取数据（字节信息）到内存的过程中不会一个字节一个字节的读取，而是会==先将读取到的字节存放在缓存区==，并从内部缓冲区中单独读取字节。这样大幅减少了 IO 次数，提高了读取效率。
+
+`BufferedInputStream` 内部维护了一个缓冲区，这个缓冲区实际就是一个字节数组
+
+`BufferedOutputStream` 将数据（字节信息）写入到目的地（通常是文件）的过程中不会一个字节一个字节的写入，而是会==先将要写入的字节存放在缓存区==，并从内部缓冲区中单独写入字节。这样大幅减少了 IO 次数，提高了读取效率
+
+### BufferedReader & BufferedWriter
+
+`BufferedReader` （字符缓冲输入流）和 `BufferedWriter`（字符缓冲输出流）类似于 `BufferedInputStream`（字节缓冲输入流）和 `BufferedOutputStream`（字节缓冲输入流），内部都维护了一个字节数组作为缓冲区。不过，前者主要是用来操作字符信息
+
+```java
+public static void main(String[] args) throws Exception {
+    String filePath = "src/test.txt";
+    BufferedReader bufferedReader = new BufferedReader(new FileReader(filePath));
+    String line; //按行读取, 效率高
+    //String readLine() 按行读取文件，但是没有换行
+    //当返回null时，表示文件读取完毕
+    while ((line = bufferedReader.readLine()) != null) {
+        System.out.println(line);
+    }
+    //关闭流, 只需要关闭 BufferedReader ，底层会自动关闭节点流
+    //FileReader。
+    bufferedReader.close();
+    /*
+        public void close() throws IOException {
+            synchronized (lock) {
+                if (in == null) //private Reader in;
+                    return;
+                try {
+                    in.close(); //in 就是我们传入的 new FileReader(filePath), 关闭了.
+                } finally {
+                    in = null;
+                    cb = null;
+                }
+            }
+        }
+     */
+}
+```
+
+```java
+public static void main(String[] args) throws IOException {
+    String filePath = "src/test.txt";
+    //new FileWriter(filePath, true) 表示以追加的方式写入
+    //new FileWriter(filePath) , 表示以覆盖的方式写入
+    BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(filePath));
+    bufferedWriter.write("hello, 韩顺平教育!");
+    bufferedWriter.newLine(); //插入一个和系统相关的换行
+    bufferedWriter.write("hello2, 韩顺平教育!");
+    //关闭外层流
+    bufferedWriter.close();
+}
+```
+
+### 字符流拷贝
+
+```java
+//BufferedReader 和 BufferedWriter 是安装字符操作
+//不要去操作 二进制文件[声音，视频，doc, pdf ], 可能造成文件损坏
+String srcFilePath = "src/test.txt";
+String destFilePath = "src/test3.txt";
+BufferedReader br = null;
+BufferedWriter bw = null;
+String line;
+try {
+    br = new BufferedReader(new FileReader(srcFilePath));
+    bw = new BufferedWriter(new FileWriter(destFilePath));
+    //说明: readLine 读取一行内容，但是没有换行
+    while ((line = br.readLine()) != null) {
+        //每读取一行，就写入
+        bw.write(line);
+        //插入一个换行
+        bw.newLine();
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+} finally {
+    //关闭流
+    try {
+        if (br != null) {
+            br.close();
+        }
+        if (bw != null) {
+            bw.close();
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+```
+
+### 字节流拷贝
+
+```java
+String srcFilePath = "e:\\a.java";
+String destFilePath = "e:\\a3.java";
+BufferedInputStream bis = null;
+BufferedOutputStream bos = null;
+
+try {
+    bis = new BufferedInputStream(new FileInputStream(srcFilePath));
+    bos = new BufferedOutputStream(new FileOutputStream(destFilePath));
+
+    byte[] buff = new byte[1024];
+    int readLen = 0;
+    //当返回 -1 时，就表示文件读取完毕
+    while ((readLen = bis.read(buff)) != -1) {
+        bos.write(buff, 0, readLen);
+    }
+} catch (IOException e) {
+    e.printStackTrace();
+} finally {
+    try {
+        if (bis != null) {
+            bis.close();
+        }
+        if (bos != null) {
+            bos.close();
+        }
+    } catch (IOException e) {
+        e.printStackTrace();
+    }
+}
+```
+
+## 处理流——对象流
+
+### 序列化和反序列化
+
+- 序列化就是在保存数据时，保存数据的值和数据类型
+- 反序列化就是在恢复数据时，恢复数据的值和数据类型
+
+注意事项：
+
+- 让某个对象支持序列化机制，必须让其**类是可序列化的**，该类必须**实现**如下两个接口之一：
+	- `Serializable`：一个标记接口，没有方法
+	- `Externalizable`：有方法需要实现，一般用上面那个
+
+- 读取（反序列化）的顺序需要 和 保存数据（序列化）的顺序一致
+
+- 序列化的类中建议添加 serialVersionUID，提高版本兼容性
+
+- 序列化对象时，默认将里面所有属性都进行序列化，但除了 static 或 transient 修饰的成员
+
+- 序列化对象时，要求里面属性的类型也需要**实现**序列化接口
+
+- 序列化具备**可继承性**，某类实现序列化，其子类也默认实现了序列化
+
+### 需要序列化的某个类
+
+```java
+public class Dog implements Serializable {
+    private String name;
+    private int age;
+    //序列化对象时，默认将里面所有属性都进行序列化，但除了static或transient修饰的成员
+    private static String nation;
+    private transient String color;
+    //序列化对象时，要求里面属性的类型也需要实现序列化接口
+    private Master master = new Master(); //class Master implements Serializable
+
+    //serialVersionUID 序列化的版本号，可以提高兼容性
+    private static final long serialVersionUID = 1L;
+
+    public Dog(String name, int age, String nation, String color) {
+        this.name = name;
+        this.age = age;
+        this.color = color;
+        this.nation = nation;
+    }
+  
+    //没有nation和color属性输出
+    @Override
+    public String toString() {
+        return "Dog{" +
+                "name='" + name + '\'' +
+                ", age=" + age +
+                ", color='" + color + '\'' +
+                ", master=" + master +
+                '}';
+    }
+
+    //get、set
+}
+```
+
+### ObjectOutputStream
+
+提供序列化功能
+
+```java
+public static void main(String[] args) throws Exception {
+    //序列化后，保存的文件格式，不是存文本，而是按照他的格式来保存
+    String filePath = "src/data.dat";
+
+    ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath));
+
+    oos.writeInt(100); // int -> Integer(Integer实现了 Serializable)
+    oos.writeBoolean(true); // boolean -> Boolean(实现了 Serializable)
+    oos.writeChar('a'); // char -> Character(实现了 Serializable)
+    oos.writeDouble(9.5); // double -> Double(实现了 Serializable)
+    oos.writeUTF("韩顺平教育"); //String
+    // 保存一个dog对象
+    oos.writeObject(new Dog("旺财", 10, "日本", "白色"));
+    oos.close();
+}
+```
+
+### ObjectInputStream
+
+提供反序列化功能
+
+```java
+public static void main(String[] args) throws IOException, ClassNotFoundException {
+    String filePath = "src/data.dat";
+
+    ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath));
+
+    //读取(反序列化)的顺序需要和保存数据(序列化)的顺序一致，否则会出现异常
+    System.out.println(ois.readInt());
+    System.out.println(ois.readBoolean());
+    System.out.println(ois.readChar());
+    System.out.println(ois.readDouble());
+    System.out.println(ois.readUTF());
+
+    //dog 的编译类型是 Object , dog 的运行类型是 Dog
+    Object dog = ois.readObject(); // public final Object readObject()
+    System.out.println("运行类型=" + dog.getClass());
+    System.out.println("dog信息=" + dog); 
+  	//dog信息=Dog{name='旺财', age=10, color='null', master=demo9.outputstream_.Master@378bf509}
+
+    ois.close();
+}
+```
+
+## 打印流
+
+`System.out` 实际是获取一个 `PrintStream` 对象，`print()` 方法实际调用的是 `PrintStream` 对象的 `write()` 方法
+
+`PrintStream` 属于字节打印流，与之对应的是 `PrintWriter` （字符打印流）。
+
+`PrintStream` 是 `OutputStream` 的子类，`PrintWriter` 是 `Writer` 的子类
+
+|                   | 编译类型        | 运行类型                | 默认设备 |
+| ----------------- | ----------- | ------------------- | ---- |
+| `System.in` 标准输入  | InputStream | BufferedInputStream | 键盘   |
+| `System.out` 标准输出 | PrintStream | PrintStream         | 显示器  |
+
+```java
+// System.in 
+// public final static InputStream in = null;
+// 编译类型   InputStream
+// 运行类型   BufferedInputStream
+System.out.println(System.in.getClass());
+
+// System.out
+// public final static PrintStream out = null;
+// 编译类型 PrintStream
+// 运行类型 PrintStream
+System.out.println(System.out.getClass());
+
+Scanner scanner = new Scanner(System.in);
+System.out.println("输入内容");
+String next = scanner.next();
+System.out.println("next=" + next);
+```
+
+## 编码与解码的概念
+
+计算机只认0和1，人类只能认文字，双方都不能妥协，那就必须要有一个从文字到0、1的映射
+
+从文字到0、1的映射称为编码
+
+反过来从0、1到文字叫解码。
+
+https://www.cnblogs.com/19322li/p/10687646.html
+
+## 转换流
+
+`InputStreamReader`：Reader的子类，将InputStream包装成Reader
+
+`OutputStreamWriter`：Writer的子类，将OutputStream包装成Writer
+
+当处理纯文本数据时，如果使用字符流更加高效，并且可以有效解决中文问题
+
+可以在使用时指定编码格式
+
+
+
+InputStreamReader
+
+```java
+public static void main(String[] args) throws IOException {
+    String filePath = "src/test.txt";
+    //1. 把 FileInputStream 转成 InputStreamReader
+    //2. 指定编码 gbk
+    //InputStreamReader isr = new InputStreamReader(new FileInputStream(filePath), "gbk");
+    //3. 把 InputStreamReader 传入 BufferedReader
+    //BufferedReader br = new BufferedReader(isr);
+
+    //将2 和 3 合在一起
+    BufferedReader br = new BufferedReader(new InputStreamReader(
+            new FileInputStream(filePath), "gbk"));
+
+    String s = br.readLine();
+    System.out.println("读取内容=" + s);
+
+    br.close();
+}
+```
+
+OutputStreamWriter
+
+```java
+public static void main(String[] args) throws IOException {
+    String filePath = "src/test3.txt";
+    String charSet = "utf-8";
+    //指定编码方式保存文本文件
+    //打开文件后是以utf-8编码的
+    OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(filePath), charSet);
+    osw.write("hi, 韩顺平教育");
+    osw.close();
+}
+```
+
+## Properties
+
+mysql.properties
+
+```properties
+ip=192.168.100.100
+user=root
+pwd=12345
+```
+
+传统方法读取mysql.properties文件
+
+```java
+BufferedReader br = new BufferedReader(new FileReader("src\\mysql.properties"));
+String line = "";
+while ((line = br.readLine()) != null) { //循环读取
+    String[] split = line.split("=");
+    //如果我们要求指定的ip值
+    if("ip".equals(split[0])) {
+        System.out.println(split[0] + "值是: " + split[1]);
+    }
+}
+
+br.close();
+```
+
+用Properties类的方法读取mysql.properties文件
+
+```java
+//1. 创建Properties 对象
+Properties properties = new Properties();
+//2. 加载指定配置文件
+properties.load(new FileReader("src\\mysql.properties"));
+//3. 把k-v显示控制台
+//public void list(PrintStream out) 
+properties.list(System.out);
+//4. 根据key 获取对应的值
+String user = properties.getProperty("user");
+String pwd = properties.getProperty("pwd");
+System.out.println("用户名=" + user);
+System.out.println("密码是=" + pwd);
+```
+
+修改mysql.properties文件
+
+```java
+Properties properties = new Properties();
+
+//如果该文件没有key 就是创建
+//如果该文件有key ,就是修改
+properties.setProperty("charset", "utf8");
+properties.setProperty("user", "汤姆"); //注意保存时，是中文的 unicode码值
+properties.setProperty("pwd", "888888");
+
+//将k-v 存储文件中即可，可以添加注释
+properties.store(new FileOutputStream("src\\mysql.properties"), "comments");
+/*
+    Properties 父类是 Hashtable ， 底层就是Hashtable 核心方法
+    public synchronized V put(K key, V value) {
+        // Make sure the value is not null
+        if (value == null) {
+            throw new NullPointerException();
+        }
+
+        // Makes sure the key is not already in the hashtable.
+        Entry<?,?> tab[] = table;
+        int hash = key.hashCode();
+        int index = (hash & 0x7FFFFFFF) % tab.length;
+        @SuppressWarnings("unchecked")
+        Entry<K,V> entry = (Entry<K,V>)tab[index];
+        for(; entry != null ; entry = entry.next) {
+            if ((entry.hash == hash) && entry.key.equals(key)) {
+                V old = entry.value;
+                entry.value = value;//如果key 存在，就替换
+                return old;
+            }
+        }
+
+        addEntry(hash, key, value, index);//如果是新k, 就addEntry
+        return null;
+    }
+ */
 ```
 
 
