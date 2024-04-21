@@ -2480,16 +2480,14 @@ impl Rectangle {
 
 定义一个 `IpAddrKind` 枚举，`V4` 和 `V6` 被称为枚举的 **成员**（_variants_）
 
+- `IpAddrKind` 就是一个可以在代码中使用的**自定义数据类型**了
+
 ```rust
 enum IpAddrKind {
     V4,
     V6,
 }
 ```
-
-`IpAddrKind` 就是一个可以在代码中使用的**自定义数据类型**了
-
-### [枚举值](https://kaisery.github.io/trpl-zh-cn/ch06-01-defining-an-enum.html#%E6%9E%9A%E4%B8%BE%E5%80%BC)
 
 创建 `IpAddrKind` 两个不同成员的实例：
 
@@ -2511,7 +2509,11 @@ fn main() {
 }
 ```
 
-使用结构体将“枚举成员”与“值”相关联
+### [枚举值](https://kaisery.github.io/trpl-zh-cn/ch06-01-defining-an-enum.html#%E6%9E%9A%E4%B8%BE%E5%80%BC)
+
+将“枚举成员”与“值”相关联
+
+1）将枚举作为结构体的一部分
 
 ```rust
     enum IpAddrKind {
@@ -2535,7 +2537,7 @@ fn main() {
     };
 ```
 
-可以仅仅使用枚举并将数据**直接**放进每一个枚举**成员**，而不是将枚举作为结构体的一部分
+2）将数据**直接**放进每一个枚举**成员**
 
 - 定义的枚举成员的名字也变成了一个构建枚举的**实例**的**函数**
 - 作为定义枚举的结果，这些构造函数会**自动**被定义。
@@ -2588,7 +2590,7 @@ enum IpAddr {
 > 
 > 注意虽然标准库中包含一个 `IpAddr` 的定义，仍然可以创建和使用我们自己的定义而不会有冲突，因为我们并没有将标准库中的定义引入作用域
 
-可以将**任意类型**的数据放入枚举成员中：例如字符串、数字类型或者结构体。甚至可以包含另一个枚举！
+可以将**任意类型**的数据放入枚举成员中，例如字符串、数字类型或者结构体，甚至可以包含另一个枚举！
 
 ```rust
 enum Message {
@@ -2681,6 +2683,721 @@ enum Option<T> {
 
 ## [`match` 控制流结构](https://kaisery.github.io/trpl-zh-cn/ch06-02-match.html#match-%E6%8E%A7%E5%88%B6%E6%B5%81%E7%BB%93%E6%9E%84)
 
+`match` 是一个极为强大的**控制流运算符**，它允许我们将一个值与一系列的**模式**相比较，并根据相匹配的模式执行相应代码。
 
+- “模式”可由字面值、变量、通配符和许多其他内容构成。
+- `match` 的力量来源于**模式**的表现力以及**编译器检查**，它确保了所有可能的情况都得到处理。
+
+> 示例 6-3：一个枚举和一个以枚举成员作为模式的 `match` 表达式
+
+```rust
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter,
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => {
+            println!("Lucky penny!");
+            1
+        }
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter => 25,
+    }
+}
+
+```
+
+- 列出 `match` 关键字后跟一个**表达式**
+	- 在这个例子中是 `coin` 的值
+- 接下来是 `match` 的分支。一个分支有两个部分：一个模式和一些代码
+	- `=>` 运算符将模式和将要运行的代码分开
+
+### [绑定值的模式](https://kaisery.github.io/trpl-zh-cn/ch06-02-match.html#%E7%BB%91%E5%AE%9A%E5%80%BC%E7%9A%84%E6%A8%A1%E5%BC%8F)
+
+匹配分支的另一个有用的功能：可以**绑定**匹配的模式的部分值。
+- 也就是==从枚举成员中提取值==。
+
+```rust
+#[derive(Debug)] // 这样可以立刻看到州的名称
+enum UsState {
+    Alabama,
+    Alaska,
+    // --snip--
+}
+
+enum Coin {
+    Penny,
+    Nickel,
+    Dime,
+    Quarter(UsState), //`Quarter` 成员也存放了一个 `UsState` 值的 `Coin` 枚举
+}
+
+fn value_in_cents(coin: Coin) -> u8 {
+    match coin {
+        Coin::Penny => 1,
+        Coin::Nickel => 5,
+        Coin::Dime => 10,
+        Coin::Quarter(state) => {
+            println!("State quarter from {:?}!", state);
+            25
+        }
+    }
+}
+```
+
+在匹配 `Coin::Quarter` 成员的分支的模式中增加了一个叫做 `state` 的变量。
+
+- 当匹配到 `Coin::Quarter` 时，变量 `state` 将会绑定 25 美分硬币所对应州的值
+
+如果调用 `value_in_cents(Coin::Quarter(UsState::Alaska))`
+
+- `coin` 将是 `Coin::Quarter(UsState::Alaska)`。
+- 当将值与每个分支相比较时，没有分支会匹配，直到遇到 `Coin::Quarter(state)`。
+- 这时，`state` 绑定的将会是值 `UsState::Alaska`。
+- 接着就可以在 `println!` 表达式中使用这个绑定了，像这样就可以获取 `Coin` 枚举的 `Quarter` 成员中内部的州的值。
+
+### [匹配是穷尽的](https://kaisery.github.io/trpl-zh-cn/ch06-02-match.html#%E5%8C%B9%E9%85%8D%E6%98%AF%E7%A9%B7%E5%B0%BD%E7%9A%84)
+
+`match` 中的分支必须覆盖了所有的可能性。
+
+```rust
+    fn plus_one(x: Option<i32>) -> Option<i32> {
+        match x {
+            Some(i) => Some(i + 1),
+        }
+    }
+```
+
+我们没有处理 `None` 的情况，所以这些代码会造成一个 bug
+
+```shell
+error[E0004]: non-exhaustive patterns: `None` not covered
+ --> src/main.rs:3:15
+  |
+3 |         match x {
+  |               ^ pattern `None` not covered
+  |
+note: `Option<i32>` defined here
+  = note: the matched value is of type `Option<i32>`
+help: ensure that all possible cases are being handled by adding a match arm with a wildcard pattern or an explicit pattern as shown
+  |
+4 ~             Some(i) => Some(i + 1),
+5 ~             None => todo!(),
+  |
+```
+
+在这个 `Option<T>` 的例子中，Rust 防止我们忘记明确的处理 `None` 的情况，这让我们免于假设拥有一个实际上为空的值
+
+```rust
+fn plus_one(x: Option<i32>) -> Option<i32> {
+    match x {
+        Some(i) => Some(i + 1),
+        None => todo!(),
+    }
+}
+```
+
+### [通配模式和 `_` 占位符](https://kaisery.github.io/trpl-zh-cn/ch06-02-match.html#%E9%80%9A%E9%85%8D%E6%A8%A1%E5%BC%8F%E5%92%8C-_-%E5%8D%A0%E4%BD%8D%E7%AC%A6)
+
+1）如果我们希望对一些**特定的值**采取特殊操作，而对**其他的值**采取默认操作：
+
+- 可以使用 other
+
+```rust
+    let dice_roll = 9;
+    match dice_roll {
+        3 => add_fancy_hat(),
+        7 => remove_fancy_hat(),
+        other => move_player(other),
+    }
+
+    fn add_fancy_hat() {}
+    fn remove_fancy_hat() {}
+    fn move_player(num_spaces: u8) {}
+```
+
+最后一个分支则涵盖了所有其他可能的值，模式是我们命名为 `other` 的一个**变量**。
+
+- `other` 分支的代码通过将其传递给 `move_player` 函数来**使用这个变量**
+- 这种**通配模式**满足了 `match` 必须被穷尽的要求
+- 必须将通配分支放在**最后**
+
+2）当我们不想使用通配模式获取的值时
+
+- 请使用 `_` 。这是一个特殊的模式，可以匹配任意值而不绑定到该值。这告诉 Rust 我们**不会使用**这个值
+
+> 当你掷出的值不是 3 或 7 的时候，你必须再次掷出。这种情况下我们不需要使用这个值
+
+```rust
+    let dice_roll = 9;
+    match dice_roll {
+        3 => add_fancy_hat(),
+        7 => remove_fancy_hat(),
+        _ => reroll(),
+    }
+
+    fn add_fancy_hat() {}
+    fn remove_fancy_hat() {}
+    fn reroll() {}
+```
+
+可以明确告诉 Rust 我们不会使用与前面模式不匹配的值，并且这种情况下我们**不想运行任何代码**
+
+- 可以使用**单元值**作为 `_` 分支的代码
+
+```rust
+    let dice_roll = 9;
+    match dice_roll {
+        3 => add_fancy_hat(),
+        7 => remove_fancy_hat(),
+        _ => (),
+    }
+
+    fn add_fancy_hat() {}
+    fn remove_fancy_hat() {}
+```
+
+## [`if let` 简洁控制流](https://kaisery.github.io/trpl-zh-cn/ch06-03-if-let.html#if-let-%E7%AE%80%E6%B4%81%E6%8E%A7%E5%88%B6%E6%B5%81)
+
+`if let` 语法让我们以一种不那么冗长的方式，来处理**只匹配一个模式**的值而忽略其他模式的情况
+
+> 示例 6-6：`match` 只关心当值为 `Some` 时执行代码
+
+```rust
+    let config_max = Some(3u8);
+    match config_max {
+        Some(max) => println!("The maximum is configured to be {}", max),
+        _ => (),
+    }
+```
+
+可以使用 `if let` 这种更短的方式编写
+- 通过等号分隔的一个**模式**（`Some(max)`）和一个**表达式**（`config_max`）
+
+```rust
+    let config_max = Some(3u8);
+    if let Some(max) = config_max {
+        println!("The maximum is configured to be {}", max);
+    }
+```
+
+可以在 `if let` 中包含一个 `else`。
+- `else` 块中的代码与 `match` 表达式中的 `_` 分支块中的代码相同
+
+```rust
+let mut count = 0;
+
+match coin {
+	Coin::Quarter(state) => println!("State quarter from {:?}!", state),
+	_ => count += 1,
+}
+
+// 简化版本
+if let Coin::Quarter(state) = coin {
+	println!("State quarter from {:?}!", state);
+} else {
+	count += 1;
+}
+```
+
+# ----- 使用包、Crate 和模块管理不断增长的项目
+
+Rust 有许多功能可以让你管理代码的组织，包括哪些内容可以被公开，哪些内容作为私有部分，以及程序每个作用域中的名字。这些功能，有时被统称为 “模块系统（the module system）”，包括：
+
+- **包**（_Packages_）：Cargo 的一个功能，它允许你构建、测试和分享 crate。
+- **Crates** ：一个模块的树形结构，它形成了库或二进制项目。
+- **模块**（_Modules_）和 **use**：允许你控制作用域和路径的私有性。
+- **路径**（_path_）：一个命名例如结构体、函数或模块等项的方式
+
+## [包和 Crate](https://kaisery.github.io/trpl-zh-cn/ch07-01-packages-and-crates.html#%E5%8C%85%E5%92%8C-crate)
+
+crate 是 Rust 在编译时**最小**的代码单位。
+
+- 如果你用 `rustc` 而不是 `cargo` 来编译一个文件（第一章我们这么做过），编译器还是会将那个文件认作一个 crate。
+- crate 可以包含**模块**，模块可以定义在其他文件，然后和 crate 一起编译
+
+crate 有两种形式：二进制项和库。
+
+- _二进制项_ 可以被编译为**可执行程序**，
+	- 比如一个命令行程序或者一个服务器。
+	- 它们必须有一个 `main` 函数来定义当程序被执行的时候所需要做的事情。
+	- 目前我们所创建的 crate 都是二进制项。
+- _库_ 并**没有** `main` 函数，它们也**不会**编译为可执行程序，
+	- 它们提供一些诸如函数之类的东西，使其他项目也能使用这些东西。
+		- 比如 [第二章](https://kaisery.github.io/trpl-zh-cn/ch02-00-guessing-game-tutorial.html#%E7%94%9F%E6%88%90%E4%B8%80%E4%B8%AA%E9%9A%8F%E6%9C%BA%E6%95%B0) 的 `rand` crate 就提供了生成随机数的东西。
+	- 大多数时间 `Rustaceans` 说的 crate 指的都是库，这与其他编程语言中 library 概念一致。
+
+_crate root_ 是一个源文件，Rust 编译器以它为起始点，并构成 crate 的**根模块**
+
+_包_（_package_）是提供一系列功能的**一个或者多个** crate
+
+- 一个包会包含一个 _Cargo.toml_ 文件，阐述如何去构建这些 crate。
+- Cargo 就是一个包含构建你代码的二进制项的**包**，也包含这些二进制项所依赖的库。
+- 其他项目也能用 Cargo 库来实现与 Cargo 命令行程序一样的逻辑。
+- 包中可以包含**至多**一个*库 crate(library crate)*。包中可以包含**任意多个***二进制 crate(binary crate)*，但是**必须至少**包含一个 crate（无论是库的还是二进制的）。
+
+创建一个包，输入命令 `cargo new my-project`
+
+- Cargo 会给我们的包创建一个 _Cargo.toml_ 文件
+- Cargo 遵循的约定
+	- _src/main.rs_ 是一个与**包同名**的二进制 crate，且是 crate 根
+	- _src/lib.rs_，是一个与**包同名**的库 crate，且是 crate 根
+	- *crate 根文件* 将由 Cargo 传递给 `rustc` 来实际构建库或者二进制项目。
+- 在此，我们有了一个只包含 _src/main.rs_ 的包，意味着它只含有一个名为 `my-project` 的二进制 crate。
+- 如果一个包同时含有 _src/main.rs_ 和 _src/lib.rs_，则它有两个 crate：一个二进制的和一个库的，且名字都与包相同
+- 通过将文件放在 _src/bin_ 目录下，一个包可以拥有多个二进制 crate
+	- 每个 _src/bin_ 下的文件都会被编译成一个独立的二进制 crate。
+
+```shell
+$ cargo new my-project
+     Created binary (application) `my-project` package
+$ ls my-project
+Cargo.toml
+src
+$ ls my-project/src
+main.rs
+```
+
+## [定义模块来控制作用域与私有性](https://kaisery.github.io/trpl-zh-cn/ch07-02-defining-modules-to-control-scope-and-privacy.html#%E5%AE%9A%E4%B9%89%E6%A8%A1%E5%9D%97%E6%9D%A5%E6%8E%A7%E5%88%B6%E4%BD%9C%E7%94%A8%E5%9F%9F%E4%B8%8E%E7%A7%81%E6%9C%89%E6%80%A7)
+
+### [模块小抄](https://kaisery.github.io/trpl-zh-cn/ch07-02-defining-modules-to-control-scope-and-privacy.html#%E6%A8%A1%E5%9D%97%E5%B0%8F%E6%8A%84)
+
+这里我们提供一个简单的参考，用来解释模块、路径、`use` 关键词和 `pub` 关键词如何在编译器中工作，以及大部分开发者如何组织他们的代码。
+
+- *从 crate 根节点开始*：当编译一个 crate，编译器首先在 crate 根文件（通常，对于一个库 crate 而言是 _src/lib.rs_，对于一个二进制 crate 而言是 _src/main.rs_）中寻找需要被编译的代码。
+- *声明模块*：在 **crate 根文件**中，你可以声明一个新模块；
+	- 比如，你用 `mod garden;` 声明了一个叫做 `garden` 的模块。编译器会在下列路径中寻找模块代码：
+	    - 内联，在大括号中，当 `mod garden` 后方不是一个分号而是一个大括号
+	    - 在文件 _src/garden.rs_
+	    - 在文件 _src/garden/mod.rs_
+- *声明子模块*：在**除了 crate 根节点以外**的其他文件中，你可以定义子模块。
+	- 比如，你可能在 _src/garden.rs_ 中定义了 `mod vegetables;`。编译器会在**以父模块命名的目录**中寻找子模块代码：
+	    - 内联，在大括号中，当 `mod vegetables` 后方不是一个分号而是一个大括号
+	    - 在文件 _src/garden/vegetables.rs_
+	    - 在文件 _src/garden/vegetables/mod.rs_
+- *模块中的代码路径*：一旦一个模块是你 crate 的一部分，你可以在隐私规则允许的前提下，从同一个 crate 内的任意地方，**通过代码路径引用该模块的代码**。
+	- 举例而言，一个 garden vegetables 模块下的 `Asparagus` 类型可以在 `crate::garden::vegetables::Asparagus` 被找到
+- *私有 vs 公用*：
+	- 一个模块里的代码默认对其父模块私有。
+	- 为了使一个模块公用，应当在**声明时**使用 `pub mod` 替代 `mod`。
+	- 为了使一个公用模块内部的成员公用，应当在**声明前**使用 `pub`。
+- *use 关键字*：在一个作用域内，`use` 关键字创建了一个成员的快捷方式，用来==减少长路径的重复==。
+	- 在任何可以引用 `crate::garden::vegetables::Asparagus` 的**作用域**，你可以通过 `use crate::garden::vegetables::Asparagus;` 创建一个快捷方式，
+	- 然后你就可以在**作用域**中只写 `Asparagus` 来使用该类型
+
+```
+backyard
+├── Cargo.lock
+├── Cargo.toml
+└── src
+    ├── garden
+    │   └── vegetables.rs
+    ├── garden.rs
+    └── main.rs
+```
+
+这个例子中的 crate 根文件是 _src/main.rs_：
+
+```rust
+use crate::garden::vegetables::Asparagus;
+
+pub mod garden;
+
+fn main() {
+    let plant = Asparagus {};
+    println!("I'm growing {:?}!", plant);
+}
+```
+
+`pub mod garden;` 行告诉编译器应该包含在 _src/garden.rs_ 文件中发现的代码
+
+```rust
+pub mod vegetables;
+```
+
+意味着在 _src/garden/vegetables.rs_ 中的代码也应该被包括
+
+```rust
+#[derive(Debug)]
+pub struct Asparagus {}
+```
+
+### [在模块中对相关代码进行分组](https://kaisery.github.io/trpl-zh-cn/ch07-02-defining-modules-to-control-scope-and-privacy.html#%E5%9C%A8%E6%A8%A1%E5%9D%97%E4%B8%AD%E5%AF%B9%E7%9B%B8%E5%85%B3%E4%BB%A3%E7%A0%81%E8%BF%9B%E8%A1%8C%E5%88%86%E7%BB%84)
+
+_模块_ 让我们可以将一个 crate 中的代码进行分组，以提高可读性与重用性。
+
+因为一个模块中的代码默认是私有的，所以还可以利用模块控制项的 _私有性_
+
+- 私有项是不可为外部使用的内在详细实现。
+- 我们也可以将模块和它其中的项标记为公开的，这样，外部代码就可以使用并依赖与它们。
+
+> 在餐饮业，餐馆中会有一些地方被称之为 _前台_（_front of house_），还有另外一些地方被称之为 _后台_（_back of house_）。
+> - 前台是招待顾客的地方，在这里，店主可以为顾客安排座位，服务员接受顾客下单和付款，调酒师会制作饮品。
+> - 后台则是由厨师工作的厨房，洗碗工的工作地点，以及经理做行政工作的地方组成。
+
+我们可以将函数放置到**嵌套的模块**中，来使我们的 crate 结构与实际的餐厅结构相同。
+
+通过执行 `cargo new --lib restaurant`，来创建一个新的名为 `restaurant` 的库。在 _src/lib.rs_ 中，来定义一些模块和函数。
+
+```rust
+mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+
+        fn seat_at_table() {}
+    }
+
+    mod serving {
+        fn take_order() {}
+
+        fn serve_order() {}
+
+        fn take_payment() {}
+    }
+}
+```
+
+- 我们定义一个模块，是以 `mod` 关键字为起始，然后指定模块的名字（本例中叫做 `front_of_house`），并且用花括号包围模块的主体。
+- 在模块内，我们还可以定义其他的模块，就像本例中的 `hosting` 和 `serving` 模块。
+- 模块还可以保存一些定义的其他项，比如结构体、枚举、常量、特性、或者函数。
+
+在前面我们提到了，`src/main.rs` 和 `src/lib.rs` 叫做 crate 根。之所以这样叫它们是因为这两个文件的内容都分别在 crate 模块结构的根组成了一个名为 `crate` 的模块，该结构被称为 _模块树_（_module tree_）
+
+- 这个树展示了一些模块是如何被嵌入到另一个模块的
+	- 例如，`hosting` 嵌套在 `front_of_house` 中
+- 这个树还展示了一些模块是互为 _兄弟_（_siblings_）的，这意味着它们定义在同一模块中
+	- `hosting` 和 `serving` 被一起定义在 `front_of_house` 中
+- 如果一个模块 A 被包含在模块 B 中，我们将模块 A 称为模块 B 的 _子_（_child_），模块 B 则是模块 A 的 _父_（_parent_）
+- 注意，整个模块树都植根于名为 `crate` 的隐式模块下。
+
+```
+crate
+ └── front_of_house
+     ├── hosting
+     │   ├── add_to_waitlist
+     │   └── seat_at_table
+     └── serving
+         ├── take_order
+         ├── serve_order
+         └── take_payment
+```
+
+## [引用模块项目的路径](https://kaisery.github.io/trpl-zh-cn/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#%E5%BC%95%E7%94%A8%E6%A8%A1%E5%9D%97%E9%A1%B9%E7%9B%AE%E7%9A%84%E8%B7%AF%E5%BE%84)
+
+来看一下 Rust 如何在模块树中找到一个项的位置，我们使用路径的方式，就像在文件系统使用路径一样。为了调用一个函数，我们需要知道它的路径。
+
+路径有两种形式：
+
+- **绝对路径**（_absolute path_）是以 crate 根（root）开头的全路径；对于外部 crate 的代码，是以 crate 名开头的绝对路径，对于当前 crate 的代码，则以字面值 `crate` 开头。
+- **相对路径**（_relative path_）从当前模块开始，以 `self`、`super` 或定义在当前模块中的标识符开头。
+
+绝对路径和相对路径都后跟一个或多个由双冒号（`::`）分割的标识符。
+
+```rust
+mod front_of_house {
+    mod hosting {
+        fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // 绝对路径
+    crate::front_of_house::hosting::add_to_waitlist();
+
+    // 相对路径
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+> 示例 7-3：使用绝对路径和相对路径来调用 `add_to_waitlist` 函数，文件名：*src/lib.rs*
+
+选择使用相对路径还是绝对路径，要取决于你的项目，也取决于你是更倾向于将项的定义代码与使用该项的代码**分开来移动**，还是**一起移动**。
+
+- 如果我们要将 `front_of_house` 模块和 `eat_at_restaurant` 函数一起移动到一个名为 `customer_experience` 的模块中，我们需要更新 `add_to_waitlist` 的绝对路径，但是相对路径还是可用的。
+- 如果我们要将 `eat_at_restaurant` 函数单独移到一个名为 `dining` 的模块中，还是可以使用原本的绝对路径来调用 `add_to_waitlist`，但是相对路径必须要更新。
+- **我们更倾向于使用绝对路径**，因为把“代码定义”和“项调用”各自独立地移动是更常见的。
+
+### [使用 `pub` 关键字暴露路径](https://kaisery.github.io/trpl-zh-cn/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#%E4%BD%BF%E7%94%A8-pub-%E5%85%B3%E9%94%AE%E5%AD%97%E6%9A%B4%E9%9C%B2%E8%B7%AF%E5%BE%84)
+
+试着编译一下示例 7-3，错误信息说 `hosting` 模块是私有的
+
+```rust
+error[E0603]: module `hosting` is private
+  --> src/lib.rs:12:21
+   |
+12 |     front_of_house::hosting::add_to_waitlist();
+   |                     ^^^^^^^ private module
+   |
+note: the module `hosting` is defined here
+  --> src/lib.rs:2:5
+   |
+2  |     mod hosting {
+   |     ^^^^^^^^^^^
+```
+
+**在 Rust 中，默认所有项（函数、方法、结构体、枚举、模块和常量）对父模块都是私有的**
+
+- 父模块中的项不能使用子模块中的私有项，但是子模块中的项可以使用它们父模块中的项。这是因为子模块封装并隐藏了它们的实现详情
+
+使用 `pub` 关键字来创建公共项，使子模块的内部部分暴露给上级模块
+
+- **使模块公有并不使其内容也是公有的**。模块上的 `pub` 关键字只允许其父模块引用它，而不允许访问内部代码
+- 需要更深入地选择将一个或多个项变为公有
+
+```rust
+mod front_of_house {
+	// 公有模块
+    pub mod hosting {
+	    // 公有函数
+        pub fn add_to_waitlist() {}
+    }
+}
+
+pub fn eat_at_restaurant() {
+    // 绝对路径
+    crate::front_of_house::hosting::add_to_waitlist();
+
+    // 相对路径
+    front_of_house::hosting::add_to_waitlist();
+}
+```
+
+> 示例 7-7: 为 `mod hosting` 和 `fn add_to_waitlist` 添加 `pub` 关键字使它们可以在 `eat_at_restaurant` 函数中被调用
+
+### [二进制和库 crate 包的最佳实践](https://kaisery.github.io/trpl-zh-cn/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#%E4%BA%8C%E8%BF%9B%E5%88%B6%E5%92%8C%E5%BA%93-crate-%E5%8C%85%E7%9A%84%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5)
+
+> 我们提到过包可以同时包含一个 _src/main.rs_ 二进制 crate 根和一个 _src/lib.rs_ 库 crate 根，并且这两个 crate 默认以包名来命名。
+
+通常，这种包含二进制 crate 和库 crate 的模式的包，在二进制 crate 中只有足够的代码来启动一个可执行文件，可执行文件调用库 crate 的代码。又因为库 crate 可以共享，这使得其它项目从包提供的大部分功能中受益。
+
+**模块树应该定义在 _src/lib.rs_ 中**。
+
+- 这样通过以包名开头的路径，公有项就可以在二进制 crate 中使用。
+- 二进制 crate 就完全变成了同其它外部 crate 一样的库 crate 的用户：它只能使用公有 API。
+- 这有助于你设计一个好的 API；你不仅仅是作者，也是用户
+
+### [`super` 开始的相对路径](https://kaisery.github.io/trpl-zh-cn/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#super-%E5%BC%80%E5%A7%8B%E7%9A%84%E7%9B%B8%E5%AF%B9%E8%B7%AF%E5%BE%84)
+
+我们可以通过在路径的开头使用 `super` ，从父模块开始构建相对路径，而不是从当前模块或者 crate 根开始。
+
+- 使用 `super` 允许我们引用父模块中的已知项，这使得重新组织模块树变得更容易 —— 当模块与父模块关联的很紧密（但某天父模块可能要移动到模块树的其它位置）
+
+```rust
+fn deliver_order() {}
+
+mod back_of_house {
+    fn fix_incorrect_order() {
+        cook_order();
+        super::deliver_order();
+    }
+
+    fn cook_order() {}
+}
+```
+
+> 我们认为 `back_of_house` 模块和 `deliver_order` 函数之间可能具有某种关联关系，并且，如果我们要重新组织这个 crate 的模块树，需要一起移动它们。因此，我们使用 `super`，这样一来，如果这些代码被移动到了其他模块，我们只需要更新很少的代码。
+
+### [创建公有的结构体和枚举](https://kaisery.github.io/trpl-zh-cn/ch07-03-paths-for-referring-to-an-item-in-the-module-tree.html#%E5%88%9B%E5%BB%BA%E5%85%AC%E6%9C%89%E7%9A%84%E7%BB%93%E6%9E%84%E4%BD%93%E5%92%8C%E6%9E%9A%E4%B8%BE)
+
+我们还可以使用 `pub` 来设计公有的结构体和枚举
+
+如果我们在一个结构体定义的前面使用了 `pub` ，
+
+- 这个结构体会变成公有的，
+- **但是这个结构体的字段仍然是私有的**。
+- 我们可以根据情况决定每个字段是否公有。
+
+```rust
+mod back_of_house {
+  pub struct Breakfast {
+      pub toast: String,
+      seasonal_fruit: String,
+  }
+
+  impl Breakfast {
+	  // 公有的关联函数
+      pub fn summer(toast: &str) -> Breakfast {
+          Breakfast {
+              toast: String::from(toast),
+              seasonal_fruit: String::from("peaches"),
+          }
+      }
+  }
+}
+
+pub fn eat_at_restaurant() {
+  // 在夏天订购一个黑麦土司作为早餐
+  let mut meal = back_of_house::Breakfast::summer("Rye");
+  // 改变主意更换想要面包的类型
+  meal.toast = String::from("Wheat");
+  println!("I'd like {} toast please", meal.toast);
+
+  // 不允许查看或修改早餐附带的季节水果
+  // meal.seasonal_fruit = String::from("blueberries");
+}
+```
+
+> 示例 7-9: 带有公有和私有字段的结构体，文件名：src/lib.rs
+
+- 因为 `back_of_house::Breakfast` 具有私有字段，所以这个结构体需要提供一个公共的**关联函数**来构造 `Breakfast` 的实例 (这里我们命名为 `summer`)
+
+---
+
+如果我们将“枚举”设为公有，则它的**所有成员都将变为公有**
+- 枚举成员默认就是公有的
+
+```rust
+mod back_of_house {
+    pub enum Appetizer {
+        Soup,
+        Salad,
+    }
+}
+
+pub fn eat_at_restaurant() {
+    let order1 = back_of_house::Appetizer::Soup;
+    let order2 = back_of_house::Appetizer::Salad;
+}
+```
+
+## [使用 `use` 关键字将路径引入作用域](https://kaisery.github.io/trpl-zh-cn/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#%E4%BD%BF%E7%94%A8-use-%E5%85%B3%E9%94%AE%E5%AD%97%E5%B0%86%E8%B7%AF%E5%BE%84%E5%BC%95%E5%85%A5%E4%BD%9C%E7%94%A8%E5%9F%9F)
+
+可以使用 `use` 关键字创建一个短路径，然后就可以在作用域中的任何地方使用这个更短的名字。
+- 通过 `use` 引入作用域的路径也会检查私有性，同其它路径一样。
+
+```rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+}
+```
+> 示例 7-11
+
+**`use` 只能创建 `use` 所在的特定作用域内的短路径**
+
+```rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting;
+
+mod customer {
+    pub fn eat_at_restaurant() {
+        hosting::add_to_waitlist();
+    }
+}
+```
+> 示例 7-12: 编译器错误显示短路径不再适用于 `customer` 模块中：
+
+为了修复这个问题，两个办法
+1. 将 `use` 移动到 `customer` 模块内
+2. 在子模块 `customer` 内通过 `super::hosting` **引用父模块中的这个短路径**
+
+```rust
+// 将 `use` 移动到 `customer` 模块内，
+mod customer {
+  use crate::front_of_house::hosting;
+  
+  pub fn eat_at_restaurant() {
+      hosting::add_to_waitlist();
+  }
+}
+
+// 在子模块 `customer` 内通过 `super::hosting` 引用父模块中的这个短路径。
+use crate::front_of_house::hosting;
+mod customer {
+  pub fn eat_at_restaurant2() {
+      super::hosting::add_to_waitlist();
+  }
+}
+```
+
+### [创建惯用的 `use` 路径](https://kaisery.github.io/trpl-zh-cn/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#%E5%88%9B%E5%BB%BA%E6%83%AF%E7%94%A8%E7%9A%84-use-%E8%B7%AF%E5%BE%84)
+
+在示例 7-11 中，你可能会比较疑惑，
+- 为什么我们是指定 `use crate::front_of_house::hosting` ，然后在 `eat_at_restaurant` 中调用 `hosting::add_to_waitlist` ，
+- 而不是通过指定一直到 `add_to_waitlist` 函数的 `use` 路径来得到相同的结果
+
+```rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+use crate::front_of_house::hosting::add_to_waitlist;
+
+pub fn eat_at_restaurant() {
+    add_to_waitlist();
+}
+```
+> 示例 7-13：不清楚 `add_to_waitlist` 是在哪里被定义的。
+
+要想使用 `use` 将函数的父模块引入作用域，我们必须在调用函数时指定父模块，
+- 这样可以**清晰地表明函数不是在本地定义的**，
+- 同时使完整路径的重复度最小化
+
+使用 `use` 引入结构体、枚举和其他项时，**习惯是指定它们的完整路径**
+
+```rust
+use std::collections::HashMap;
+
+fn main() {
+    let mut map = HashMap::new();
+    map.insert(1, 2);
+}
+```
+> 示例 7-14: 将 `HashMap` 引入作用域的习惯用法
+
+**如何将两个具有相同名称但不同父模块的 `Result` 类型引入作用域**
+- Rust 不允许使用 `use` 语句将两个具有相同名称的项带入作用域
+- 使用父模块可以区分这两个 `Result` 类型
+
+```rust
+use std::fmt;
+use std::io;
+
+fn function1() -> fmt::Result {
+    // --snip--
+}
+
+fn function2() -> io::Result<()> {
+    // --snip--
+}
+```
+
+### [使用 `as` 关键字提供新的名称](https://kaisery.github.io/trpl-zh-cn/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#%E4%BD%BF%E7%94%A8-as-%E5%85%B3%E9%94%AE%E5%AD%97%E6%8F%90%E4%BE%9B%E6%96%B0%E7%9A%84%E5%90%8D%E7%A7%B0)
+
+使用 `use` 将两个同名类型引入同一作用域的另一个办法：
+- 在这个类型的路径后面，**使用 `as` 指定一个新的本地名称或者别名**
+
+```rust
+use std::fmt::Result;
+use std::io::Result as IoResult;
+
+fn function1() -> Result {
+    // --snip--
+}
+
+fn function2() -> IoResult<()> {
+    // --snip--
+}
+```
+> 示例 7-16: 使用 `as` 关键字重命名引入作用域的类型
 
 

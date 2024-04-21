@@ -1,14 +1,6 @@
 # -------------------- JavaWeb
 
-## Cookie 和 Session 的区别，Cookie 和 Session 有联系吗(2)
-
-![](assets/image%20(5).png)
-
-## URL 点击到查看页面的过程
-
-#饿了么
-
-> 项目中从前端来的请求如何最终到达 mysql 数据库 #得物_24_后端 
+##  项目中从前端来的请求如何最终到达 mysql 数据库 #得物_24_后端 
 
 # -------------------- Spring
 
@@ -22,20 +14,20 @@ Spring 是一个家族，通常 Spring 框架指的都是 Spring Framework，是
 
 Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发效率
 
-## Spring 包含的模块有哪些？
+## Spring 包含的模块有哪些？ #repeat 
 
 > 讲一下你知道的模块 #得物_24_实习_Java 
 
-![](assets/Pasted%20image%2020240320011936.png)
+![600](assets/Pasted%20image%2020240320011936.png)
 
 各模块间的依赖关系
 
-![](assets/Pasted%20image%2020240320011739.png)
+![600](assets/Pasted%20image%2020240320011739.png)
 
 *Core Container*：Spring 框架的核心模块、基础模块，主要提供 IoC 依赖注入功能的支持。Spring 其他所有的功能基本都需要依赖于该模块
 
-- spring-core：Spring 框架基本的核心工具类
-- spring-beans：提供对 bean 的创建、配置和管理等功能的支持
+- spring-**core**：Spring 框架基本的核心工具类
+- spring-**beans**：提供对 bean 的创建、配置和管理等功能的支持
 - spring-context：提供对国际化、事件传播、资源加载等功能的支持
 - spring-expression：提供对表达式语言（Spring Expression Language） SpEL 的支持，只依赖于 core 模块，不依赖于其他模块，可以单独使用
 
@@ -45,14 +37,14 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 *AOP*
 
-- spring-aspects：该模块为与 AspectJ 的集成提供支持。
-- spring-aop：提供了面向切面的编程实现
+- spring-**aspects**：该模块为与 AspectJ 的集成提供支持。
+- spring-**aop**：提供了面向切面的编程实现
 - spring-instrument：提供了为 JVM 添加代理（agent）的功能。 具体来讲，它为 Tomcat 提供了一个织入代理，能够为 Tomcat 传递类文件，就像这些文件是被类加载器加载的一样。没有理解也没关系，这个模块的使用场景非常有限
 
 *Data Access/Integration*
 
-- spring-jdbc：提供了对数据库访问的抽象 JDBC。不同的数据库都有自己独立的 API 用于操作数据库，而 Java 程序只需要和 JDBC API 交互，这样就屏蔽了数据库的影响。
-- spring-tx：提供对事务的支持。
+- spring-**jdbc**：提供了对数据库访问的抽象 JDBC。不同的数据库都有自己独立的 API 用于操作数据库，而 Java 程序只需要和 JDBC API 交互，这样就屏蔽了数据库的影响。
+- spring-**tx**：提供对事务的支持。
 - spring-orm：提供对 Hibernate、JPA、iBatis 等 ORM 框架的支持。
 - spring-oxm：提供一个抽象层支撑 OXM(Object-to-XML-Mapping)，例如：JAXB、Castor、XMLBeans、JiBX 和 XStream 等。
 - spring-jms : 消息服务。自 Spring Framework 4.1 以后，它还提供了对 spring-messaging 模块的继承
@@ -60,8 +52,8 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 *Spring Web*
 
 - spring-web：对 Web 功能的实现提供一些最基础的支持。
-- spring-webmvc：提供对 Spring MVC 的实现。
-- spring-websocket：提供了对 WebSocket 的支持，WebSocket 可以让客户端和服务端进行双向通信。
+- spring-**webmvc**：提供对 Spring MVC 的实现。
+- spring-**websocket**：提供了对 WebSocket 的支持，WebSocket 可以让客户端和服务端进行双向通信。
 - spring-webflux：提供对 WebFlux 的支持。WebFlux 是 Spring Framework 5.0 中引入的新的响应式框架。与 Spring MVC 不同，它不需要 Servlet API，是完全异步
 
 *Messaging*：spring-messaging 是从 Spring4.0 开始新加入的一个模块，主要职责是为 Spring 框架集成一些基础的报文传送应用。
@@ -69,7 +61,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 *Spring Test*：
 
 - Spring 团队提倡测试驱动开发（TDD）。有了控制反转 (IoC)的帮助，单元测试和集成测试变得更简单
-- Spring 的测试模块对 JUnit（单元测试框架）、TestNG（类似 JUnit）、Mockito（主要用来 Mock 对象）、PowerMock（解决 Mockito 的问题比如无法模拟 final, static， private 方法）等等常用的测试框架支持的都比较好。
+- Spring 的测试模块对 **JUnit**（单元测试框架）、TestNG（类似 JUnit）、Mockito（主要用来 Mock 对象）、PowerMock（解决 Mockito 的问题比如无法模拟 final, static， private 方法）等等常用的测试框架支持的都比较好。
 
 ## 为什么要用 spring，静态实现方式可不可以
 
@@ -79,7 +71,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 # ---------- IOC、DI
 
-## 介绍 Spring IoC(1)
+## 介绍 Spring IoC(1)  #repeat
 
 #PDD_23_秋招_后端 
 
@@ -99,7 +91,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 ## 注册 Bean
 
-### 注册 Bean 的方式
+### 注册 Bean 的方式 #repeat 
 
 config 配置类上加 `@Configuration` + `@ComponentScan` 
 
@@ -109,7 +101,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 	- 手动加入配置类到核心配置
 - 编程式注册：通过 AnnotationConfigApplicationContext 实例的 `registerBean()` 方法
 
-### @Component 和 @Bean 的区别是什么
+### @Component 和 @Bean 的区别是什么 #repeat
 
 1）作用对象：`@Component` 作用于类，`@Bean` 作用于方法
 
@@ -135,7 +127,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 > 
 > Spring 官方文档：强制依赖使用构造器注入，可选依赖使用 setter 注入
 
-### @Autowired 和 @Resource 的区别是什么？
+### @Autowired 和 @Resource 的区别是什么？ #repeat
 
 > 自动装配具体是怎么实现的？(1)
 
@@ -150,9 +142,9 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 - `@Autowired` 可以通过 `@Qualifier` 注解来显式指定名称
 - `@Resource` 可以通过 `name` 属性来显式指定名称
 
-4）`@Autowired` 支持在构造函数、方法、字段和参数上使用。`@Resource` 主要用于字段和方法上的注入，不支持在构造函数或参数上使用
+4）`@Autowired` 支持在构造函数、方法、字段和参数上使用。`@Resource` 主要用于**字段和方法**上的注入，不支持在构造函数或参数上使用
 
-## Bean 的作用域有哪些?
+## Bean 的作用域有哪些? #repeat
 
 - *singleton*（默认） : IoC 容器中只有唯一的 bean 实例
 - *prototype* : 每次获取都会创建一个新的 bean 实例。也就是说，连续 `getBean()` 两次，得到的是不同的 Bean 实例
@@ -164,7 +156,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 - *application/global-session*：每个 Web 应用在启动时创建一个 Bean（**应用 Bean**），该 bean 仅在当前应用启动时间内有效
 - *websocket*：每一次 WebSocket 会话产生一个新的 bean
 
-## Bean 是线程安全的吗？
+## Bean 是线程安全的吗？ #repeat
 
 Bean 是否线程安全，取决于其**作用域和状态**
 
@@ -174,16 +166,15 @@ Bean 是否线程安全，取决于其**作用域和状态**
 	- 如果这个 bean 是**有状态**的话，那就存在线程安全问题
 	- 大部分 Bean 实际都是**无状态**的（比如 Dao、Service），是线程安全的
 
-> 有状态：包含可变的成员变量的对象
-> 
-> 无状态：没有定义可变的成员变量
+> - 有状态：包含可变的成员变量的对象
+> - 无状态：没有定义可变的成员变量
 
 对于有状态单例 Bean 的线程安全问题，常见的有两种解决办法：
 
-1. 在 Bean 中尽量避免定义可变的成员变量
+1. 在 Bean 中尽量避免定义**可变**的成员变量
 2. 在类中定义一个 ThreadLocal 成员变量，将需要的可变成员变量保存在 ThreadLocal 中（推荐的一种方式）
 
-## bean 生命周期
+## bean 生命周期 #repeat
 
 > #饿了么
 
@@ -194,16 +185,16 @@ bean 生命周期控制：在 bean 创建后到销毁前做一些事情
 实例化：
 
 - Bean 容器找到配置文件中 Spring Bean 的定义
-- Bean 容器利用 Java Reflection API 调用构造器创建 Bean 的实例
+- Bean 容器利用 Java **Reflection** API 调用bb创建 Bean 的实例
 
 初始化：
 
 - 设置属性值：自动装配、属性注入、依赖检查
 
 - 调用 Bean 实现的 **`*.Aware` 接口**的方法，列举三个：
-	- BeanNameAware 接口：调用 `setBeanName()` 方法，传入 Bean 的名字
-	- BeanClassLoaderAware 接口：调用 `setBeanClassLoader()` 方法，传入 ClassLoader 对象的实例
-	- BeanFactoryAware 接口：调用 `setBeanFactory()` 方法，传入 BeanFactory 对象的实例
+	- *BeanNameAware* 接口：调用 `setBeanName()` 方法，传入 Bean 的名字
+	- *BeanClassLoaderAware* 接口：调用 `setBeanClassLoader()` 方法，传入 ClassLoader 对象的实例
+	- *BeanFactoryAware* 接口：调用 `setBeanFactory()` 方法，传入 BeanFactory 对象的实例
 
 - 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象（Bean），执行 `postProcessBeforeInitialization()` 方法
 
@@ -318,7 +309,7 @@ public class Main {
 }
 ```
 
-### beanPostProcessor
+### beanPostProcessor #repeat
 
 > Spring 中的后置处理器的作用是什么？ #顺丰_23_秋招_Java 
 > 
@@ -331,16 +322,17 @@ BeanPostProcessor (BPP) 是 Spring IOC 容器给我们提供的一个**扩展接
 
 - BPP 对象会在**普通对象创建前被创建**
 
-- 在 bean 的初始化前后，容器会遍历所有的 BeanPostProcessor 的实现类的对象，执行他们的 前置处理方法 (postProcessBeforeInitialization) 和 后置处理方法 (postProcessAfterInitialization)
+- 在 bean 的初始化前后，容器会遍历所有的 BPP 的实现类的对象，执行他们的 前置处理方法 (postProcessBeforeInitialization) 和 后置处理方法 (postProcessAfterInitialization)
 
-BPP 的典型使用：AnnotationAwareAspectJAutoProxyCreator
+BPP 的典型使用：Abstract**AutoProxyCreator**
 
 - 服务于 Spring AOP 的 BBP（连接 IOC 和 AOP 的桥梁）
 - 它的后置处理方法完成 AOP 的代理对象的创建（带有切面逻辑的对象，注入进来之后，都不是原来的对象了）
 
 # ---------- AOP
 
-## 介绍 Spring aop 
+## 介绍 Spring aop  #repeat
+
 
 #得物_24_实习_Java 
 
@@ -348,7 +340,7 @@ _AOP (Aspect Oriented Programming)_ 面向切面编程，一种**编程范式**
 
 - 作用：在不惊动原始设计的基础上为其进行功能增强（代理模式课可以实现）
 
-能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性
+- 应用场景：能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性
 
 AOP 切面编程涉及到的一些专业术语：
 
@@ -362,7 +354,7 @@ AOP 切面编程涉及到的一些专业术语：
 | 切面(Aspect)     | 切入点(Pointcut)+通知(Advice)                                                     |
 | Weaving(织入)    | 将通知应用到目标对象，进而生成代理对象的过程动作。织入可以在编译时，类加载时和运行时完成。在编译时进行织入就是静态代理，而在运行时进行织入则是动态代理。 |
 
-## AspectJ 定义的通知类型有哪些？
+## AspectJ 定义的通知类型有哪些？ #repeat
 
 > AOP 的通知类型和这个差不多
 
@@ -374,18 +366,21 @@ AOP 切面编程涉及到的一些专业术语：
 | @After          | 无论连接点是正常执行还是抛出异常，在连接点执行完毕后执行的逻辑                                                                             |
 | @Around         | 编程式控制目标对象的方法调用。环绕通知是所有通知类型中**可操作范围最大**的一种，因为它可以**直接拿到目标对象，以及要执行的方法**，所以环绕通知可以任意的在目标对象的方法调用前后搞事，甚至不调用目标对象的方法 |
 
-## Spring AOP 和 AspectJ AOP 有什么区别？
+> 前、后、前+后
+
+## Spring AOP 和 AspectJ AOP 有什么区别？ #repeat
 
 Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了
 
 区别：
 
-- **Spring AOP 属于运行时增强（动态代理），而 AspectJ 是编译时增强（静态代理）** 
-- Spring AOP 基于代理(Proxying)，而 AspectJ 基于字节码操作(Bytecode Manipulation)。
-- AspectJ 相比于 Spring AOP 功能更加强大，但是 Spring AOP 相对来说更简单
+- **Spring AOP 属于运行时增强（动态代理），而 AspectJ 是编译时增强（支持编译时、编译后和加载时织入）** 
+- Spring AOP 基于代理(Proxying)，而 AspectJ 基于字节码操作（在执行应用程序之前 (在运行时) 前, 各方面直接在代码中进行织入）
+- AspectJ 相比于 Spring AOP 功能更加强大
+	- Spring AOP 仅支持方法切入点，AspectJ 支持所有切入点
 - 如果切面比较少，那么两者性能差异不大。如果**切面太多的话，最好选择 AspectJ** ，它比 Spring AOP 快很多
 
-## Spring AOP 底层原理/怎么实现？(3)
+## Spring AOP 底层原理/怎么实现？(3) #repeat
 
 #PDD_23_秋招_基础电商_后端 #字节_23_实习_Java 
 
@@ -400,7 +395,7 @@ Spring AOP 就是基于**动态代理**的
 
 ![](assets/Pasted%20image%2020240320233941.png)
 
-## Cglib 和 JDK 动态代理
+## Cglib 和 JDK 动态代理 #repeat
 
 > #todo 原理？ #小红书_电商_实习_后端
 > 
@@ -465,7 +460,7 @@ public class LoggingAspect implements Ordered {
 }
 ```
 
-## Spring AOP 在什么场景下会失效？
+## Spring AOP 在什么场景下会失效？ #repeat
 
 #todo_完善
 
@@ -476,20 +471,24 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - 私有方法调用
 - 静态方法调用
 - final方法调用
-- 类内部自调用
+- 类内部自调用（被调用方代理失效）
+	- 不要嵌套调用，将需要一个类中嵌套调用的方法，移到另一个类中
+	- 在代码中使用 AopContext 获取到代理对象，使用代理对象进行嵌套调用
 - 内部类方法调用
+
+[Spring专题: 4. AOP失效的场景与原理 - 简书 (jianshu.com)](https://www.jianshu.com/p/5df09b132abd)
 
 # ---------- 事务
 
 - 事务作用：在数据层保障一系列的数据库操作同成功同失败
 - Spring 事务作用：在数据层或业务层保障一系列的数据库操作同成功同失败
 
-## Spring 管理事务的方式有几种？
+## Spring 管理事务的方式有几种？ #repeat
 
 - **编程式事务**：在代码中硬编码(在分布式系统中推荐使用) : 通过 `TransactionTemplate` 或者 `TransactionManager` 手动管理事务，事务范围过大会出现事务未提交导致超时，因此事务要比锁的粒度更小。
 - **声明式事务**：在 XML 配置文件中配置或者直接基于注解（单体应用或者简单业务系统推荐使用） : 实际是通过 AOP 实现（基于 `@Transactional` 的全注解方式使用最多）
 
-## spring 事务有哪些传播行为？
+## spring 事务有哪些传播行为？ #repeat
 
 #PDD_23_秋招_后端 
 
@@ -497,27 +496,25 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 
 当事务方法被另一个事务方法调用时，必须**指定事务应该如何传播**（例如：方法可能继续在现有事务中运行，也可能开启一个新事务，并在自己的事务中运行）
 
-正确的事务传播行为可能的值如下:
+正确的事务传播行为可能的值，即 `@Transactional` 的 Propagation 属性如下:
 
-- *REQUIRED*（`@Transactional` 默认）：如果当前存在事务，则**加入**该事务；否则创建一个新的事务
+- *REQUIRED*（默认）：如果当前存在事务，则**加入**该事务；否则创建一个新的事务
 
-- *REQUIRES_NEW*：创建一个新的事务，如果当前存在事务，则把当前事务挂起。
+- *REQUIRES_NEW*（独立新事务）：创建一个新的事务，如果当前存在事务，则把当前事务挂起。
 	- 不管外部方法是否开启事务，内部方法会新开启自己的事务，且**相互独立，互不干扰**
 
-- *NESTED*：如果当前存在事务，则创建一个事务作为当前事务的**嵌套事务**来运行，否则创建一个新的事务
+- *NESTED*（嵌套）：如果当前存在事务，则创建一个事务作为当前事务的**嵌套事务**来运行，否则创建一个新的事务
 	- 嵌套事务出错回滚不会影响到主事务（部分回滚），主事务回滚会将嵌套事务一起回滚了
 
-- *MANDATORY*：如果当前存在事务，则**加入**该事务，否则抛出异常（很少用）
-
-> mandatory：强制性
+- *MANDATORY*（强制）：如果当前存在事务，则**加入**该事务，否则抛出异常（很少用）
 
 若是错误的配置以下 3 种事务传播行为，事务将不会发生回滚：
 
-- *SUPPORTS*：如果当前存在事务，则加入该事务，否则以**非事务**的方式继续运行
+- *SUPPORTS*（有就支持一下）：如果当前存在事务，则加入该事务，否则以**非事务**的方式继续运行
 - *NOT_SUPPORTED*：以**非事务**方式运行，如果当前存在事务，则把当前事务**挂起**
 - *NEVER*：以**非事务**方式运行，如果当前存在事务，则**抛出异常**
 
-## Spring 事务的隔离级别
+## Spring 事务的隔离级别 #repeat 
 
 - *DEFAULT*：使用后端数据库默认的隔离级别，
 	- MySQL 默认 `REPEATABLE_READ`，Oracle 默认 `READ_COMMITTED`
@@ -531,25 +528,24 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - *REPEATABLE_READ*：对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，不会发生脏读、不可重复读
 	- 可能发生：幻读
 
-- *SERIALIZABLE*：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，事务之间不可能产生干扰，但严重影响程序的性能（通常不会用）
+- *SERIALIZABLE*（可串行化）：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，事务之间不可能产生干扰，但严重影响程序的性能（通常不会用）
 
-## 事务注解的 rollbackFor 属性
+## 事务注解的 rollbackFor 属性 #repeat
 
-`@Transactional(rollbackFor = Exception.class)`
+`@Transactional(rollbackFor = Exception.class)` 设置事务的回滚策略
 
-`@Transactional` 默认回滚策略：只有遇到 RuntimeException (运行时异常) 或者 Error 时才会回滚事务，而不会回滚 Checked Exception（受检查异常）
+默认回滚策略：只有遇到 RuntimeException (运行时异常) 或者 Error 时才会回滚事务，而不会回滚 Checked Exception（受检查异常）
 
 > 这是因为 Spring 认为 RuntimeException 和 Error 是不可预期的错误，而受检异常是可预期的错误，可以通过业务逻辑来处理
 
 修改默认的回滚策略：rollbackFor 和 noRollbackFor 属性指定需要/不要回滚的异常
-
 
 ## 事务失效
 
 
 # ---------- 设计模式
 
-## Spring 框架有哪些比较经典的设计模式
+## Spring 框架有哪些比较经典的设计模式 #repeat
 
 #顺丰_23_秋招_Java 
 
@@ -561,7 +557,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - **观察者模式:** Spring 事件驱动模型就是观察者模式很经典的一个应用 #todo
 - **适配器模式** : Spring AOP 的增强或通知(Advice)使用到了适配器模式、spring MVC 中也是用到了适配器模式适配 `Controller` #todo
 
-## 工厂模式
+## 工厂模式 #repeat
 
 > BeanFactory 和 FactoryBean 有什么区别？
 
@@ -619,7 +615,7 @@ public class UserDaoFactoryBean implements FactoryBean<UserDao> {
 
 #饿了么
 
-循环依赖问题？
+循环依赖问题？ #todo
 
 # ---------- 未知
 ## spring 怎么去做监控，错误码体系？
@@ -631,7 +627,7 @@ public class UserDaoFactoryBean implements FactoryBean<UserDao> {
 
 # ---------- 概念
 
-### MVC
+## MVC
 
 MVC 是模型(Model)、视图(View)、控制器(Controller)的简写，其核心思想是通过将业务逻辑、数据、显示分离来组织代码，是一种设计模式。
 
@@ -639,18 +635,16 @@ MVC 是模型(Model)、视图(View)、控制器(Controller)的简写，其核心
 
 ![500](assets/Pasted%20image%2020240321121454.png)
 
-### Spring MVC
+## Spring MVC
 
-Spring MVC 是一款很优秀的 MVC 框架
-
-Spring MVC 可以帮助我们进行更**简洁的 Web 层的开发**
+Spring MVC 是一款很优秀的 MVC 框架，可以帮助我们进行更**简洁的 Web 层的开发**
 
 - 对 Servlet 进行了封装，相比于 Servlet，使用更简单，开发更便捷
 - 与 Spring 框架集成
 
-Spring MVC 下我们一般把后端项目分为 Service 层（处理业务）、Dao 层（数据库操作）、Entity 层（实体类）、Controller 层(控制层，返回数据给前台页面)
+> Spring MVC 下我们一般把后端项目分为 Service 层（处理业务）、Dao 层（数据库操作）、Entity 层（实体类）、Controller 层(控制层，返回数据给前台页面)
 
-### Spring MVC 的核心组件
+## Spring MVC 的核心组件 #repeat
 
 记住了下面这些组件，也就记住了 SpringMVC 的工作原理。
 
@@ -662,16 +656,16 @@ Spring MVC 下我们一般把后端项目分为 Service 层（处理业务）、
 
 # ---------- 原理
 
-## SpringMVC 是如何将不同的 Request 路由到不同 Controller 中的？
+## SpringMVC 是如何将不同的 Request 路由到不同 Controller 中的？ #repeat
 
 > 在计算机程序处理中，但凡涉及到路由，那包含到的数据结构一定是和 map 相关的。所以对于 url 和 controller 之间的映射，如果交给我们来设计的话，可能会用一个大的 **map 将 url 和 controller 中对应的方法作为键值对**存储起来，以此来达到路由的目的。
 
 ![600](assets/Pasted%20image%2020240321185323.png)
 
-Spring MVC 在启动的时候，会把带有 `@RequestMapping` 注解的方法和类封装成 RequestMappingInfo 和 HandlerMethod，然后注册到 MappingRegistry
+Spring MVC 在启动的时候，会把带有 `@RequestMapping` 注解的方法和类封装成 RequestMappingInfo 和 HandlerMethod，然后注册到 **MappingRegistry**
 
-- MappingRegistry 存放了一个 HashMap，key 是 RequestMappingInfo，value 是 HandlerMethod
-- HandlerMethod 封装了对应的 Method（controller 的方法的反射方法对象） 和持有它的 Bean（controller） 的名字
+- MappingRegistry 存放了一个 **HashMap**，key 是 RequestMappingInfo，value 是 HandlerMethod
+- HandlerMethod 封装了对应的 Method（controller 的方法的**反射方法对象**） 和持有它的 **Bean**（controller） 的名字
 
 ![](assets/Pasted%20image%2020240321192147.png)
 
@@ -689,7 +683,7 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 ![](assets/Pasted%20image%2020240321192118.png)
 
 
-## Spring MVC 的执行流程(1)
+## Spring MVC 的执行流程(1) #repeat
 
 #小红书_暑期实习_Java后端 #PDD_23_秋招_后端 
 
@@ -701,17 +695,17 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 
 进入到 Spring MVC 的流程中，在 DispatcherServlet 中的流程如下：
 
-1）请求到达 DispatcherServlet 的 `doDispatch()` 方法
+1）请求到达 **DispatcherServlet** 的 `doDispatch()` 方法
 
-2）根据 HandlerMapping 拿到 request 对应的 HandlerAdapter 对象
+2）根据 **HandlerMapping** 拿到 request 对应的 HandlerAdapter 对象，并且返回 **HandlerExecutionChain**
 
 - `getHandler()` 方法中，先通过 `HandlerMapping` 拿到 request 对应的 HandlerExecutionChain
 	- HandlerExecutionChain 封装了 HandlerMethod 和 存放拦截器的 ArrayList
 - `getHandlerAdapter()` 中 拿到 HandlerMethod 对应的 HandlerAdapter，
 
-3）通过 HandlerExecutionChain 执行拦截器的 `prehandle()` 方法（责任链模式）
+3）通过 **HandlerExecutionChain** 执行拦截器的 `prehandle()` 方法（责任链模式）
 
-4）通过 HandlerAdapter 去执行 HandlerMethod，返回一个 ModelAndView 对象
+4）通过 **HandlerAdapter** 去执行 **HandlerMethod**，返回一个 **ModelAndView** 对象
 
 > - handlerMethod 里面封装的映射的真正方法 handler 还有可能是原生的 Servlet，要执行 `handler.invoke`
 > - 在这之前要去判断参数，通过参数解析器 HandlerMethodArgumentResolver
@@ -719,17 +713,17 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 
 > #Bo 返回 json 数据，mav 是空的
 
-5）通过 HandlerExecutionChain 执行拦截器的 `posthandle()` 方法
+5）通过 **HandlerExecutionChain** 执行拦截器的 `posthandle()` 方法
 
 > Spring MVC 执行完之后返回的是 `ModelAndView`，我们还需要对 `ModelAndView` 进行 render，即把 `ModelAndView` 中的 view 渲染到 response 中
 
-6）当发生异常时，会将异常拉到用户 custom 的异常处理方法中
+6）当发生异常时，会将异常拉到 用户定制 的**异常处理方法**中
 
-- 用户标记的 `@ExceptionHandler` 方法已经被 **ExceptionHandlerMethodResolver** 找到，并且注册（key 为对应异常，value 为对应方法），只需要调用该方法就可以对异常进行处理，此时的方法调用和之前的 handler 几乎没有区别 #todo
+- ==用户标记的 `@ExceptionHandler` 方法==已经被 ExceptionHandlerMethodResolver 找到，并且注册（==key 为对应异常，value 为对应方法==），只需要调用该方法就可以对异常进行处理，此时的方法调用和之前的 handler 几乎没有区别 #todo完善
 
 ![](assets/Pasted%20image%2020240321131100.png)
 
-## 全局异常处理器怎么做的（项目）？
+## 全局异常处理器怎么做的（项目）？ #repeat 
 
 #小红书_实习_后端 
 
@@ -764,19 +758,16 @@ public class GlobalExceptionHandler {
 	- 添加 code 属性，便于区分异常来自的业务
 
 - 对异常分类：
-	- *业务异常*（BusinessException）：用户行为产生的异常
+	- *业务异常*（BusinessException）：**用户行为**产生的异常
 		- 解决方案：发送消息给用户，提醒规范操作
-	- *系统异常*（SystemException）：可预计但无法避免的异常，比如数据库或服务器宕机
+	- *系统异常*（SystemException）：**可预计但无法避免**的异常，比如数据库或服务器宕机
 		- 解决方案：发送固定消息安抚用户、日志、提醒运维
-	- *其他异常*（Exception）：编程人员未预期到的异常
+	- *其他异常*（Exception）：编程人员**未预期**到的异常
 		- 解决方案：同上
 
 - 业务中 throw 自定义异常
 
 ![500](assets/Pasted%20image%2020240219204200.png)
-
-
-
 
 # -------------------- SpringBoot
 
@@ -798,7 +789,7 @@ Spring 旨在简化 J2EE 企业应用程序开发。Spring Boot **旨在简化 S
 
 Spring Boot 只是简化了配置，如果你需要构建 MVC 架构的 Web 程序，你还是需要使用 Spring MVC 作为 MVC 框架，只是说 Spring Boot 帮你**简化了 Spring MVC 的很多配置**，真正做到开箱即用！
 
-## 为什么要有 SpringBoot（优点）？
+## 为什么要有 SpringBoot（优点）？ #repeat 
 
 Spring 旨在简化 J2EE 企业应用程序开发。Spring Boot **旨在简化 Spring 开发**（减少配置文件，开箱即用！）
 
@@ -815,7 +806,7 @@ starter 定义了使用某种技术时对于**依赖的固定搭配格式**，�
 
 # ---------- 原理
 
-## springboot 怎么实现自动化配置？
+## springboot 怎么实现自动化配置？ #repeat 
 
 #PDD_23_秋招_后端 
 
