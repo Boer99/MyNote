@@ -53,7 +53,7 @@ JRE（Java Runtime Environment） 是 Java 运行时环境。它是运行已编�
 
 `native`：native关键字说明其修饰的方法是一个原生态方法，方法对应的实现不是在当前文件，而是在用其他语言（如C和C++）实现的文件中。Java语言本身不能对操作系统底层进行访问和操作，但是可以通过JNI接口调用其他语言来实现对底层的访问
 
-`transient`：让某些被transient关键字修饰的成员属性变量不被序列化
+`transient`：让某些被 transient 关键字修饰的成员属性变量不被序列化
 
 `instanceof`：java的保留关键字。他的作用就是测试==左边的对象==是不是==右边类的实例==，是的话就返回true，不是的话返回false。类的实例包括本身的实例，以及所有直接或间接子类的实例
 
@@ -1166,7 +1166,7 @@ JDK1.7 及之前版本的 `HashMap` 在多线程环境下扩容操作可能存�
 在 Java 中，所有的异常都有一个共同的祖先 `java.lang` 包中的 `Throwable` 类。`Throwable` 类有两个重要的子类:
 
 - **`Exception`** ：==程序本身可以处理的异常==，可以通过 `catch` 来进行捕获。
-- **`Error`** ：`Error` 属于==程序无法处理的错误==，不建议通过`catch`捕获。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止
+- **`Error`** ：`Error` 属于==程序无法处理的错误==，不建议通过 `catch` 捕获。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止
 
 
 
@@ -1237,9 +1237,9 @@ public void printStackTrace() //在控制台上打印 Throwable 对象封装的�
 
 ### try-catch-finally 如何使用？
 
-- try块：用于捕获异常。其后可接零个或多个catch块，如果没有catch块，则必须跟一个finally块。
-- catch块：用于处理try捕获到的异常。
-- finally块：无论是否捕获或处理异常，finally 块里的语句都会被执行。当在 try 块或 catch 块中遇到 return 语句时，finally 语句块将在方法返回之前被执行。
+- try 块：用于捕获异常。其后可接零个或多个 catch 块，如果没有 catch 块，则必须跟一个 finally 块。
+- catch 块：用于处理 try 捕获到的异常。
+- finally 块：无论是否捕获或处理异常，finally 块里的语句都会被执行。当在 try 块或 catch 块中遇到 return 语句时，finally 语句块将在方法返回之前被执行。
 
 ```java
 try {
