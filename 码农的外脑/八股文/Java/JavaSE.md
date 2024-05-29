@@ -1663,5 +1663,52 @@ Java 中将实参传递给方法（或函数）的方式是==值传递== ：
 一般我们需要对一个集合使用自定义排序时，我们就要重写 `compareTo()` 方法或 `compare()` 方法，当我们需要对某一个集合实现两种排序方式，比如一个 `song` 对
 象中的歌名和歌手名分别采用一种排序方法的话，我们可以重写 `compareTo()` 方法和使用自制的 `Comparator` 方法或者以两个 `Comparator` 来实现歌名排序和歌星名排序，第二种代表我们只能使用两个参数版的 `Collections.sort()`
 
+# 新特性
 
+## 为什么 lambda 表达式中的局部变量必须是 final 或者是有效 final 的？
 
+[【Java异常】Variable used in lambda expression should be final or effectively final_contains报错should be final-CSDN博客](https://blog.csdn.net/weixin_44299027/article/details/117333043)
+
+以下代码会编译器报错，`Variable used in lambda expression should be final or effectively final`，batchIdSet 被认为是可变的，因为 `Set<Long> batchIdSet = new HashSet<>();` 中 batchIdSet 已经被赋值了，if 中可能 batchIdSet 可能会被修改
+
+```java
+// 查出药品已绑定的批次Id
+Set<Long> batchIdSet = new HashSet<>();
+LambdaQueryWrapper<BatchMedicalMappingTemplate> queryWrapper = new LambdaQueryWrapper<>();
+queryWrapper.eq(BatchMedicalMappingTemplate::getMedicalCode, medicalCode);
+List<BatchMedicalMappingTemplate> mappingList = list(queryWrapper);
+if (CollectionUtils.isNotEmpty(mappingList)) {
+	batchIdSet = mappingList.stream()
+			.map(BatchMedicalMappingTemplate::getBatchId)
+			.collect(Collectors.toSet());
+}
+
+Set<Long> addBatchIdSet = newBatchIdSet.stream()
+		.filter(newBatchId -> {
+			if (!batchIdSet.contains(newBatchId)) return true;
+			return false;
+		})
+		.collect(Collectors.toSet());
+```
+
+解决办法如下：
+
+```java
+// 查出药品已绑定的批次Id
+Set<Long> batchIdSet;
+...
+if (CollectionUtils.isNotEmpty(mappingList)) {
+	batchIdSet = mappingList.stream()
+			.map(BatchMedicalMappingTemplate::getBatchId)
+			.collect(Collectors.toSet());
+} else {
+	batchIdSet = Collections.emptySet();
+}
+
+Set<Long> addBatchIdSet = newBatchIdSet.stream()
+		.filter(newBatchId -> {
+			if (!batchIdSet.contains(newBatchId)) return true;
+			return false;
+		})
+		.collect(Collectors.toSet());
+```

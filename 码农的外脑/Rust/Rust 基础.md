@@ -1782,11 +1782,8 @@ fn second_word(s: &String) -> (usize, usize) {
 **字符串 slice**（_string slice_）是 `String` 中一部分值的**引用**
 
 - 变量的类型：`&str`
-- 形式：`[开始索引..结束索引]`
-	- 开始索引就是切片起始位置的索引值
-	- 结束索引是切片终止位置的**下一个**索引值
+- 形式：`[开始位置..结束位置+1]`
 - slice 的数据结构存储了 slice 的开始位置和长度
-	- 长度对应于 开始索引 减去 开始索引 的值。
 
 ```rust
     let s = String::from("hello world");
@@ -1884,25 +1881,21 @@ let s = "Hello, world!";
 
 > 这里 `s` 的类型是 `&str`：它是一个指向==二进制程序特定位置==的 slice。这也就是为什么字符串字面值是不可变的；
 
-#### 字符串 slice 作为参数
+#### 字符串 slice 作为参数（重要）
 
-```rust
-fn first_word(s: &String) -> &str {
-```
-
-有经验的 Rustacean 会编写出：
+有经验的 Rustacean 会编写出 `&str` 作为参数，而不是 `&String：
 
 ```rust
 // 将 `s` 参数的类型改为字符串 slice
 fn first_word(s: &str) -> &str {
 ```
 
-- 因为它使得可以对 `&String` 值和 `&str` 值使用相同的函数，使得我们的 API 更加**通用**并且**不会丢失**任何功能
+- 因为它使得可以对 `&String` 值和 `&str` 值使用相同的函数（更加**通用**并且**不会丢失**任何功能）
 	- 如果有一个**字符串 slice**，可以直接传递它。
 	- 如果有一个**字符串字面值**，可以直接传递它
 	- 如果有一个 `String`，则可以传递
 		- 整个 `String` 的 slice 
-		- 或==对 `String` 的引用==
+		- 或==对 `String` 的引用==，`&String`
 
 > 这种灵活性利用了 _deref coercions_ 的优势，这个特性我们将在[“函数和方法的隐式 Deref 强制转换”](https://kaisery.github.io/trpl-zh-cn/ch15-02-deref.html#%E5%87%BD%E6%95%B0%E5%92%8C%E6%96%B9%E6%B3%95%E7%9A%84%E9%9A%90%E5%BC%8F-deref-%E5%BC%BA%E5%88%B6%E8%BD%AC%E6%8D%A2)章节中介绍。
 
@@ -1951,7 +1944,8 @@ let slice = &a[1..3];
 assert_eq!(slice, &[2, 3]);`
 ```
 
-这个 slice 的类型是 `&[i32]`。它跟字符串 slice 的工作方式一样，通过存储第一个集合元素的引用和一个集合总长度。你可以对其他所有集合使用这类 slice。
+- 这个 slice 的类型是 `&[i32]`。它跟字符串 slice 的工作方式一样，通过存储第一个集合元素的引用和一个集合总长度。
+- 可以对其他所有集合使用这类 slice。
 
 # ----- 结构体
 
@@ -2821,7 +2815,7 @@ fn plus_one(x: Option<i32>) -> Option<i32> {
     fn move_player(num_spaces: u8) {}
 ```
 
-最后一个分支则涵盖了所有其他可能的值，模式是我们命名为 `other` 的一个**变量**。
+==最后一个分支则涵盖了所有其他可能的值==，模式是我们命名为 `other` 的一个**变量**。（可以是其他）
 
 - `other` 分支的代码通过将其传递给 `move_player` 函数来**使用这个变量**
 - 这种**通配模式**满足了 `match` 必须被穷尽的要求
@@ -3400,4 +3394,724 @@ fn function2() -> IoResult<()> {
 ```
 > 示例 7-16: 使用 `as` 关键字重命名引入作用域的类型
 
+### [使用 `pub use` 重导出名称](https://kaisery.github.io/trpl-zh-cn/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#%E4%BD%BF%E7%94%A8-pub-use-%E9%87%8D%E5%AF%BC%E5%87%BA%E5%90%8D%E7%A7%B0)
 
+使用 `use` 关键字，将某个名称导入当前作用域后，这个名称在此作用域中就可以使用了，但它对此作用域之外还是私有的。如果想让其他人调用我们的代码时，也能够正常使用这个名称，就好像它本来就在当前作用域一样，
+
+那我们可以将 `pub` 和 `use` 合起来使用。这种技术被称为 “_重导出_（_re-exporting_）”：我们不仅将一个名称导入了当前作用域，还允许别人把它导入他们自己的作用域
+
+```rust
+mod front_of_house {
+    pub mod hosting {
+        pub fn add_to_waitlist() {}
+    }
+}
+
+pub use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+}
+```
+
+> 在这个修改之前，外部代码需要使用路径 `restaurant::front_of_house::hosting::add_to_waitlist()` 来调用 `addtowaitlist` 函数。
+> 
+> 现在这个 `pub use` 从根模块重导出了 `hosting` 模块，外部代码现在可以使用路径 `restaurant::hosting::add_to_waitlist`。
+
+### 使用外部包
+
+项目使用了一个外部包，`rand`，来生成随机数。为了在项目中使用 `rand`，在 _Cargo.toml_ 中加入 `rand` 依赖告诉了 Cargo 要从 [crates.io](https://crates.io/) 下载 `rand` 和其依赖，并使其可在项目代码中使用。
+
+```rust
+rand = "0.8.5"
+```
+
+为了将 `rand` 定义引入项目包的作用域，我们加入一行 `use` 起始的包名，它**以 `rand` 包名开头**并列出了需要引入作用域的项
+
+> [crates.io](https://crates.io/) 上有很多 Rust 社区成员发布的包，将其引入你自己的项目都需要一道相同的步骤：在 _Cargo.toml_ 列出它们并通过 `use` 将其中定义的项引入项目包的作用域中。
+
+---
+
+注意 `std` 标准库对于你的包来说也是外部 crate。因为标准库随 Rust 语言一同分发，
+- 无需修改 _Cargo.toml_ 来引入 `std`，
+- 不过需要通过 `use` 将标准库中定义的项引入项目包的作用域中来引用它们，
+
+比如我们使用的 `HashMap`：
+
+```
+use std::collections::HashMap;
+```
+
+> 这是一个以标准库 crate 名 `std` 开头的绝对路径。
+
+### 嵌套路径来消除大量的 use 行
+
+当需要引入很多定义于相同包或相同模块的项时，为每一项单独列出一行会占用源码很大的空间
+
+```rust
+// --snip--
+use std::cmp::Ordering;
+use std::io;
+// --snip--
+```
+
+我们可以使用嵌套路径将相同的项在一行中引入作用域
+- 以在路径的任何层级使用嵌套路径，这在组合两个共享子路径的 `use` 语句时非常有用
+- 可以在嵌套路径中使用 `self`
+
+```rust
+// --snip--
+use std::{cmp::Ordering, io};
+// --snip--
+
+//use std::io;
+//use std::io::Write;
+use std::io::{self, Write};
+```
+
+### [通过 glob 运算符将所有的公有定义引入作用域](https://kaisery.github.io/trpl-zh-cn/ch07-04-bringing-paths-into-scope-with-the-use-keyword.html#%E9%80%9A%E8%BF%87-glob-%E8%BF%90%E7%AE%97%E7%AC%A6%E5%B0%86%E6%89%80%E6%9C%89%E7%9A%84%E5%85%AC%E6%9C%89%E5%AE%9A%E4%B9%89%E5%BC%95%E5%85%A5%E4%BD%9C%E7%94%A8%E5%9F%9F)
+
+如果希望将一个路径下 **所有** 公有项引入作用域，可以指定路径后跟 `*`，glob 运算符：
+
+```
+use std::collections::*;
+```
+
+> 这个 `use` 语句将 `std::collections` 中定义的所有公有项引入当前作用域
+
+Glob 会使得我们难以推导作用域中有什么名称和它们是在何处定义的
+
+经常用于测试模块 `tests` 中
+
+## 将模块拆分成多个文件
+
+当模块变得更大时，你可能想要将它们的定义移动到单独的文件中，从而使代码更容易阅读。
+
+- 我们会将模块提取到各自的文件中，而不是将所有模块都定义到 crate 根文件中。
+- 在这里，crate 根文件是 _src/lib.rs_，不过这个过程也适用于 crate 根文件是 _src/main.rs_ 的二进制 crate。
+
+模块树：
+```
+restaurant
+├── Cargo.lock
+├── Cargo.toml
+└── src
+    ├── front_of_house
+    │   └── hosting.rs
+    ├── front_of_house.rs
+    └── lib.rs
+```
+
+首先将 `front_of_house` 模块提取到其自己的文件中 front_of_house.rs
+```rust
+pub mod hosting {
+    pub fn add_to_waitlist() {}
+}
+```
+> src/front_of_house.rs
+
+你只需在模块树中的某处使用一次 `mod` 声明就可以加载这个文件
+
+```rust
+mod front_of_house;
+
+pub use crate::front_of_house::hosting;
+
+pub fn eat_at_restaurant() {
+    hosting::add_to_waitlist();
+}
+```
+> src/lib.rs
+
+接下来我们同样将 `hosting` 模块提取到自己的文件中。
+- 因为 `hosting` 是 `front_of_house` 的子模块而不是根模块。我们将 `hosting` 的文件放在与模块树中**它的父级模块同名的目录中**，
+	- 在这里是 _src/front_of_house/_
+
+```
+pub fn add_to_waitlist() {}
+```
+> 文件名：src/front_of_house/hosting.rs
+
+为了移动 `hosting`，修改 _src/front_of_house.rs_ 使之仅包含 `hosting` 模块的声明。
+
+```
+pub mod hosting;
+```
+> src/front_of_house.rs
+
+> 如果将 _hosting.rs_ 放在 _src_ 目录，编译器会认为 `hosting` 模块中的 _hosting.rs_ 的代码声明于 crate 根，而不是声明为 `front_of_house` 的子模块
+
+### 老风格
+
+#todo 
+
+# ----- 常见集合
+
+Rust 标准库中包含一系列被称为 **集合**（_collections_）的非常有用的数据结构。大部分其他数据类型都代表一个特定的值，不过集合可以包含多个值。
+
+不同于内建的数组和元组类型，这些集合指向的数据是储存在堆上的，这意味着**数据的数量不必在编译时就已知**，并且还可以随着程序的运行增长或缩小。
+
+三个在 Rust 程序中被广泛使用的集合：
+
+- _vector_ 允许我们一个挨着一个地储存一系列数量可变的值
+- **字符串**（_string_）是字符的集合。
+- **哈希 map**（_hash map_）允许我们将值与一个特定的键（key）相关联。这是一个叫做 _map_ 的更通用的数据结构的特定实现。
+
+## Vector
+
+### [新建 vector](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E6%96%B0%E5%BB%BA-vector)
+
+为了创建一个新的空 vector，可以调用 `Vec::new` 函数
+
+```
+    let v: Vec<i32> = Vec::new();
+```
+
+新建一个拥有值 `1`、`2` 和 `3` 的 `Vec<i32>`。推断为 `i32` 是因为这是默认整型类型
+
+```
+    let v = vec![1, 2, 3];
+```
+
+### [更新 vector](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E6%9B%B4%E6%96%B0-vector)
+
+对于新建一个 vector 并向其增加元素，可以使用 `push` 方法
+
+```rust
+    let mut v = Vec::new();
+
+    v.push(5);
+    v.push(6);
+    v.push(7);
+    v.push(8);
+```
+
+### [读取 vector 的元素](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E8%AF%BB%E5%8F%96-vector-%E7%9A%84%E5%85%83%E7%B4%A0)
+
+有两种方法引用 vector 中储存的值
+- 1）索引：使用 `&` 和 `[]` 会得到一个索引位置元素的引用
+- 2）get方法：使用索引作为参数调用 `get` 方法时，会得到一个可以用于 `match` 的 `Option<&T>`
+
+```rust
+    let v = vec![1, 2, 3, 4, 5];
+
+    let third: &i32 = &v[2];
+    println!("The third element is {third}");
+
+    let third: Option<&i32> = v.get(2);
+    match third {
+        Some(third) => println!("The third element is {third}"),
+        None => println!("There is no third element."),
+    }
+```
+
+get方法的优势：当使用现有元素范围之外的索引值时，get方法不会 panic 而是返回 `None`
+
+一旦程序获取了一个有效的引用，借用检查器将会执行所有权和借用规则来确保 vector 内容的这个引用和任何其他引用保持有效。
+- 在相同作用域中同时存在可变和不可变引用的规则
+	- 当我们获取了 vector 的第一个元素的不可变引用并尝试在 vector 末尾增加一个元素的时候，如果尝试**在函数的后面引用这个元素是行不通的**
+
+```rust
+    let mut v = vec![1, 2, 3, 4, 5];
+
+    let first = &v[0];
+
+    v.push(6);
+
+    println!("The first element is: {first}");
+```
+
+> 为什么第一个元素的引用会关心 vector 结尾的变化？不能这么做的原因是由于 vector 的工作方式：在 vector 的结尾增加新元素时，在没有足够空间将所有元素依次相邻存放的情况下，可能会要求分配新内存并将老的元素拷贝到新的空间中。这时，第一个元素的引用就指向了被释放的内存。借用规则阻止程序陷入这种状况。
+
+### [遍历 vector 中的元素](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E9%81%8D%E5%8E%86-vector-%E4%B8%AD%E7%9A%84%E5%85%83%E7%B4%A0)
+
+for循环
+
+```rust
+    let v = vec![100, 32, 57];
+    for i in &v {
+        println!("{i}");
+    }
+```
+
+可以遍历可变 vector 的每一个元素的可变引用以便能改变它们
+- 为了修改可变引用所指向的值，在使用 `+=` 运算符之前必须使用解引用运算符（`*`）获取 `i` 中的值
+
+```rust
+    let mut v = vec![100, 32, 57];
+    for i in &mut v {
+        *i += 50;
+    }
+```
+
+因为借用检查器的规则，无论可变还是不可变地遍历一个 vector 都是安全的。
+- 如果尝试在示例 8-7 和 示例 8-8 的 `for` 循环体内插入或删除项，都会得到一个类似示例 8-6 代码中类似的编译错误。
+- `for` 循环中获取的 vector 引用阻止了同时对 vector 整体的修改。
+
+### [使用枚举来储存多种类型](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E4%BD%BF%E7%94%A8%E6%9E%9A%E4%B8%BE%E6%9D%A5%E5%82%A8%E5%AD%98%E5%A4%9A%E7%A7%8D%E7%B1%BB%E5%9E%8B)
+
+使用枚举外加 `match` 意味着 Rust 能在编译时就保证总是会处理所有可能的情况
+
+如果在编写程序时不能确切无遗地知道运行时会储存进 vector 的所有类型，可以使用 trait 对象
+
+```rust
+    enum SpreadsheetCell {
+        Int(i32),
+        Float(f64),
+        Text(String),
+    }
+
+    let row = vec![
+        SpreadsheetCell::Int(3),
+        SpreadsheetCell::Text(String::from("blue")),
+        SpreadsheetCell::Float(10.12),
+    ];
+```
+
+### [丢弃 vector 时也会丢弃其所有元素](https://kaisery.github.io/trpl-zh-cn/ch08-01-vectors.html#%E4%B8%A2%E5%BC%83-vector-%E6%97%B6%E4%B9%9F%E4%BC%9A%E4%B8%A2%E5%BC%83%E5%85%B6%E6%89%80%E6%9C%89%E5%85%83%E7%B4%A0)
+
+## 字符串
+
+### [什么是字符串？](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E4%BB%80%E4%B9%88%E6%98%AF%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+两种类型：
+- Rust 的核心语言中只有一种字符串类型：string slice `str`，
+	- 它通常以被借用的形式出现，`&str`
+- `String` 类型由 Rust 标准库提供，而不是编入核心语言，
+	- 它是一种可增长、可变、可拥有的字符串类型
+
+它们都是UTF-8 编码
+
+### [新建字符串](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E6%96%B0%E5%BB%BA%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+新建一个空String
+
+```
+let mut s = String::new();
+```
+
+使用 `to_string` 方法从字符串字面值创建 `String`
+- 它能用于任何实现了 `Display` trait 的类型，比如字符串字面值
+
+```rust
+    let data = "initial contents";
+
+    let s = data.to_string();
+
+    // 该方法也可直接用于字符串字面值：
+    let s = "initial contents".to_string();
+```
+
+使用 `String::from` 函数从字符串字面值创建 `String`
+
+```rust
+    let s = String::from("initial contents");
+```
+
+### [更新字符串](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E6%9B%B4%E6%96%B0%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+#### [使用 `push_str` 和 `push` 附加字符串](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E4%BD%BF%E7%94%A8-push_str-%E5%92%8C-push-%E9%99%84%E5%8A%A0%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+使用 `push_str` 方法向 `String` 附加字符串 slice
+- `push_str` 方法采用字符串 slice，因为我们并不需要获取参数的所有权
+
+```rust
+    let mut s1 = String::from("foo");
+    let s2 = "bar";
+    s1.push_str(s2);
+    println!("s2 is {s2}");
+```
+
+`push` 方法被定义为获取一个单独的字符作为参数，并附加到 `String` 中
+
+```
+    let mut s = String::from("lo");
+    s.push('l');
+```
+
+#### [使用 `+` 运算符或 `format!` 宏拼接字符串](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E4%BD%BF%E7%94%A8--%E8%BF%90%E7%AE%97%E7%AC%A6%E6%88%96-format-%E5%AE%8F%E6%8B%BC%E6%8E%A5%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+使用 `+` 运算符将两个 `String` 值合并到一个新的 `String` 值中
+
+```rust
+    let s1 = String::from("Hello, ");
+    let s2 = String::from("world!");
+    let s3 = s1 + &s2; // 注意 s1 被移动了，不能继续使用
+```
+
+`+` 运算符使用了 `add` 函数
+- `&s2` 是 `&String` 类型，可以被 **强转**（_coerced_）成 `&str`（可以理解为把 `&s2` 变成了 `&s2[..]`）
+- 获取了 `self` 的所有权，因为 `self` **没有** 使用 `&`，所以 s1 被移动了
+
+```
+fn add(self, s: &str) -> String {
+```
+
+使用 `format!` 宏级联多个字符串
+
+```rust
+    let s1 = String::from("tic");
+    let s2 = String::from("tac");
+    let s3 = String::from("toe");
+
+	//let s = s1 + "-" + &s2 + "-" + &s3;
+    let s = format!("{s1}-{s2}-{s3}");
+```
+
+### [索引字符串](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E7%B4%A2%E5%BC%95%E5%AD%97%E7%AC%A6%E4%B8%B2)
+
+Rust 的字符串不支持索引
+
+```rust
+    let s1 = String::from("hello");
+    let h = s1[0]; //`String` cannot be indexed by `{integer}`
+```
+
+### [字符串 slice](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E5%AD%97%E7%AC%A6%E4%B8%B2-slice)
+
+可以使用 `[]` 和一个 range 来创建含特定字节的字符串 slice
+
+```
+let hello = "Здравствуйте";
+
+let s = &hello[0..4];
+```
+
+### [遍历字符串的方法](https://kaisery.github.io/trpl-zh-cn/ch08-02-strings.html#%E9%81%8D%E5%8E%86%E5%AD%97%E7%AC%A6%E4%B8%B2%E7%9A%84%E6%96%B9%E6%B3%95)
+
+操作字符串每一部分的最好的方法是明确表示需要字符还是字节
+
+调用 `chars` 方法会返回每一个字符
+
+```
+for c in "Зд".chars() {
+    println!("{c}");
+}
+```
+
+调用 `bytes` 方法返回每一个原始字节
+
+```
+for b in "Зд".bytes() {
+    println!("{b}");
+}
+```
+
+## Hash Map
+
+### 新建
+
+新建一个哈希 map 并插入一些键值对
+
+```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+```
+
+### 访问
+
+可以通过 `get` 方法并提供对应的键来从哈希 map 中获取值
+
+```rust
+    use std::collections::HashMap;
+
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Yellow"), 50);
+
+    let team_name = String::from("Blue");
+    let score = scores.get(&team_name).copied().unwrap_or(0);
+```
+
+- 通过调用 `copied` 方法来获取一个 `Option<i32>` 而不是 `Option<&i32>`
+- 调用 `unwrap_or` 在 `scores` 中**没有该键所对应的项时**将其设置为零。
+
+### 遍历 kv 对
+
+```rust
+    //--snip--
+
+    for (key, value) in &scores {
+        println!("{key}: {value}");
+    }
+```
+
+### [哈希 map 和所有权](https://kaisery.github.io/trpl-zh-cn/ch08-03-hash-maps.html#%E5%93%88%E5%B8%8C-map-%E5%92%8C%E6%89%80%E6%9C%89%E6%9D%83)
+
+- 对于像 `i32` 这样的实现了 `Copy` trait 的类型，其值可以拷贝进哈希 map。
+- 对于像 `String` 这样拥有所有权的值，其值将被**移动**而哈希 map 会成为这些值的所有者
+
+```rust
+    use std::collections::HashMap;
+
+    let field_name = String::from("Favorite color");
+    let field_value = String::from("Blue");
+
+    let mut map = HashMap::new();
+    map.insert(field_name, field_value);
+    // 这里 field_name 和 field_value 不再有效，
+    // 尝试使用它们看看会出现什么编译错误！
+```
+
+如果将值的引用插入哈希 map，这些值本身将**不会被移动**进哈希 map。但是这些引用指向的值必须至少在哈希 map 有效时也是有效的
+
+### 更新
+
+如何处理一个键已经有值了的情况。
+- 新值代替旧值。
+- 保留旧值而忽略新值，并只在键 **没有** 对应值时增加新值。
+- 可以结合新旧两值。
+
+#### 覆盖
+
+insert方法
+```rust
+use std::collections::HashMap;
+
+fn main() {
+    
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+    scores.insert(String::from("Blue"), 25);
+
+    println!("{:?}", scores); //{"Blue": 25}
+}
+```
+
+#### 只在键没有对应值时插入键值对
+
+- `entry` 函数的返回值是一个枚举，`Entry`，它代表了可能存在也可能不存在的值
+- `Entry` 的 `or_insert` 方法
+	- 在键对应的值**存在时**，就返回这个值的**可变引用**，
+	- 如果不存在，插入新值并返回其**可变引用**
+
+```rust
+fn main() {
+    let mut scores = HashMap::new();
+
+    scores.insert(String::from("Blue"), 10);
+
+    scores.entry(String::from("Yellow")).or_insert(50);
+
+    scores.entry(String::from("Blue")).or_insert(50); //返回类型：&mut i32
+
+    println!("{:?}", scores); //{"Yellow": 50, "Blue": 10}
+}
+```
+
+#### [根据旧值更新一个值](https://kaisery.github.io/trpl-zh-cn/ch08-03-hash-maps.html#%E6%A0%B9%E6%8D%AE%E6%97%A7%E5%80%BC%E6%9B%B4%E6%96%B0%E4%B8%80%E4%B8%AA%E5%80%BC)
+
+一个键对应的值并根据旧的值更新它
+
+```rust
+fn main() {
+
+    let text: &str = "hello world wonderful world";
+
+    let mut map = HashMap::new();
+
+    for word in text.split_whitespace() {
+        let count = map.entry(word).or_insert(0);
+        *count += 1;
+    }
+
+    println!("{:?}", map); //{"wonderful": 1, "world": 2, "hello": 1}
+}
+```
+> 通过哈希 map 储存单词和计数来统计出现次数
+
+### [哈希函数](https://kaisery.github.io/trpl-zh-cn/ch08-03-hash-maps.html#%E5%93%88%E5%B8%8C%E5%87%BD%E6%95%B0)
+
+#todo 
+
+# 错误处理
+
+Rust 将错误分为两大类：
+- **可恢复的**（_recoverable_）错误：对于一个可恢复的错误，比如文件未找到的错误，我们很可能只想向用户报告问题并重试操作。
+- **不可恢复的**（_unrecoverable_）错误：总是 bug 出现的征兆，比如试图访问一个超过数组末端的位置，因此我们要立即停止程序。
+- 
+大多数语言并不区分这两种错误，并采用类似异常这样方式统一处理它们。
+
+Rust 没有异常。相反，
+- 它有 `Result<T, E>` 类型，用于处理**可恢复**的错误，
+- 还有 `panic!` 宏，在程序遇到**不可恢复**的错误时停止执行
+
+## panic!
+
+在一个简单的程序中调用 `panic!`：
+
+```
+fn main() {
+    panic!("crash and burn");
+}
+```
+
+程序输出：
+- 第一行显示了 panic 提供的信息
+- 并指明了源码中 panic 出现的位置：_src/main.rs:2:5_（第二行第五个字符）
+```
+$ cargo run
+   Compiling panic v0.1.0 (file:///projects/panic)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.25s
+     Running `target/debug/panic`
+thread 'main' panicked at 'crash and burn', src/main.rs:2:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+### [使用 `panic!` 的 backtrace](https://kaisery.github.io/trpl-zh-cn/ch09-01-unrecoverable-errors-with-panic.html#%E4%BD%BF%E7%94%A8-panic-%E7%9A%84-backtrace)
+
+尝试访问超越 vector 结尾的元素，这会造成 `panic!`
+
+```
+fn main() {
+    let v = vec![1, 2, 3];
+
+    v[99];
+}
+```
+
+```
+$ cargo run
+   Compiling panic v0.1.0 (file:///projects/panic)
+    Finished dev [unoptimized + debuginfo] target(s) in 0.27s
+     Running `target/debug/panic`
+thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+```
+
+下面的说明（note）行提醒我们可以设置 `RUST_BACKTRACE` 环境变量来得到一个 backtrace。
+- _backtrace_ 是一个执行到目前位置所有被调用的函数的列表
+- 阅读 backtrace 的关键是从头开始读直到发现你编写的文件。这就是问题的发源地。
+	- 这一行往上是你的代码所调用的代码；
+	- 往下则是调用你的代码的代码
+
+```shell
+$ RUST_BACKTRACE=1 cargo run
+thread 'main' panicked at 'index out of bounds: the len is 3 but the index is 99', src/main.rs:4:5
+stack backtrace:
+   0: rust_begin_unwind
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/std/src/panicking.rs:584:5
+   1: core::panicking::panic_fmt
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/panicking.rs:142:14
+   2: core::panicking::panic_bounds_check
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/panicking.rs:84:5
+   3: <usize as core::slice::index::SliceIndex<[T]>>::index
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/slice/index.rs:242:10
+   4: core::slice::index::<impl core::ops::index::Index<I> for [T]>::index
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/slice/index.rs:18:9
+   5: <alloc::vec::Vec<T,A> as core::ops::index::Index<I>>::index
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/alloc/src/vec/mod.rs:2591:9
+   6: panic::main
+             at ./src/main.rs:4:5
+   7: core::ops::function::FnOnce::call_once
+             at /rustc/e092d0b6b43f2de967af0887873151bb1c0b18d3/library/core/src/ops/function.rs:248:5
+note: Some details are omitted, run with `RUST_BACKTRACE=full` for a verbose backtrace.
+```
+
+## [用 `Result` 处理可恢复的错误](https://kaisery.github.io/trpl-zh-cn/ch09-02-recoverable-errors-with-result.html#%E7%94%A8-result-%E5%A4%84%E7%90%86%E5%8F%AF%E6%81%A2%E5%A4%8D%E7%9A%84%E9%94%99%E8%AF%AF)
+
+```rust
+enum Result<T, E> {
+    Ok(T),
+    Err(E),
+}
+```
+
+- `T` 代表成功时返回的 `Ok` 成员中的数据的类型，而 `E` 代表失败时返回的 `Err` 成员中的错误的类型
+
+使用 `match` 表达式处理可能会返回的 `Result` 成员
+- 与 `Option` 枚举一样，`Result` 枚举和其成员也被导入到了 prelude 中，所以就不需要在 `match` 分支中的 `Ok` 和 `Err` 之前指定 `Result::`。
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let greeting_file_result = File::open("hello.txt");
+
+    let greeting_file = match greeting_file_result {
+        Ok(file) => file,
+        Err(error) => panic!("Problem opening the file: {:?}", error),
+    };
+}
+```
+
+### [匹配不同的错误](https://kaisery.github.io/trpl-zh-cn/ch09-02-recoverable-errors-with-result.html#%E5%8C%B9%E9%85%8D%E4%B8%8D%E5%90%8C%E7%9A%84%E9%94%99%E8%AF%AF)
+
+对不同的错误原因采取不同的行为
+- 如果 `File::open` 因为文件不存在而失败，我们希望创建这个文件并返回新文件的句柄
+- 如果 `File::open` 因为任何其他原因失败，panic!
+
+```rust
+use std::fs::File;
+use std::io::ErrorKind;
+
+fn main() {
+    let greeting_file_result = File::open("hello.txt");
+
+    let greeting_file = match greeting_file_result {
+        Ok(file) => file,
+        Err(error) => match error.kind() {
+            // 文件不存在则创建文件
+            ErrorKind::NotFound => match File::create("hello.txt") { 
+                Ok(fc) => fc,
+                Err(e) => panic!("Problem creating the file: {:?}", e),
+            },
+            other_error => {
+                panic!("Problem opening the file: {:?}", other_error);
+            }
+        },
+    };
+}
+```
+
+- `io::ErrorKind` 是一个标准库提供的枚举，它的成员对应 `io` 操作可能导致的不同错误类型；`ErrorKind::NotFound` 它代表尝试打开的文件并不存在
+
+### [失败时 panic 的简写：`unwrap` 和 `expect`](https://kaisery.github.io/trpl-zh-cn/ch09-02-recoverable-errors-with-result.html#%E5%A4%B1%E8%B4%A5%E6%97%B6-panic-%E7%9A%84%E7%AE%80%E5%86%99unwrap-%E5%92%8C-expect)
+
+> match有点冗长并且不总是能很好的表明其意图。
+
+`Result<T, E>` 类型定义了很多辅助方法来处理各种情况。其中之一叫做 `unwrap`
+
+- 如果 `Result` 值是成员 `Ok`，`unwrap` 会返回 `Ok` 中的值。
+- 如果 `Result` 是成员 `Err`，`unwrap` 会为我们调用 `panic!`
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let greeting_file = File::open("hello.txt").unwrap();
+}
+```
+
+`expect` 与 `unwrap` 的使用方式一样，`expect` 在调用 `panic!` 时使用的错误信息将是我们传递给 `expect` 的参数，而不像 `unwrap` 那样使用默认的 `panic!` 信息
+
+```rust
+use std::fs::File;
+
+fn main() {
+    let greeting_file = File::open("hello.txt")
+        .expect("hello.txt should be included in this project");
+}
+```
+
+```shell
+thread 'main' panicked at 'hello.txt should be included in this project: Error
+{ repr: Os { code: 2, message: "No such file or directory" } }',
+src/libcore/result.rs:906:4
+```
+
+> 在生产级别的代码中，大部分 Rustaceans 选择 `expect` 而不是 `unwrap` 并提供更多关于为何操作期望是一直成功的上下
+
+```
+jdbc:mysql://rm-uf68r71g259l26w42.mysql.rds.aliyuncs.com:3306/gezhi-test_medicine-knowledge?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+    username: gezhi_test_tod_rw
+    password: WOQAVFovizqp751328
+
+jdbc:mysql://localhost:3306/gezhi-test_medicine-knowledge?useUnicode=true&characterEncoding=UTF-8&autoReconnect=true&useSSL=false&zeroDateTimeBehavior=convertToNull&serverTimezone=Asia/Shanghai
+```

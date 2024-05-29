@@ -3912,7 +3912,7 @@ HttpMessageConverter 接口是实现对象与 JSON 之间的转换工作
 ### 简介
 
 *REST（Representational State Transfer）*，表现形式状态转换，它是一种软件架构风格
-    
+
 当我们想表示一个网络资源的时候，可以使用两种方式：
 
 * 传统风格资源描述形式
@@ -3923,7 +3923,7 @@ HttpMessageConverter 接口是实现对象与 JSON 之间的转换工作
 	* `http://localhost/user`
 
 REST 的优点有：
-- 隐藏资源的访问行为，无法通过地址得知对资源是何种操作
+- ==隐藏资源的访问行为==，无法通过地址得知对资源是何种操作
 - 书写简化
 
 按照 REST 风格访问资源时使用**行为动作**区分对资源进行了何种操作

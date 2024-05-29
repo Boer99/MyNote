@@ -1998,50 +1998,35 @@ public int evalRPN(String[] tokens) {
 > 
 > 空间：`O(n)` 维护栈
 
-## 滑动窗口最大值
+## 滑动窗口最大值 #困难 #笔试 #rep
 
-> 题目：[239. 滑动窗口最大值 - 力扣（LeetCode）](https://leetcode.cn/problems/sliding-window-maximum/description/)
+[239. 滑动窗口最大值 - 力扣（LeetCode）](https://leetcode.cn/problems/sliding-window-maximum/description/)
 
-给你一个整数数组 `nums`，有一个大小为 `k` 的滑动窗口从数组的最左侧移动到数组的最右侧。你只可以看到在滑动窗口内的 `k` 个数字。滑动窗口每次只向右移动一位。
+分析：
+- 窗口是滑动的，需要将窗口的元素维护成有序的，且不能排序
 
-返回 _滑动窗口中的最大值_ 。
-
-> 示例：
-> - 输入：`nums = [1,3,-1,-3,5,3,6,7], k = 3`
-> - 输出：`[3,3,5,5,6,7]`
->   
-> 提示：
-> - `1 <= nums.length <= 10^5`
-> - `-10^4 <= nums[i] <= 10^4`
-> - `1 <= k <= nums.length`
-
-思路：
-- 维护一个对头到队尾单调递减的队列
-- 双端队列（队尾要出队）
-
+1）单调队列
+- 维护一个队头到队尾单调递减的队列
+- 因为要获取队头和队尾的元素，使用双端队列
 ```java
 class Solution {
-    public static int[] maxSlidingWindow(int[] nums, int k) {
-        ArrayDeque<Integer> deque = new ArrayDeque<>();
-        int n = nums.length;
-        int[] res = new int[n - k + 1];
+    public int[] maxSlidingWindow(int[] nums, int k) {
+        int[] res = new int[nums.length - k + 1];
         int idx = 0;
-        for (int i = 0; i < n; i++) {
-            // 根据题意，i为nums下标，是要在[i - k + 1, i] 中选到最大值，只需要保证两点
-            // 1.队列头结点需要在[i - k + 1, i]范围内，不符合则要弹出
-            if (!deque.isEmpty() && deque.peek() < i - k + 1) {
-                deque.poll();
+        Deque<Integer> deque = new LinkedList<>();
+        for (int l = 1 - k, r = 0; r < nums.length; l++, r++) {
+            // 队尾出队
+            if (l > 0 && deque.peekLast() == nums[l - 1]) {
+                deque.removeLast();
             }
-            // 2.既然是单调，就要保证每次放进去的数字要比末尾的都大，否则也弹出
-            while (!deque.isEmpty() && nums[deque.peekLast()] < nums[i]) {
-                deque.pollLast();
+            // 保持队列单调，如果队头元素小于当前元素，则队头元素出队
+            while (!deque.isEmpty() && deque.peekFirst() < nums[r]) {
+                deque.removeFirst();
             }
-
-            deque.offer(i);
-
-            // 因为单调，当i增长到符合第一个k范围的时候，每滑动一步都将队列头节点放入结果就行了
-            if (i >= k - 1) {
-                res[idx++] = nums[deque.peek()];
+            deque.addFirst(nums[r]);
+            // 获取结果
+            if (l >= 0) {
+                res[idx++] = deque.peekLast();
             }
         }
         return res;
@@ -2049,9 +2034,31 @@ class Solution {
 }
 ```
 
-复杂度分析：
-- 时间：`O(n)`
-- 空间：`O(k)` 
+- 时间复杂度：`O(n)`
+- 空间复杂度：`O(k)` 
+
+2）双指针
+- 上一种方式代码难写一点，因为出队的情况需要额外判断，可以直接在原数组上维护单调
+```java
+public int[] maxSlidingWindow(int[] nums, int k) {
+	int[] res = new int[nums.length - k + 1];
+	int idx = 0;
+	for (int l = 1 - k, r = 0; r < nums.length; l++, r++) {
+		// 保持单调递减窗口
+		if (r > 0) {
+			for (int s = r - 1; s >= 0 && s >= l && nums[s] < nums[s + 1]; s--) {
+				nums[s] = nums[s + 1];
+			}
+		}
+		// 获取结果
+		if (l >= 0) {
+			res[idx++] = nums[l];
+		}
+	}
+	return res;
+}
+```
+
 
 ## 补：前K个高频元素
 
@@ -5499,7 +5506,7 @@ class Solution {
 
 所以动态规划中==每一个状态一定是由上一个状态推导出来的==，而贪心没有状态推导，而是从局部直接选最优的，
 
-动态规划五部曲：
+动态规划五部曲：7
 
 1. 确定 dp **数组**（dp table）以及**下标**的含义
 2. 确定**递推**公式
@@ -5507,15 +5514,341 @@ class Solution {
 4. 确定**遍历顺序**
 5. 举例推导 dp 数组
 
+动态规划如何 debug？
+
+- 最好的方式就是打印 dp 数组
+
+## 斐波那契数列
+
+[509. 斐波那契数 - 力扣（LeetCode）](https://leetcode.cn/problems/fibonacci-number/description/)
+
+dp
+1. `dp[i]` 定义：第 i 个数的斐波那契数值
+2. 递推公式：题目已给
+3. 初始化：题目已给
+4. 遍历顺序：从前向后
+5. 模拟
+
+迭代
+```java
+class Solution {
+    public int fib(int n) {
+        if (n < 2)
+            return n;
+        int[] dp = new int[2];
+        dp[0] = 0;
+        dp[1] = 1;
+        for (int i = 2; i <= n; i++) {
+            int sum = dp[0] + dp[1];
+            dp[0] = dp[1];
+            dp[1] = sum;
+        }
+        return dp[1];
+    }
+}
+```
+
+- 时间复杂度：$O(n)$
+- 空间复杂度：$O(n)$
+
+递归
+```java
+class Solution {
+    public int fib(int n) {
+        if (n < 2) {
+            return n;
+        }
+        return fib(n - 1) + fib(n - 2);
+    }
+}
+```
+
+- 时间复杂度：$O(2^n)$
+- 空间复杂度：$O(n)$
+
+## 爬楼梯
+
+[70. 爬楼梯 - 力扣（LeetCode）](https://leetcode.cn/problems/climbing-stairs/description/)
+
+dp 思路同斐波那契数列，初始化不同
+
+迭代
+```java
+class Solution {
+    public int climbStairs(int n) {
+        if (n <= 2)
+            return n;
+        int[] dp = new int[2];
+        dp[0] = 1;
+        dp[1] = 2;
+        for (int i = 3; i <= n; i++) {
+            int sum = dp[0] + dp[1];
+            dp[0] = dp[1];
+            dp[1] = sum;
+        }
+        return dp[1];
+    }
+}
+```
+
+## 使用最小费用爬楼梯
+
+[746. 使用最小花费爬楼梯 - 力扣（LeetCode）](https://leetcode.cn/problems/min-cost-climbing-stairs/description/)
+
+dp：
+
+1. `dp[i]` 定义：到达第 i 台阶所花费的最少体力为 `dp[i]`，目标是 `dp[cost.length]`
+2. 递推公式：`dp[i] = min(dp[i - 1] + cost[i - 1], dp[i - 2] + cost[i - 2])`
+3. 初始化：`dp[0] = 0，dp[1] = 0`
+4. 遍历顺序：从前向后
+5. 模拟
+
+迭代
+
+```java
+class Solution {
+    public int minCostClimbingStairs(int[] cost) {
+        int[] dp = new int[2];
+        dp[0] = 0;
+        dp[1] = 0;
+        for (int i = 2; i <= cost.length; i++) {
+            int min = Math.min(dp[0] + cost[i - 2], dp[1] + cost[i - 1]);
+            dp[0] = dp[1];
+            dp[1] = min;
+        }
+        return dp[1];
+    }
+}	
+```
+
+## 不同路径 #笔试
+
+[62. 不同路径 - 力扣（LeetCode）](https://leetcode.cn/problems/unique-paths/description/)
+
+dp：
+
+1. `dp[i][j]` 定义：从 `(0,0)` 出发，到 `(i,j)` 有 `dp[i][j]` 条不同的路径
+2. 递推公式：`dp[i][j] = dp[i - 1][j] + dp[i][j - 1]`
+3. 初始化：`dp[i][0] = 1, dp[0][j] = 1`
+4. 遍历顺序：从左到右一层层遍历
+5. 模拟
+
+迭代
+
+```java
+class Solution {
+    public int uniquePaths(int m, int n) {
+        int[][] dp = new int[m][n];
+        // dp[0][0] = 1;
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i == 0 || j == 0) {
+                    dp[i][j] = 1;
+                    continue;
+                }
+                dp[i][j] = dp[i - 1][j] + dp[i][j - 1];
+            }
+        }
+        return dp[m-1][n-1];
+    }
+}
+```
+
+## 不同路径 II #中等
+
+[63. 不同路径 II - 力扣（LeetCode）](https://leetcode.cn/problems/unique-paths-ii/description/)
+
+dp：
+1. `dp[i][j]` 定义：从 `(0,0)` 出发，到 `(i,j)` 有 `dp[i][j]` 条不同的路径
+2. 递推公式：
+	1. `(i,j)` 有障碍，`dp[i][j] = 0`。
+	2. 否则 `dp[i][j] = dp[i - 1][j] + dp[i][j - 1]
+3. 初始化：
+	1. `(i,0)` 和 `(0,j)` 边有障碍，障碍之后：`dp[i][0] = 0, dp[0][j] = 0`。
+	2. 否则 `dp[i][0] = 1, dp[0][j] = 1`
+4. 遍历顺序：从左到右一层层遍历
+5. 模拟
+
+迭代
+```java
+class Solution {
+    public int uniquePathsWithObstacles(int[][] obstacleGrid) {
+        int m = obstacleGrid.length;
+        int n = obstacleGrid[0].length;
+        int[][] dp = new int[m][n];
+        // 初始化
+        for (int i = 0; i < m && obstacleGrid[i][0] == 0; i++) {
+            dp[i][0] = 1;
+        }
+        for (int j = 0; j < n && obstacleGrid[0][j] == 0; j++) {
+            dp[0][j] = 1;
+        }
+        // 递推
+        for (int i = 1; i < m; i++) {
+            for (int j = 1; j < n; j++) {
+                dp[i][j] = (obstacleGrid[i][j] == 0) ? dp[i - 1][j] + dp[i][j - 1] : 0;
+            }
+        }
+        return dp[m - 1][n - 1];
+    }
+}
+```
+
+## 整数拆分 #中等 #rep 
+
+[343. 整数拆分 - 力扣（LeetCode）](https://leetcode.cn/problems/integer-break/)
+
+dp：
+1. `dp[i]` 定义：分拆数字 i，可以得到的最大乘积为 `dp[i]`
+2. 递推公式：`dp[i] = max({dp[i], (i - j) * j, dp[i - j] * j})`
+	- j 为从 1 遍历到 `i/2`（记不住的话遍历到 `i-1` 也行）
+	- `j * (i - j)` 是单纯的把整数拆分为两个数相乘，而 `j * dp[i - j]` 是拆分成两个以及两个以上的个数相乘
+3. 初始化：`dp[2] = 1`
+4. 遍历顺序：从前向后遍历
+5. 模拟
+
+迭代：
+```java
+class Solution {
+    public int integerBreak(int n) {
+        int[] dp = new int[n + 1];
+        dp[2] = 1;
+        for (int i = 3; i <= n; i++) {
+            for (int j = 1; j <= i/2 ; j++) {
+                int max = Math.max(j * (i - j), j * dp[i - j]);
+                dp[i] = Math.max(dp[i], max);
+            }
+        }
+        return dp[n];
+    }
+}
+```
+
+## 不同的二叉搜索树 #中等 #rep
+
+https://leetcode.cn/problems/unique-binary-search-trees/description/
+
+分析：
+- `dp[3]`，就是 元素 1 为头结点搜索树的数量 + 元素 2 为头结点搜索树的数量 + 元素 3 为头结点搜索树的数量
+	- 元素 1 为头结点搜索树的数量 = 右子树有 2 个元素的搜索树数量 * 左子树有 0 个元素的搜索树数量
+	- 元素 2 为头结点搜索树的数量 = 右子树有 1 个元素的搜索树数量 * 左子树有 1 个元素的搜索树数量
+	- 元素 3 为头结点搜索树的数量 = 右子树有 0 个元素的搜索树数量 * 左子树有 2 个元素的搜索树数量
+- 有 2 个元素的搜索树数量就是 `dp[2]`。有 1 个元素的搜索树数量就是 `dp[1]`。有0个元素的搜索树数量就是 `dp[0]`。
+- 所以 `dp[3] = dp[2] * dp[0] + dp[1] * dp[1] + dp[0] * dp[2]`
+![[Pasted image 20240527154118.png]]
+
+dp：
+1. `dp[i]` 定义：1 到 i 为节点组成的二叉搜索树的个数为 `dp[i]`
+2. 递推公式：
+	- `dp[i] += dp[以j为头结点左子树节点数量] * dp[以j为头结点右子树节点数量]`，j 相当于是头结点的元素，从 1 遍历到 i 为止。
+	- 所以递推公式：`dp[i] += dp[j - 1] * dp[i - j]` ，`j-1` 是 j 为头结点左子树节点数量，`i-j` 是以 j 为头结点右子树节点数量
+3. 初始化：`dp[0] = 1`
+4. 遍历顺序：从前向后遍历
+5. 模拟
+
+迭代：
+```java
+class Solution {
+    public int numTrees(int n) {
+        int[] dp = new int[n + 1];
+        dp[0] = 1;
+        for (int i = 1; i <= n; i++) {
+            for (int j = 1; j <= i; j++) {
+                dp[i] += dp[j - 1] * dp[i - j];
+            }
+        }
+        return dp[n];
+    }
+}
+```
+
+## 01背包
+
+https://kamacoder.com/problempage.php?pid=1046
+
+有 n 件物品和一个最多能背重量为 w 的背包。第i件物品的重量是 `weight[i]`，得到的价值是 `value[i]` 。**每件物品只能用一次**，求解将哪些物品装入背包里物品价值总和最大。
+
+分析：
+- 暴力解法，每件物品只有选和不选两种状态，可以使用回溯，时间复杂度是指数级别的 $O(2^n)$。考虑采用动态规划
+
+dp：
+1. `dp[i][j]` 表示从下标为 `[0-i]` 的物品里任意取，放进容量为 j 的背包，价值总和最大是多少
+2. 递推公式：可以有两个方向推出来 `dp[i][j]`
+	- **不放物品 i**：物品 i 的重量大于背包j的重量，无法放进背包中，所以递推公式：`dp[i][j] = dp[i - 1][j]`
+	- **放物品i**：`dp[i - 1][j - weight[i]]` 为背包容量为 `j - weight[i]` 的时候不放物品 i 的最大价值，那么 `dp[i - 1][j - weight[i]] + value[i]` 就是背包放物品 i 得到的最大价值。所以递归公式： `dp[i][j] = max(dp[i - 1][j], dp[i - 1][j - weight[i]] + value[i])`
+		- 为什么要取 max 呢？因为 weight 大的物品 value 不一定大
+1. 初始化：`
+	- 背包容量 j 为 0 的话，`dp[i][0]=0`
+	- 当 `j < weight[0]`的时候，`dp[0][j] = 0`。当`j >= weight[0]`时，`dp[0][j] = value[0]`
+2. 遍历顺序：按 容量 j / 物品 i 遍历都可，最后求出 `dp[n-1][bagSize]` 就行
+3. 模拟
+
+初始化情况：
+![[Pasted image 20240528143303.png]]
+dp数组值：
+![[Pasted image 20240528143444.png]]
+
+```java
+public static void main(String[] args) {
+	Scanner sc = new Scanner(System.in);
+	int num = sc.nextInt(); // 物品种类
+	int bagSize = sc.nextInt(); // 背包容量
+	int[] weights = new int[num]; // 物品所占空间
+	int[] values = new int[num]; // 物品价值
+	for (int i = 0; i < num; i++) {
+		weights[i] = sc.nextInt();
+	}
+	for (int i = 0; i < num; i++) {
+		values[i] = sc.nextInt();
+	}
+
+	int[][] dp = new int[num][bagSize + 1];
+	// 初始化：容量为0时，最大价值为0
+//        for (int i = 0; i < num; i++) {
+//            dp[i][0] = 0;
+//        }
+	// 初始化：dp第一行
+	for (int j = 0; j <= bagSize; j++) {
+		if (weights[0] <= j) {
+			dp[0][j] = values[0];
+		}
+	}
+	// 递推
+	for (int i = 1; i < num; i++) {
+		for (int j = 1; j <= bagSize; j++) {
+			if (j < weights[i]) { // j容量放不下物品i
+				dp[i][j] = dp[i - 1][j];
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i - 1][j - weights[i]] + values[i]);
+			}
+		}
+	}
+
+	// 结果
+	System.out.println(dp[num - 1][bagSize]);
+}
+```
+
+## 分隔等和子集
+
+https://leetcode.cn/problems/partition-equal-subset-sum/description/
+
+分析：
+- 问题可以转换为：集合里能否出现总和为 sum / 2 的子集
+- 转换为 01背包问题：
+	- 背包的体积为sum / 2
+	- 背包里放的物品就是集合中的元素，价值和重量都是元素值
+	- 背包如果正好装满，说明找到了总和为 sum / 2 的子集。
+	- 背包中每一个元素是不可重复放入。
+
 ## 回文子串 #rep
 
 [647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) #中等
 
 给你一个字符串 `s` ，请你统计并返回这个字符串中 **回文子串** 的数目。
 
-**回文字符串** 是正着读和倒过来读一样的字符串。
-
-**子字符串** 是字符串中的由连续字符组成的一个序列。
+- **回文字符串** 是正着读和倒过来读一样的字符串。
+- **子字符串** 是字符串中的由连续字符组成的一个序列。
 
 具有不同开始位置或结束位置的子串，即使是由相同的字符组成，也会被视作不同的子串。
 
@@ -5617,3 +5950,4 @@ class Solution {
     }
 }
 ```
+
