@@ -5762,6 +5762,7 @@ class Solution {
 }
 ```
 
+## ----------> 01背包
 ## 01背包
 
 https://kamacoder.com/problempage.php?pid=1046
@@ -5829,7 +5830,7 @@ public static void main(String[] args) {
 }
 ```
 
-## 分隔等和子集
+## 分隔等和子集 #中等 #rep
 
 https://leetcode.cn/problems/partition-equal-subset-sum/description/
 
@@ -5840,6 +5841,95 @@ https://leetcode.cn/problems/partition-equal-subset-sum/description/
 	- 背包里放的物品就是集合中的元素，价值和重量都是元素值
 	- 背包如果正好装满，说明找到了总和为 sum / 2 的子集。
 	- 背包中每一个元素是不可重复放入。
+
+dp：
+- `dp[j]` 表示： 容量为 j 的背包，所背的物品价值最大可以为 `dp[j]`
+- 递推公式：`dp[j] = max(dp[j], dp[j - nums[i]] + nums[i])`
+- 初始化：全0
+- 遍历顺序：j 从大到小遍历
+
+```java
+public boolean canPartition(int[] nums) {
+	int sum = 0;
+	for (int num : nums) {
+		sum += num;
+	}
+	if (sum % 2 != 0) return false;
+	int bagSize = sum / 2;
+	int[] dp = new int[bagSize + 1];
+	// 遍历
+	for (int i = 0; i < nums.length; i++) {
+		for (int j = bagSize; j >= nums[i]; j--) {
+			dp[j] = Math.max(dp[j], dp[j - nums[i]] + nums[i]);
+		}
+		if (dp[bagSize] == bagSize) return true;
+	}
+	return false;
+}
+```
+
+## 最后一块石头的重量 ll #中等 #rep
+
+https://leetcode.cn/problems/last-stone-weight-ii/description/
+
+分析：
+- 尽量让石头分成重量相同的两堆，相撞之后剩下的石头最小，**这样就化解成01背包问题了**
+- 物品的重量为 `stones[i]`，物品的价值也为 `stones[i]`
+
+dp：
+- `dp[j]` 表示重量为 j 的背包，最多可以背最大重量为 `dp[j]`
+- 递推公式：`dp[j] = max(dp[j], dp[j - stones[i]] + stones[i])`
+- 初始化：全0
+- 遍历顺序：i 从小到大，j 从大到小遍历
+- 模拟：
+	- 分成两堆石头，一堆石头的总重量是 `dp[target]`，另一堆就是 `sum - dp[target]`
+	- 在计算 target 的时候，`target = sum / 2` 因为是向下取整，所以 `sum - dp[target]` 一定大于等于 `dp[target]`
+	- 那么相撞之后剩下的最小石头重量就是 `(sum - dp[target]) - dp[target]`
+
+```java
+public int lastStoneWeightII(int[] stones) {
+	int sum = 0;
+	for (int stone : stones) {
+		sum += stone;
+	}
+	int bagSize = sum / 2;
+	int[] dp = new int[bagSize + 1];
+	// 遍历dp
+	for (int i = 0; i < stones.length; i++) {
+		for (int j = bagSize; j >= stones[i]; j--) {
+			dp[j] = Math.max(dp[j], dp[j - stones[i]] + stones[i]);
+		}
+	}
+	return (sum - dp[bagSize]) - dp[bagSize];
+}
+```
+
+## 目标和 #中等 #rep 
+
+dp：
+- `dp[j]` 表示：填满容量为 j 的背包，有 `dp[j]` 种方法
+- 递推公式：
+
+```java
+public int findTargetSumWays(int[] nums, int target) {
+	int sum = 0;
+	for (int num : nums) {
+		sum += num;
+	}
+	if (sum < Math.abs(target) || (sum + target) % 2 != 0) return 0;
+	int bagSize = (sum + target) / 2;
+	int[] dp = new int[bagSize + 1];
+	// 初始化
+	dp[0] = 1;
+	// 遍历dp数组
+	for (int i = 0; i < nums.length; i++) {
+		for (int j = bagSize; j >= nums[i]; j--) {
+			dp[j] += dp[j - nums[i]];
+		}
+	}
+	return dp[bagSize];
+}
+```
 
 ## 回文子串 #rep
 
