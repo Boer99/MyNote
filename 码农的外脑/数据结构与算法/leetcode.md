@@ -55,9 +55,6 @@
 - 最长不重复子串
 - 最大连续子数组的和
 
-## 动态规划
-
-- lc518. 零钱兑换 II
 
 # 数组
 
@@ -5621,7 +5618,7 @@ class Solution {
 }	
 ```
 
-## 不同路径 #笔试
+## 不同路径 #中等 #笔试
 
 [62. 不同路径 - 力扣（LeetCode）](https://leetcode.cn/problems/unique-paths/description/)
 
@@ -5762,7 +5759,8 @@ class Solution {
 }
 ```
 
-## ----------> 01背包
+## ---------- 01背包
+
 ## 01背包
 
 https://kamacoder.com/problempage.php?pid=1046
@@ -5930,6 +5928,83 @@ public int findTargetSumWays(int[] nums, int target) {
 	return dp[bagSize];
 }
 ```
+
+## 一和零 #中等 #rep
+
+[474. 一和零 - 力扣（LeetCode）](https://leetcode.cn/problems/ones-and-zeroes/submissions/536636963/)
+
+分析：
+- strs 数组里的元素就是物品，每个物品都是一个，字符串里的 0 和 1 的个数就是重量和价值
+- m 和 n 相当于是一个两个维度的背包
+- 01背包问题
+
+dp：
+- 1）`dp[i][j]`：最多有 i 个 0 和 j 个 1 的 strs 的**最大子集的大小**为 `dp[i][j]`
+- 2）递推公式：当前放入物品（字符串）有 zeroNum 个 0，oneNum 个1，`dp[i][j]` 可以由前一个 strs 里的字符串推导出来，`dp[i][j] = max(dp[i][j], dp[i - zeroNum][j - oneNum] + 1);`
+- 3）初始化：全 0
+- 4）遍历顺序：没有设置多的维度来保存每次放入新物品后的 dp 数组，所以为了防止覆盖上次放入物品的结果，i 和 j 都从大到小遍历
+
+```java
+class Solution {
+    public int findMaxForm(String[] strs, int m, int n) {
+        int[][] dp = new int[m + 1][n + 1];
+        for (String str : strs) {
+            int zeroNum = 0;
+            int oneNum = 0;
+            for (int i = 0; i < str.length(); i++) {
+                if (str.charAt(i) == '0') {
+                    zeroNum++;
+                } else {
+                    oneNum++;
+                }
+            }
+            for (int i = m; i >= zeroNum; i--) {
+                for (int j = n; j >= oneNum; j--) {
+                    dp[i][j] = Math.max(dp[i][j], dp[i - zeroNum][j - oneNum] + 1);
+                }
+            }
+        }
+        return dp[m][n];
+    }
+}
+```
+
+## ---------- 完全背包
+
+## 完全背包理论 
+
+完全背包问题：有 N 件物品和一个最多能背重量为 W 的背包。第 i 件物品的重量是 `weight[i]`，得到的价值是 `value[i]` 。**每件物品都有无限个（也就是可以放入背包多次）**，求解将哪些物品装入背包里物品价值总和最大。
+
+完全背包和 01 背包问题唯一不同的地方：**每种物品有无限件**。
+
+dp五部曲唯一不同：遍历顺序，01背包内嵌的循环是从大到小遍历，为了保证每个物品仅被添加一次。而完全背包的物品是可以添加多次的，所以要**从小到大去遍历**
+
+```java
+public static void main(String[] args) {
+	Scanner sc = new Scanner(System.in);
+	int num = sc.nextInt();
+	int bagSize = sc.nextInt();
+	// 读取物品重量和价值
+	int[] weights = new int[num];
+	int[] values = new int[num];
+	for (int i = 0; i < num; i++) {
+		weights[i] = sc.nextInt();
+		values[i] = sc.nextInt();
+	}
+
+	int[] dp = new int[bagSize + 1];
+	for (int i = 0; i < num; i++) {
+		for (int j = weights[i]; j <= bagSize; j++) {
+			dp[j] = Math.max(dp[j], dp[j - weights[i]] + values[i]);
+		}
+	}
+	System.out.println(dp[bagSize]);
+}
+```
+
+## 零钱兑换 ll #面试
+
+
 
 ## 回文子串 #rep
 

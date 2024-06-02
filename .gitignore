@@ -1,15 +1,11 @@
 /码农的外脑/.obsidian/
 
-**/assets/
-**/黑马2022SSM资料/
 *.pdf
 *.java
 *.txt
 *.xml
 *.yml
 *.yaml
-*.png
-*.jpg
 *.ico
 *.gif
 *.mp4
@@ -29,6 +25,3 @@
 *.woff2
 *.js
 *.cmd
-/码农的外脑/汇报导师.md
-/码农的外脑/Java/设计模式/Java设计模式_heima资料/
-/码农的外脑/Java/JUC/JUC_heima资料/
