@@ -5503,8 +5503,7 @@ class Solution {
 
 所以动态规划中==每一个状态一定是由上一个状态推导出来的==，而贪心没有状态推导，而是从局部直接选最优的，
 
-动态规划五部曲：7
-
+动态规划五部曲：
 1. 确定 dp **数组**（dp table）以及**下标**的含义
 2. 确定**递推**公式
 3. dp 数组如何**初始化**
@@ -5512,8 +5511,10 @@ class Solution {
 5. 举例推导 dp 数组
 
 动态规划如何 debug？
-
 - 最好的方式就是打印 dp 数组
+
+背包问题分类：
+![[Pasted image 20240604113606.png]]
 
 ## 斐波那契数列
 
@@ -6002,8 +6003,113 @@ public static void main(String[] args) {
 }
 ```
 
-## 零钱兑换 ll #面试
+## 零钱兑换 ll #中等 #面试 #rep
 
+https://leetcode.cn/problems/coin-change-ii
+
+分析：
+- 货币数量无限，将 amount 看作背包容量，转换为完全背包问题。
+
+dp：
+- 1）`dp[j]`：凑成总金额 j 的货币**组合数**为 `dp[j]`
+- 2）递推公式：`dp[j] += dp[j - coins[i]]`
+- 3）`dp[0]=1` 还说明了一种情况：如果正好选了 `coins[i]` 后，也就是 `j-coins[i] == 0` 的情况表示这个硬币刚好能选，此时 `dp[0]` 为 1 表示只选 `coins[i]` 存在这样的一种选法
+- 4）==**遍历顺序：外层遍历物品，内层遍历容量**==
+- 5）模拟：以 `amount=5, coins=[1,5,2]` 为例，==注意这里模拟的是一维 dp 数组==
+
+先遍历物品再遍历容量，`dp[j]` 求得的是**组合数**
+
+| 物品/容量 | 0   | 1   | 2   | 3   | 4   | 5   |
+| ----- | --- | --- | --- | --- | --- | --- |
+| 1     | 1   | 1   | 1   | 1   | 1   | 1   |
+| 5     | 1   | 1   | 1   | 1   | 1   | 2   |
+| 2     | 1   | 1   | 2   | 2   | 3   | 4   |
+
+
+先遍历容量再遍历物品，`dp[j]` 求得的是**排列数**
+
+| 物品/容量 | 0   | 1   | 2              | 3                  | 4                          | 5   |
+| ----- | --- | --- | -------------- | ------------------ | -------------------------- | --- |
+| 1     | 1   | 1   | 1              | ==2(111, 12)==     | ==3==                      | 5   |
+| 5     | 1   | 1   | 1              | 2(111, 12)         | 3                          | 6   |
+| 2     | 1   | 1   | ==2(111, 12)== | ==3(111, 12, 21)== | 5(1111, 121, 112, 211, 22) | 9   |
+
+```java
+public int change(int amount, int[] coins) {
+	int[] dp = new int[amount + 1];
+	dp[0] = 1;
+	for (int i = 0; i < coins.length; i++) {
+		for (int j = coins[i]; j <= amount; j++) {
+			dp[j] += dp[j - coins[i]];
+		}
+	}
+	return dp[amount];
+}
+```
+
+## 组合总和 Ⅳ #中等 
+
+https://leetcode.cn/problems/combination-sum-iv/
+
+分析：
+- 题目描述说是求组合，但又说是可以元素相同顺序不同的组合算两个组合，**其实就是求排列！**，排列时强调顺序的！
+- `nums[i]` 中的元素作为物品，target 作为容量，元素数量无限，转换为完全背包问题
+
+dp：
+- 1）`dp[j]` 表示 `target=j` 可能的组合数量
+- 2）递推公式：`dp[j]+=dp[j-nums[i]]`
+- 3）初始化：`dp[0]=1`
+- 4）遍历顺序：外层遍历容量，内层遍历物品
+
+```java
+public int combinationSum4(int[] nums, int target) {
+	int[] dp = new int[target + 1];
+	dp[0] = 1;
+	for (int j = 0; j <= target; j++) {
+		for (int i = 0; i < nums.length; i++) {
+			if (j >= nums[i])
+				dp[j] += dp[j - nums[i]];
+		}
+	}
+	return dp[target];
+}
+```
+
+## 爬楼梯（进阶版）
+
+https://kamacoder.com/problempage.php?pid=1067
+
+分析：
+- 1阶，2阶，.... m阶就是物品，楼顶就是背包，每一阶可以重复使用，问题转换为完全背包问题
+
+dp：
+- `dp[j]`：到达 j 阶有多少种办法
+- 递推公式为：`dp[i] += dp[i - j]`
+- 初始化：`dp[0]=1`
+- 遍历顺序：外层遍历容量，内层遍历物品
+
+模拟：`m=3, n=2`
+
+| 物品/容量 | 0   | 1   | 2   | 3   |
+| ----- | --- | --- | --- | --- |
+| 1     | 1   | 1   | 1   | 2   |
+| 2     | 1   | 1   | 2   | 3   |
+
+```java
+public static void main(String[] args) {
+	Scanner sc = new Scanner(System.in);
+	int bagSize = sc.nextInt();
+	int m = sc.nextInt();
+	int[] dp = new int[bagSize + 1];
+	dp[0] = 1;
+	for (int j = 1; j <= bagSize; j++) {
+		for (int i = 1; i <= m; i++) {
+			if (j >= i) dp[j] += dp[j - i];
+		}
+	}
+	System.out.println(dp[bagSize]);
+}
+```
 
 
 ## 回文子串 #rep
