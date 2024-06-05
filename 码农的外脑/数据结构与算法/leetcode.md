@@ -5513,8 +5513,6 @@ class Solution {
 动态规划如何 debug？
 - 最好的方式就是打印 dp 数组
 
-背包问题分类：
-![[Pasted image 20240604113606.png]]
 
 ## 斐波那契数列
 
@@ -5760,7 +5758,14 @@ class Solution {
 }
 ```
 
-## ---------- 01背包
+## ---------- 背包问题
+
+背包问题分类：
+![[assets/Pasted image 20240604113606.png]]
+
+背包问题的 `dp[0]` 初始化：常见的是 0 和 1，根据递推公式的需要选择，不用太纠结它的意义
+
+## ----- 01背包
 
 ## 01背包
 
@@ -5970,7 +5975,7 @@ class Solution {
 }
 ```
 
-## ---------- 完全背包
+## ----- 完全背包
 
 ## 完全背包理论 
 
@@ -6080,7 +6085,7 @@ public int combinationSum4(int[] nums, int target) {
 https://kamacoder.com/problempage.php?pid=1067
 
 分析：
-- 1阶，2阶，.... m阶就是物品，楼顶就是背包，每一阶可以重复使用，问题转换为完全背包问题
+- 1 阶，2 阶，.... m 阶就是物品，楼顶就是背包，每一阶可以重复使用，问题转换为完全背包问题
 
 dp：
 - `dp[j]`：到达 j 阶有多少种办法
@@ -6108,6 +6113,48 @@ public static void main(String[] args) {
 		}
 	}
 	System.out.println(dp[bagSize]);
+}
+```
+
+## 零钱兑换 #中等 #rep
+
+[322. 零钱兑换 - 力扣（LeetCode）](https://leetcode.cn/problems/coin-change/)
+
+分析：
+- 硬币无限，完全背包问题
+
+dp：
+- `dp[j]` 表示凑成 j 的**最少**硬币数量
+- 递推公式：
+	- `dp[j] = min(dp[j - coins[i]] + 1, dp[j])`
+	- 如果 `dp[j - coins[i]]==Integer.MAX_VALUE`，说明 `j - coins[i]` 目前没法凑出的，这个时候 `dp[j]` 不用改
+- 初始化：`dp[0] = 0`，`dp[j]`必须初始化为一个**最大的数**
+- 遍历顺序：本题并**不强调集合是组合还是排列**，容量和物品的遍历顺序没有要求
+
+模拟：`amount=5, coins=[2,5,1]`，模拟一维 dp 数组
+
+| 物品/容量 | 0   | 1   | 2   | 3   | 4   | 5   |
+| ----- | --- | --- | --- | --- | --- | --- |
+| 2     | 0   | max | 1   | max | 2   | max |
+| 5     | 0   | max | 1   | max | 2   | 1   |
+| 1     | 0   | 1   | 1   | 2   | 2   | 1   |
+
+```java
+public int coinChange(int[] coins, int amount) {
+	int[] dp = new int[amount + 1];
+	// 初始化
+	for (int j = 1; j <= amount; j++) {
+		dp[j] = Integer.MAX_VALUE;
+	}
+	for (int i = 0; i < coins.length; i++) {
+		for (int j = coins[i]; j <= amount; j++) {
+			// 如果 dp[j - coins[i]] == Integer.MAX_VALUE，说明 j - coins[i] 暂时凑不出来
+			if (dp[j - coins[i]] != Integer.MAX_VALUE) {
+				dp[j] = Math.min(dp[j], dp[j - coins[i]] + 1);
+			}
+		}
+	}
+	return dp[amount] == Integer.MAX_VALUE ? -1 : dp[amount];
 }
 ```
 
