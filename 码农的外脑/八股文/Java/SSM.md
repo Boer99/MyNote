@@ -1,10 +1,10 @@
-# -------------------- JavaWeb
+# ---------- JavaWeb
 
 ##  项目中从前端来的请求如何最终到达 mysql 数据库 #得物_24_后端 
 
-# -------------------- Spring
+# ---------- Spring
 
-# ---------- 概念
+# 概念
 
 Spring 是一款开源的轻量级 Java 开发框架，旨在提高开发人员的开发效率以及系统的可维护性
 
@@ -69,7 +69,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 #todo 
 
-# ---------- IOC、DI
+# IOC、DI
 
 ## 介绍 Spring IoC(1)  #repeat
 
@@ -329,7 +329,7 @@ BPP 的典型使用：Abstract**AutoProxyCreator**
 - 服务于 Spring AOP 的 BBP（连接 IOC 和 AOP 的桥梁）
 - 它的后置处理方法完成 AOP 的代理对象的创建（带有切面逻辑的对象，注入进来之后，都不是原来的对象了）
 
-# ---------- AOP
+# AOP
 
 ## 介绍 Spring aop  #repeat
 
@@ -478,7 +478,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 
 [Spring专题: 4. AOP失效的场景与原理 - 简书 (jianshu.com)](https://www.jianshu.com/p/5df09b132abd)
 
-# ---------- 事务
+# 事务
 
 - 事务作用：在数据层保障一系列的数据库操作同成功同失败
 - Spring 事务作用：在数据层或业务层保障一系列的数据库操作同成功同失败
@@ -543,7 +543,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 ## 事务失效
 
 
-# ---------- 设计模式
+# 设计模式
 
 ## Spring 框架有哪些比较经典的设计模式 #repeat
 
@@ -611,21 +611,51 @@ public class UserDaoFactoryBean implements FactoryBean<UserDao> {
 }
 ```
 
-## 三级缓存(2)
+# 循环依赖
 
-#饿了么
+## 循环依赖 Spring 循环依赖了解吗，怎么解决？
 
-循环依赖问题？ #todo
+#饿了么 #蔚来
 
-# ---------- 未知
+循环依赖是指 Bean 对象循环引用，是两个或多个 Bean 之间相互持有对方的引用
+
+Spring 框架通过使用三级缓存来解决这个问题，确保即使在循环依赖的情况下也能正确创建 Bean。三级缓存其实就是三个 Map：
+- **一级缓存（singletonObjects）**：
+	- 存放最终形态的 Bean（已经实例化、属性填充、初始化），单例池，为“Spring 的单例属性”而生。
+	- 一般情况我们获取 Bean 都是从这里获取的，但是并不是所有的 Bean 都在单例池里面，例如原型 Bean
+- **二级缓存（earlySingletonObjects）**：
+	- 存放过渡 Bean（半成品，尚未属性填充），也就是==三级缓存中 `ObjectFactory` 产生的对象==，
+	- 与三级缓存配合使用的，可以防止 AOP 的情况下，每次调用 `ObjectFactory#getObject()` 都是会产生新的代理对象的。
+- **三级缓存（singletonFactories）**：
+	- 存放 `ObjectFactory`，
+		- `ObjectFactory` 的 `getObject()` 方法（最终调用的是 `getEarlyBeanReference()` 方法）可以生成原始 Bean 对象或者代理对象（如果 Bean 被 AOP 切面代理）
+	- 三级缓存只会对单例 Bean 生效
+
+```java
+// 一级缓存
+/** Cache of singleton objects: bean name to bean instance. */
+private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
+
+// 二级缓存
+/** Cache of early singleton objects: bean name to bean instance. */
+private final Map<String, Object> earlySingletonObjects = new HashMap<>(16);
+
+// 三级缓存
+/** Cache of singleton factories: bean name to ObjectFactory. */
+private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
+```
+
+
+# 未知
+
 ## spring 怎么去做监控，错误码体系？
 
 #PDD_23_秋招_后端 
 
 
-# -------------------- Spring MVC
+# ---------- Spring MVC
 
-# ---------- 概念
+# 概念
 
 ## MVC
 
@@ -654,7 +684,7 @@ Spring MVC 是一款很优秀的 MVC 框架，可以帮助我们进行更**简�
 - `Handler`：**请求处理器**，处理实际请求的处理器
 - `ViewResolver`：**视图解析器**，根据 `Handler` 返回的逻辑视图 / 视图，解析并渲染真正的视图，并传递给 `DispatcherServlet` 响应客户端
 
-# ---------- 原理
+# 原理
 
 ## SpringMVC 是如何将不同的 Request 路由到不同 Controller 中的？ #repeat
 
@@ -769,9 +799,9 @@ public class GlobalExceptionHandler {
 
 ![500](assets/Pasted%20image%2020240219204200.png)
 
-# -------------------- SpringBoot
+# ---------- SpringBoot
 
-# ---------- 概念
+# 概念
 
 ## Spring、Spring MVC、Spring Boot 之间什么关系?
 
@@ -804,7 +834,7 @@ Spring 旨在简化 J2EE 企业应用程序开发。Spring Boot **旨在简化 S
 
 starter 定义了使用某种技术时对于**依赖的固定搭配格式**，也是一种最佳解决方案，使用 starter 可以帮助开发者**减少依赖配置**
 
-# ---------- 原理
+# 原理
 
 ## springboot 怎么实现自动化配置？ #repeat 
 
@@ -850,7 +880,7 @@ public @interface EnableAutoConfiguration
 
 
 
-# ---------- 未知
+# 未知
 ## 如果小红书内部需要做一个 starter，你会从哪些方面去考虑、设计
 
 #小红书_实习_后端 
@@ -860,12 +890,12 @@ public @interface EnableAutoConfiguration
 
 
 
-# -------------------- MyBatis
+# ---------- MyBatis
 
 Mybatis 和 MybtisPlus，在使用 mybaits 中设计到的端口问题 #得物_24_后端 
 
 
-# -------------------- 未知
+# ---------- 未知
 
 注解机制 #小红书_23_秋招_后端 
 

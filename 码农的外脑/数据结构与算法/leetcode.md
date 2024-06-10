@@ -5765,9 +5765,9 @@ class Solution {
 
 背包问题的 `dp[0]` 初始化：常见的是 0 和 1，根据递推公式的需要选择，不用太纠结它的意义
 
-## ----- 01背包
+### ----- 01背包
 
-## 01背包
+### 01背包
 
 https://kamacoder.com/problempage.php?pid=1046
 
@@ -5834,7 +5834,7 @@ public static void main(String[] args) {
 }
 ```
 
-## 分隔等和子集 #中等 #rep
+### 分隔等和子集 #中等 #rep
 
 https://leetcode.cn/problems/partition-equal-subset-sum/description/
 
@@ -5872,7 +5872,7 @@ public boolean canPartition(int[] nums) {
 }
 ```
 
-## 最后一块石头的重量 ll #中等 #rep
+### 最后一块石头的重量 ll #中等 #rep
 
 https://leetcode.cn/problems/last-stone-weight-ii/description/
 
@@ -5908,7 +5908,7 @@ public int lastStoneWeightII(int[] stones) {
 }
 ```
 
-## 目标和 #中等 #rep 
+### 目标和 #中等 #rep 
 
 dp：
 - `dp[j]` 表示：填满容量为 j 的背包，有 `dp[j]` 种方法
@@ -5935,7 +5935,7 @@ public int findTargetSumWays(int[] nums, int target) {
 }
 ```
 
-## 一和零 #中等 #rep
+### 一和零 #中等 #rep
 
 [474. 一和零 - 力扣（LeetCode）](https://leetcode.cn/problems/ones-and-zeroes/submissions/536636963/)
 
@@ -5975,9 +5975,9 @@ class Solution {
 }
 ```
 
-## ----- 完全背包
+### ----- 完全背包
 
-## 完全背包理论 
+### 完全背包理论 
 
 完全背包问题：有 N 件物品和一个最多能背重量为 W 的背包。第 i 件物品的重量是 `weight[i]`，得到的价值是 `value[i]` 。**每件物品都有无限个（也就是可以放入背包多次）**，求解将哪些物品装入背包里物品价值总和最大。
 
@@ -6008,7 +6008,7 @@ public static void main(String[] args) {
 }
 ```
 
-## 零钱兑换 ll #中等 #面试 #rep
+### 零钱兑换 ll #中等 #面试 #rep
 
 https://leetcode.cn/problems/coin-change-ii
 
@@ -6052,7 +6052,7 @@ public int change(int amount, int[] coins) {
 }
 ```
 
-## 组合总和 Ⅳ #中等 
+### 组合总和 Ⅳ #中等 
 
 https://leetcode.cn/problems/combination-sum-iv/
 
@@ -6080,7 +6080,7 @@ public int combinationSum4(int[] nums, int target) {
 }
 ```
 
-## 爬楼梯（进阶版）
+### 爬楼梯（进阶版）
 
 https://kamacoder.com/problempage.php?pid=1067
 
@@ -6116,7 +6116,7 @@ public static void main(String[] args) {
 }
 ```
 
-## 零钱兑换 #中等 #rep
+### 零钱兑换 #中等 #rep
 
 [322. 零钱兑换 - 力扣（LeetCode）](https://leetcode.cn/problems/coin-change/)
 
@@ -6158,7 +6158,7 @@ public int coinChange(int[] coins, int amount) {
 }
 ```
 
-## 完全平方数 #中等
+### 完全平方数 #中等
 
 [279. 完全平方数 - 力扣（LeetCode）](https://leetcode.cn/problems/perfect-squares/description/)
 
@@ -6195,10 +6195,83 @@ public int numSquares(int n) {
 }
 ```
 
+### 单词拆分 #中等 
 
-## 回文子串 #rep
+[139. 单词拆分 - 力扣（LeetCode）](https://leetcode.cn/problems/word-break/description/)
 
-[647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) #中等
+dp：
+- `dp[j]` 表示长度为 j 的单词是否能被拼接
+- 递推公式：
+	- `dp[j] = true`，不用遍历后续 word，肯定是 true
+	- 否则，`dp[j] = dp[j - word长度)] && [(j-word长度)~j]的子串和word是否相等`
+- 初始化：`dp[0]=true`，其他元素为 false
+- 遍历顺序：排列问题，先遍历背包，再遍历物品
+
+模拟：`s = apppenapp, list = [app, pen]`，dp 为一维数组
+
+| 物品/容量 | 0   | a   | p   | p   | p   | e   | n   | a   | p   | p   |
+| ----- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| app   | T   | F   | F   | T   | f   | f   | f   | f   | f   | f   |
+| pen   | T   | F   | F   | T   | f   | f   | f   | f   | f   | f   |
+
+```java
+public boolean wordBreak(String s, List<String> wordDict) {
+	boolean[] dp = new boolean[s.length() + 1];
+	dp[0] = true;
+	for (int j = 1; j <= s.length(); j++) {
+		for (String word : wordDict) {
+			if (j >= word.length()) {
+				String subStr = s.substring(j - word.length(), j);
+				boolean equals = word.equals(subStr);
+				dp[j] = dp[j] || (dp[j - word.length()] && equals);
+			}
+		}
+	}
+	return dp[s.length()];
+}
+```
+
+### ----- 多重背包
+
+leetcode 暂无题目
+
+## 打家劫舍 #中等
+
+[198. 打家劫舍 - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber/)
+
+分析：当前房屋偷与不偷取决于 前一个房屋和前两个房屋是否被偷了。所以这里就更感觉到，当前状态和前面状态会有一种依赖关系，那么这种依赖关系都是动规的递推公式
+
+dp：
+- `dp[i]`：考虑下标i（包括i）以内的房屋，最多可以偷窃的金额为`dp[i]`
+- 递推公式：`dp[i] = max(dp[i - 2] + nums[i], dp[i - 1])`
+- 初始化：递推公式的基础就是 `dp[0]` 和 `dp[1]`，`dp[0]` 一定是 `nums[0]`，`dp[1]` 就是 `nums[0]` 和 `nums[1]` 的最大值
+- 遍历顺序：从前到后遍历
+
+```java
+class Solution {
+    public int rob(int[] nums) {
+        if (nums.length == 1)
+            return nums[0];
+        int[] dp = new int[nums.length];
+        dp[0] = nums[0];
+        dp[1] = Math.max(nums[0], nums[1]);
+        for (int i = 2; i < nums.length; i++) {
+            dp[i] = Math.max(dp[i - 1], dp[i - 2] + nums[i]);
+        }
+        return dp[nums.length - 1];
+    }
+}
+```
+
+
+
+
+
+
+
+## 回文子串 #中等 #rep
+
+[647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) 
 
 给你一个字符串 `s` ，请你统计并返回这个字符串中 **回文子串** 的数目。
 
