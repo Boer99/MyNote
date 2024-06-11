@@ -6263,7 +6263,41 @@ class Solution {
 }
 ```
 
+## 打家劫舍 ll #中等 #rep 
 
+[213. 打家劫舍 II - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber-ii/description/)
+
+分析：
+- 和打家劫舍的区别就在于第一个房间和最后一个房间不能都偷
+- 考虑两种情况即可
+	- 考虑包含首元素，不包含尾元素
+	- 考虑包含尾元素，不包含首元素
+
+```java
+public int rob(int[] nums) {
+	if (nums.length == 1)
+		return nums[0];
+	if (nums.length == 2)
+		return Math.max(nums[0], nums[1]);
+
+	// 不包含尾节点
+	int[] dp = new int[nums.length];
+	dp[0] = nums[0];
+	dp[1] = Math.max(nums[0], nums[1]);
+	for (int i = 2; i < nums.length - 1; i++) {
+		dp[i] = Math.max(dp[i - 1], dp[i - 2] + nums[i]);
+	}
+	int temp = dp[nums.length - 2];
+
+	// 不包含头节点
+	dp[1] = nums[1];
+	dp[2] = Math.max(nums[1], nums[2]);
+	for (int i = 3; i < nums.length; i++) {
+		dp[i] = Math.max(dp[i - 1], dp[i - 2] + nums[i]);
+	}
+	return Math.max(temp, dp[nums.length - 1]);
+}
+```
 
 
 
