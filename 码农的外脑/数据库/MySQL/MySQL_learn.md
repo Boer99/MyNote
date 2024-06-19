@@ -2898,7 +2898,7 @@ heima_learn	stu		TABLE	IS
 heima_learn	stu	PRIMARY	RECORD	S	11
 ```
 
-## 间隙锁 & 临键锁
+### 间隙锁 & 临键锁
 
 间隙锁可以共存，一个事务采用的间隙锁不会阻止另一个事务在同一间隙上采用间隙锁
 

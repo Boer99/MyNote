@@ -4947,50 +4947,6 @@ class Solution {
 
 动态规划 #todo
 
-## 买卖股票的最佳时机 II(1)
-
-[122. 买卖股票的最佳时机 II - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/description/)
-
-给你一个整数数组 `prices` ，其中 `prices[i]` 表示某支股票第 `i` 天的价格。
-
-在每一天，你可以决定是否购买和/或出售股票。你在任何时候 **最多** 只能持有 **一股** 股票。你也可以先购买，然后在 **同一天** 出售。
-
-返回 _你能获得的 **最大** 利润_ 。
-
-> 示例：
-> - 输入: `prices = [7,1,5,3,6,4]`
-> - 输出：`7`
-> - 解释：在第 2 天（股票价格 = 1）的时候买入，在第 3 天（股票价格 = 5）的时候卖出, 这笔交易所能获得利润 = 5 - 1 = 4 。随后，在第 4 天（股票价格 = 3）的时候买入，在第 5 天（股票价格 = 6）的时候卖出, 这笔交易所能获得利润 = 6 - 3 = 3 。总利润为 4 + 3 = 7 。
->  
-> 说明：
-> - `1 <= prices.length <= 3 * 10^4`
-> - `0 <= prices[i] <= 10^4`
-
----
-贪心：
-- **最终利润是可以分解的**，假如第 0 天买入，第 3 天卖出，那么利润为：`prices[3] - prices[0]`。相当于 `(prices[3] - prices[2]) + (prices[2] - prices[1]) + (prices[1] - prices[0])`
-- 局部最优：收集**每天的正利润**
-- 全局最优：求得最大利润
-
-![](assets/Pasted%20image%2020240229234241.png)
-
-```java
-class Solution {
-    public int maxProfit(int[] prices) {
-        int res = 0;
-        for (int i = 0; i < prices.length - 1; i++) {
-            int pro = prices[i + 1] - prices[i];
-            if (pro > 0) {
-                res += pro;
-            }
-        }
-        return res;
-    }
-}
-```
-
----
-动态规划 #todo 
 
 ## 跳跃游戏(1)
 
@@ -5503,15 +5459,19 @@ class Solution {
 
 所以动态规划中==每一个状态一定是由上一个状态推导出来的==，而贪心没有状态推导，而是从局部直接选最优的，
 
-动态规划五部曲：
+dp五部曲：
 1. 确定 dp **数组**（dp table）以及**下标**的含义
 2. 确定**递推**公式
 3. dp 数组如何**初始化**
 4. 确定**遍历顺序**
 5. 举例推导 dp 数组
 
-动态规划如何 debug？
+dp如何 debug？
 - 最好的方式就是打印 dp 数组
+
+贪心和 dp 的区别：
+- 贪心是 dp 的一种特殊情况，贪心只依赖于前一个状态的结果，所以不需要一个数组记录历史状态
+- 例如 `dp[i]` 只依赖于 `dp[i-1]`，那直接用变量记录 `dp[i-1]` 就好了
 
 
 ## 斐波那契数列
@@ -6299,9 +6259,245 @@ public int rob(int[] nums) {
 }
 ```
 
+## 打家劫舍 lll #中等 #树形dp #rep
 
+[337. 打家劫舍 III - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber-iii/)
 
+分析：对于树的话，首先就要想到遍历方式，前中后序（深度优先搜索）还是层序遍历（广度优先搜索）。**本题一定是要后序遍历，因为通过递归函数的返回值来做下一步计算**
 
+1）暴力递归，超时
+
+```java
+class Solution {
+    public int rob(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        // 不偷当前节点
+        int max1 = rob(root.left) + rob(root.right);
+        // 偷当前节点
+        int max2 = root.val;
+        if (root.left != null) {
+            max2 += rob(root.left.left) + rob(root.left.right);
+        }
+        if (root.right != null) {
+            max2 += rob(root.right.left) + rob(root.right.right);
+        }
+        return Math.max(max1, max2);
+    }
+}
+```
+
+- 时间复杂度：`O(n^2)`，这个时间复杂度不太标准，也不容易准确化，例如越往下的节点重复计算次数就越多
+- 空间复杂度：`O(log n)`，算上递推系统栈的空间
+
+> 我们计算了 root 的四个孙子（左右孩子的孩子）为头结点的子树的情况，又计算了 root 的左右孩子为头结点的子树的情况，计算左右孩子的时候其实又把孙子计算了一遍
+
+2）记忆化递归
+
+```java
+class Solution {
+    private Map<TreeNode, Integer> map = new HashMap<>();
+
+    public int rob(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        if (map.get(root) != null) {
+            return map.get(root);
+        }
+        // 不偷当前节点
+        int max1 = rob(root.left) + rob(root.right);
+        // 偷当前节点
+        int max2 = root.val;
+        if (root.left != null) {
+            max2 += rob(root.left.left) + rob(root.left.right);
+        }
+        if (root.right != null) {
+            max2 += rob(root.right.left) + rob(root.right.right);
+        }
+        map.put(root, Math.max(max1, max2));
+        return Math.max(max1, max2);
+    }
+}
+```
+
+- 时间复杂度：`O(n)`
+- 空间复杂度：`O(log n)`，算上递推系统栈的空间
+
+3）动态规划
+
+dp：
+- `dp[i]`：长度为 2 的数组，下标为 0 记录不偷该节点所得到的的最大金钱，下标为 1 记录偷该节点所得到的的最大金钱。
+- 确定终止条件：在遍历的过程中，如果遇到空节点的话，很明显，无论偷还是不偷都是 0，返回 `[0,0]`
+- 递归顺序：首先明确的是使用后序遍历。 因为要通过递归函数的返回值来做下一步计算。通过递归左节点，得到左节点偷与不偷的金钱。通过递归右节点，得到右节点偷与不偷的金钱。
+- 递推公式：
+	- 如果是偷当前节点，那么左右孩子就不能偷，`val1 = cur->val + left[0] + right[0];` 
+	- 如果不偷当前节点，那么左右孩子就可以偷，至于到底偷不偷一定是选一个最大的，所以：`val2 = max(left[0], left[1]) + max(right[0], right[1]);`
+
+```java
+class Solution {
+    public int rob(TreeNode root) {
+        int[] dp = robAction(root);
+        return Math.max(dp[0], dp[1]);
+    }
+
+    public int[] robAction(TreeNode root) {
+        int[] dp = new int[2];
+        if (root == null) {
+            return dp;
+        }
+        int[] left = robAction(root.left);
+        int[] right = robAction(root.right);
+        // 不偷当前节点
+        dp[0] = Math.max(left[0], left[1]) + Math.max(right[0], right[1]);
+        // 偷当前节点
+        dp[1] = root.val + left[0] + right[0];
+        return dp;
+    }
+}
+```
+
+- 时间复杂度：`O(n)`
+- 空间复杂度：`O(log n)`，算上递推系统栈的空间
+
+## 买卖股票的最佳时机
+
+[121. 买卖股票的最佳时机 - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/)
+
+1）贪心法 ✔
+
+分析：
+- 每天根据 前一天的最小买入价格 和 前一天能够获取的最大利润，决定今天是否卖出，并更新这两个值
+
+> 先更新哪个都可以，如果先更新 min 会出现当日买进当日卖出的情况，res=0，对结果没影响，但意思不明确
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int len = prices.length;
+        int[] dp = new int[len];
+        dp[0] = 0; // 当前卖出的最大利润
+        int min = prices[0]; //
+        for (int i = 1; i < len; i++) {
+            dp[i] = Math.max(dp[i - 1], prices[i] - min);
+            min = Math.min(prices[i], min);
+        }
+        return dp[len - 1];
+    }
+}
+```
+
+2）动态规划
+
+dp五部曲：
+- dp数组定义
+	- `dp[i][0]` 表示第 i 天持有股票所得最多现金（持有可能是当天买入，也可能是前 i-1 天买入），
+	- `dp[i][1]` 表示第 i 天不持有股票所得最多现金（不持有可以是当天卖出，也可能是 i-1 天卖出）
+- 递推公式：
+	- 前 i-1 天买入和当天买入选一个现金最多的 `dp[i][0] = max(dp[i - 1][0], -prices[i]);`
+	- 前 i-1 天卖出和当天卖出选一个现金最多的`dp[i][1] = max(dp[i - 1][1], prices[i] + dp[i - 1][0])`
+- 初始化：`dp[0][0] -= prices[0]`，`dp[0][1] = 0`
+- 遍历顺序：`dp[i]` 都是由 `dp[i - 1]` 推导出来的，那么一定是从前向后遍历
+- 模拟：返回结果 `dp[prices.length-1][1]`
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        if (prices == null || prices.length == 0) return 0;
+        int length = prices.length;
+        // dp[i][0]代表第i天持有股票的最大收益
+        // dp[i][1]代表第i天不持有股票的最大收益
+        int[][] dp = new int[length][2];
+        int result = 0;
+        dp[0][0] = -prices[0];
+        dp[0][1] = 0;
+        for (int i = 1; i < length; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], -prices[i]);
+            dp[i][1] = Math.max(dp[i - 1][0] + prices[i], dp[i - 1][1]);
+        }
+        return dp[length - 1][1];
+    }
+}
+```
+
+`dp[i]` 只是依赖于 `dp[i - 1]` 的状态，滚动数组优化空间
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int len = prices.length;
+        int dp[][] = new int[2][2];
+        
+        dp[0][0] = - prices[0];
+        dp[0][1] = 0;
+
+        for (int i = 1; i < len; i++){
+            dp[i % 2][0] = Math.max(dp[(i - 1) % 2][0], - prices[i]);
+            dp[i % 2][1] = Math.max(dp[(i - 1) % 2][1], prices[i] + dp[(i - 1) % 2][0]);
+        }
+        return dp[(len - 1) % 2][1];
+    }
+}
+```
+
+## 买卖股票的最佳时机 II(1)
+
+[122. 买卖股票的最佳时机 II - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/description/)
+
+1）贪心
+
+分析：
+- 股票可以当天买当天卖
+- **最终利润是可以分解的**，假如第 0 天买入，第 3 天卖出，那么利润为：`prices[3] - prices[0]`。相当于 `(prices[3] - prices[2]) + (prices[2] - prices[1]) + (prices[1] - prices[0])`
+- 局部最优：收集**每天的正利润**
+- 全局最优：求得最大利润
+
+![](assets/Pasted%20image%2020240229234241.png)
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int res = 0;
+        for (int i = 0; i < prices.length - 1; i++) {
+            int pro = prices[i + 1] - prices[i];
+            if (pro > 0) {
+                res += pro;
+            }
+        }
+        return res;
+    }
+}
+```
+
+2）动态规划
+
+dp：
+- `dp[i][0]` 表示第 i 天持有股票所得现金。`dp[i][1]` 表示第 i 天不持有股票所得最多现金
+- 递推公式：
+	- `dp[i][0]` 可以由两个状态推出来
+		- 第 i-1天就持有股票，保持现状，所得现金即：`dp[i - 1][0]`
+		- 第 i 天买入股票，所得现金即：`dp[i - 1][1] - prices[i]`
+	- `dp[i][1]` 可以由两个状态推出来
+		- 第 i-1天就不持有股票，保持现状，所得现金即：`dp[i - 1][1]`
+		- 第 i 天卖出股票，所得现金即：`prices[i] + dp[i - 1][0]`
+- 初始化
+- 遍历顺序
+
+```java
+class Solution {
+    public int maxProfit(int[] prices) {
+        int[][] dp = new int[prices.length][2];
+        dp[0][0] = -prices[0];
+        dp[0][1] = 0;
+        for (int i = 1; i < prices.length; i++) {
+            dp[i][0] = Math.max(dp[i - 1][0], dp[i - 1][1] - prices[i]);
+            dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] + prices[i]);
+        }
+        return dp[prices.length - 1][1];
+    }
+}
+```
 
 ## 回文子串 #中等 #rep
 
