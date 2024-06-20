@@ -51,7 +51,6 @@
 ## 回溯
 
 - 八皇后问题
-- lc300. 最长递增子序列(2)
 - 最长不重复子串
 - 最大连续子数组的和
 
@@ -5968,7 +5967,7 @@ public static void main(String[] args) {
 }
 ```
 
-### 零钱兑换 ll #中等 #面试 #rep
+### 零钱兑换 ll #中等 #手撕 #rep
 
 https://leetcode.cn/problems/coin-change-ii
 
@@ -6392,11 +6391,11 @@ class Solution {
 
 dp五部曲：
 - dp数组定义
-	- `dp[i][0]` 表示第 i 天持有股票所得最多现金（持有可能是当天买入，也可能是前 i-1 天买入），
-	- `dp[i][1]` 表示第 i 天不持有股票所得最多现金（不持有可以是当天卖出，也可能是 i-1 天卖出）
+	- `dp[i][0]` 表示第 i 天持有股票所得最多现金
+	- `dp[i][1]` 表示第 i 天不持有股票所得最多现金
 - 递推公式：
-	- 前 i-1 天买入和当天买入选一个现金最多的 `dp[i][0] = max(dp[i - 1][0], -prices[i]);`
-	- 前 i-1 天卖出和当天卖出选一个现金最多的`dp[i][1] = max(dp[i - 1][1], prices[i] + dp[i - 1][0])`
+	- 前 i-1 天买入 和 当天买入 选一个现金最多的 `dp[i][0] = max(dp[i - 1][0], -prices[i]);`
+	- 前 i-1 天卖出 和 当天卖出 选一个现金最多的`dp[i][1] = max(dp[i - 1][1], prices[i] + dp[i - 1][0])`
 - 初始化：`dp[0][0] -= prices[0]`，`dp[0][1] = 0`
 - 遍历顺序：`dp[i]` 都是由 `dp[i - 1]` 推导出来的，那么一定是从前向后遍历
 - 模拟：返回结果 `dp[prices.length-1][1]`
@@ -6441,19 +6440,19 @@ class Solution {
 }
 ```
 
-## 买卖股票的最佳时机 II(1)
+## 买卖股票的最佳时机 II #中等 #rep
 
 [122. 买卖股票的最佳时机 II - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/description/)
 
-1）贪心
+1）贪心 ✔️
 
 分析：
-- 股票可以当天买当天卖
+- 股票可以当天买当天卖，且可以买卖多次
 - **最终利润是可以分解的**，假如第 0 天买入，第 3 天卖出，那么利润为：`prices[3] - prices[0]`。相当于 `(prices[3] - prices[2]) + (prices[2] - prices[1]) + (prices[1] - prices[0])`
 - 局部最优：收集**每天的正利润**
 - 全局最优：求得最大利润
 
-![](assets/Pasted%20image%2020240229234241.png)
+![600](assets/Pasted%20image%2020240229234241.png)
 
 ```java
 class Solution {
@@ -6495,6 +6494,82 @@ class Solution {
             dp[i][1] = Math.max(dp[i - 1][1], dp[i - 1][0] + prices[i]);
         }
         return dp[prices.length - 1][1];
+    }
+}
+```
+
+## 买卖股票的最佳时机 lll #困难 #todo 
+
+|          | 3   | 3   | 5   | 0   | 0   | 3   | 1   | 4   |
+| -------- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 第一次持有股票  | -3  | -3  |     |     |     |     |     |     |
+| 第一次不持有股票 | 0   |     |     |     |     |     |     |     |
+| 第二次持有股票  | 0   |     |     |     |     |     |     |     |
+| 第二次不持有股票 | 0   |     |     |     |     |     |     |     |
+
+## 买卖股票的最佳时机 4 #困难 #todo 
+
+## 买卖股票的最佳时机含冷冻期 #中等 #todo
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown
+
+## 买卖股票的最佳时机含手续费 #中等 #todo
+
+https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/
+
+## 最长递增子序列 #中等 #手撕2 #rep
+
+https://leetcode.cn/problems/longest-increasing-subsequence/description/
+
+dp：
+- `dp[i]` 表示 i 之前包括 i 的以 `nums[i]` 结尾的最长递增子序列的长度
+- 递推公式：`dp[i]` 为 j 从 0 到 i-1 各个位置的最长升序子序列 + 1 的最大值。所以：`if (nums[i] > nums[j]) dp[i] = max(dp[i], dp[j] + 1);`
+- 初始化：起始大小至少都是1
+- 遍历顺序：i 从前向后，j 从前向后或者从后向前都可以
+- 返回 dp 数组的最大值
+
+|         | 10  | 9   | 2   | 5   | 3   | 7   | 101 | 18  |
+| ------- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `dp[i]` | 1   | 1   | 1   | 2   |     |     |     |     |
+
+```java
+class Solution {
+    public int lengthOfLIS(int[] nums) {
+        int[] dp = new int[nums.length];
+        Arrays.fill(dp, 1);
+        int res = 1;
+        for (int i = 1; i < nums.length; i++) {
+            for (int j = 0; j < i; j++) {
+                if (nums[j] < nums[i]) {
+                    dp[i] = Math.max(dp[i], dp[j] + 1);
+                }
+            }
+            res = Math.max(res, dp[i]);
+        }
+        return res;
+    }
+}
+```
+
+- 时间复杂度：$O(N^2)$
+
+## 最长连续递增序列 
+
+https://leetcode.cn/problems/longest-continuous-increasing-subsequence/
+
+```java
+class Solution {
+    public int findLengthOfLCIS(int[] nums) {
+        int[] dp = new int[nums.length];
+        Arrays.fill(dp, 1);
+        int res = 1;
+        for (int i = 1; i < nums.length; i++) {
+            if (nums[i] > nums[i - 1]) {
+                dp[i] = dp[i - 1] + 1;
+            }
+            res = Math.max(res, dp[i]);
+        }
+        return res;
     }
 }
 ```
