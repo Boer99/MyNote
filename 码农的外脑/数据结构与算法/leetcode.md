@@ -6574,6 +6574,69 @@ class Solution {
 }
 ```
 
+## 最长重复子数组 #中等 #rep 
+
+https://leetcode.cn/problems/maximum-length-of-repeated-subarray/description/
+
+分析：
+- 如果是暴力的解法，需要先两层 for 循环确定两个数组起始位置，然后再来一个循环从两个起始位置开始比较
+- 本题其实是动规解决的经典题目，我们只要想到 用二维数组可以记录两个字符串的所有比较情况
+
+dp：
+- `dp[i][j]` 为 以下标 i 为结尾的 A，和以下标 j 为结尾的 B，最长重复子数组长度
+- 递推公式：`dp[i][j]` 的状态只能由 `dp[i - 1][j - 1]` 推导出来。即当 `A[i]` 和 `B[j]` 相等的时候，`dp[i][j] = dp[i - 1][j - 1] + 1`
+- 初始化：如果 `nums1[0] == nums2[i]`，`dp[0][i] = 1`。如果 `nums2[0] == nums1[i]`，`dp[i][0] = 1`
+- 遍历顺序：i 和 j 都从 0 开始，谁在外层都可以
+
+> 遍历顺序，i 和 j 为啥不从 1 开始呢，因为需要记录 dp 数组的最大值，最长重复子数组（res）可能为 0 或 1，初始化的部分也要遍历用于获取 res
+
+|     | 3     | 2     | 1     | 4   | 7   |
+| --- | ----- | ----- | ----- | --- | --- |
+| 1   | 0     | 0     | 1     | 0   | 0   |
+| 2   | 0     | 1     | 0     | 0   | 0   |
+| 3   | **1** | 0     | 0     | 0   | 0   |
+| 2   | 0     | **2** | 0     | 0   | 0   |
+| 1   | 0     | 0     | **3** | 0   | 0   |
+
+```java
+class Solution {
+    public int findLength(int[] nums1, int[] nums2) {
+        int[][] dp = new int[nums1.length][nums2.length];
+        // 初始化
+        for (int i = 0; i < nums2.length; i++) {
+            if (nums1[0] == nums2[i]) {
+                dp[0][i] = 1;
+            }
+        }
+        for (int i = 0; i < nums1.length; i++) {
+            if (nums2[0] == nums1[i]) {
+                dp[i][0] = 1;
+            }
+        }
+        // 递推
+        int res = 0;
+        for (int i = 0; i < nums1.length; i++) {
+            for (int j = 0; j < nums2.length; j++) {
+                if (nums1[i] == nums2[j] && i > 0 && j > 0) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                }
+                res = Math.max(res, dp[i][j]);
+            }
+        }
+        return res;
+    }
+}
+```
+
+## 最长公共子序列
+
+|     | a   | b   | c   | d   | e   |
+| --- | --- | --- | --- | --- | --- |
+| a   | 1   | 1   | 1   | 1   | 1   |
+| c   | 1   | 1   | 2   | 2   | 2   |
+| e   | 1   | 1   |     |     |     |
+
+
 ## 回文子串 #中等 #rep
 
 [647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) 
