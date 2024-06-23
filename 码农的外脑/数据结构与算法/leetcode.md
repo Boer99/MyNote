@@ -36,10 +36,6 @@
 - [删除链表的倒数第N个节点](#删除链表的倒数第N个节点)（1） 
 - 链表交叉重排
 
-## 栈和队列
-
-- [用栈实现队列](#用栈实现队列)（1）
-
 ## 树
 
 - [二叉树的右视图](#二叉树的右视图)（1）
@@ -1706,7 +1702,7 @@ class Solution {
 
 # 栈与队列
 
-## 用栈实现队列
+## 用栈实现队列 #手撕
 
 [232. 用栈实现队列 - 力扣（LeetCode）](https://leetcode.cn/problems/implement-queue-using-stacks/)
 
@@ -4901,51 +4897,6 @@ class Solution {
 ---
 动态规划 #todo
 
-## 最大子数组和(1)
-
-[53. 最大子数组和 - 力扣（LeetCode）](https://leetcode.cn/problems/maximum-subarray/description/)
-
-给你一个整数数组 `nums` ，请你找出一个具有最大和的连续子数组（子数组最少包含一个元素），返回其最大和。
-
-**子数组** 是数组中的一个连续部分。
-
-> 示例：
-> - 输入: `nums = [-2,1,-3,4,-1,2,1,-5,4]`
-> - 输出：`6`
-> - 解释: 连续子数组 `[4,-1,2,1]` 的和最大，为 6
->  
-> 说明：
-> - `1 <= nums.length <= 10^5`
-> - `-10^4 <= nums[i] <= 10^4`
-
----
-> 2024年2月28日15:29:59
-
-贪心：
-- 局部最优：**当前“连续和”为负数的时候立刻放弃，从下一个元素重新计算“连续和”**，因为负数加上下一个元素 “连续和”只会越来越小。
-- 全局最优：选取最大“连续和”
-
-```java
-class Solution {
-    public int maxSubArray(int[] nums) {
-        // 不能排序
-        int res = nums[0];
-        int temp = 0;
-        for (int i = 0; i < nums.length; i++) {
-            temp = nums[i] + temp;
-            res = Math.max(res, temp);
-            if (temp < 0) {
-                temp = 0;
-                continue;
-            }
-        }
-        return res;
-    }
-}
-```
-
-动态规划 #todo
-
 
 ## 跳跃游戏(1)
 
@@ -6517,7 +6468,11 @@ https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown
 
 https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/
 
-## 最长递增子序列 #中等 #手撕2 #rep
+## ---------- 子序列/子数组
+
+序列不要求连续，数组要求连续
+
+### 最长递增子序列 #中等 #手撕2 #rep
 
 https://leetcode.cn/problems/longest-increasing-subsequence/description/
 
@@ -6553,7 +6508,7 @@ class Solution {
 
 - 时间复杂度：$O(N^2)$
 
-## 最长连续递增序列 
+### 最长连续递增序列 
 
 https://leetcode.cn/problems/longest-continuous-increasing-subsequence/
 
@@ -6574,7 +6529,8 @@ class Solution {
 }
 ```
 
-## 最长重复子数组 #中等 #rep 
+
+### 最长重复子数组 #中等 #rep 
 
 https://leetcode.cn/problems/maximum-length-of-repeated-subarray/description/
 
@@ -6583,7 +6539,8 @@ https://leetcode.cn/problems/maximum-length-of-repeated-subarray/description/
 - 本题其实是动规解决的经典题目，我们只要想到 用二维数组可以记录两个字符串的所有比较情况
 
 dp：
-- `dp[i][j]` 为 以下标 i 为结尾的 A，和以下标 j 为结尾的 B，最长重复子数组长度
+- `dp[i][j]` 为 以下标 i 为结尾的 A，和以下标 j 为结尾的 B，最长重复子数组长度。
+	- **注意：一定是以 i 或 j 结尾的**
 - 递推公式：`dp[i][j]` 的状态只能由 `dp[i - 1][j - 1]` 推导出来。即当 `A[i]` 和 `B[j]` 相等的时候，`dp[i][j] = dp[i - 1][j - 1] + 1`
 - 初始化：如果 `nums1[0] == nums2[i]`，`dp[0][i] = 1`。如果 `nums2[0] == nums1[i]`，`dp[i][0] = 1`
 - 遍历顺序：i 和 j 都从 0 开始，谁在外层都可以
@@ -6628,13 +6585,236 @@ class Solution {
 }
 ```
 
-## 最长公共子序列
+### 最长公共子序列 #中等 #rep
 
-|     | a   | b   | c   | d   | e   |
-| --- | --- | --- | --- | --- | --- |
-| a   | 1   | 1   | 1   | 1   | 1   |
-| c   | 1   | 1   | 2   | 2   | 2   |
-| e   | 1   | 1   |     |     |     |
+[1143. 最长公共子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-common-subsequence/description/)
+
+分析：
+- 本题和 最长重复子数组 区别在于这里**不要求是连续**的了，但要有相对顺序
+
+dp：
+- `dp[i][j]`：长度为 `[0, i]` 的字符串 text1 与长度为 `[0, j - 1]` 的字符串 text2 的最长公共子序列为 `dp[i][j]`
+- 递推公式：
+	- 如果 `text1[i]` 与 `text2[j]` 相同，那么找到了一个公共元素，所以 `dp[i][j] = dp[i - 1][j - 1] + 1`;
+	- 如果 `text1[i]` 与 `text2[j]` 不相同，那就看看 `text1[0, i - 1]` 与 `text2[0, j]` 的最长公共子序列 和 `text1[0, i]` 与 `text2[0, j - 1]` 的最长公共子序列，取最大的。即：`dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])`
+- 初始化：`dp[0][i]` 和 `dp[i][0]`，看代码
+- 遍历顺序：从递推公式，可以看出，有三个方向可以推出 `dp[i][j]`，i 和 j 从 1 开始从小到大遍历，谁在外层都可以
+
+![300](assets/Pasted%20image%2020240622161956.png)
+
+|     | a   | b   | c   | d   | e     |
+| --- | --- | --- | --- | --- | ----- |
+| a   | 1   | 1   | 1   | 1   | 1     |
+| c   | 1   | 1   | 2   | 2   | 2     |
+| e   | 1   | 1   | 2   | 2   | ==3== |
+
+```java
+public int longestCommonSubsequence(String text1, String text2) {
+	char[] chars1 = text1.toCharArray();
+	char[] chars2 = text2.toCharArray();
+	int[][] dp = new int[chars1.length][chars2.length];
+	// 初始化
+	for (int i = 0, v = 0; i < chars2.length; i++) {
+		if (chars1[0] == chars2[i]) {
+			v = 1;
+		}
+		dp[0][i] = v;
+	}
+	for (int i = 0, v = 0; i < chars1.length; i++) {
+		if (chars1[i] == chars2[0]) {
+			v = 1;
+		}
+		dp[i][0] = v;
+	}
+	// 递推
+	for (int i = 1; i < chars1.length; i++) {
+		for (int j = 1; j < chars2.length; j++) {
+			if (chars1[i] == chars2[j]) {
+				dp[i][j] = dp[i - 1][j - 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			}
+		}
+	}
+	return dp[chars1.length - 1][chars2.length - 1];
+}
+```
+
+### 不相交的线 #中等 #rep
+ 
+[1035. 不相交的线 - 力扣（LeetCode）](https://leetcode.cn/problems/uncrossed-lines/description/)
+
+分析：
+- 本题说是求绘制的最大连线数，其实就是求两个字符串的最长公共子序列的长度！那么和 最长公共子序列 是一样的
+
+```java
+public int maxUncrossedLines(int[] nums1, int[] nums2) {
+	int[][] dp = new int[nums1.length][nums2.length];
+	// 初始化
+	for (int i = 0; i < nums2.length; i++) {
+		if (nums1[0] == nums2[i]) {
+			dp[0][i] = 1;
+			for (int j = i + 1; j < nums2.length; j++) {
+				dp[0][j] = 1;
+			}
+			break;
+		}
+	}
+	for (int i = 0; i < nums1.length; i++) {
+		if (nums1[i] == nums2[0]) {
+			dp[i][0] = 1;
+			for (int j = i + 1; j < nums1.length; j++) {
+				dp[j][0] = 1;
+			}
+			break;
+		}
+	}
+	// 递推
+	for (int i = 1; i < nums1.length; i++) {
+		for (int j = 1; j < nums2.length; j++) {
+			if (nums1[i] == nums2[j]) {
+				dp[i][j] = dp[i - 1][j - 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			}
+		}
+	}
+	return dp[nums1.length - 1][nums2.length - 1];
+}
+```
+
+### 最大子数组和 #中等 #手撕
+
+[53. 最大子数组和 - 力扣（LeetCode）](https://leetcode.cn/problems/maximum-subarray/description/)
+
+1）动态规划 ✔
+
+dp 五部曲：
+- ` dp[i]`：包括下标 i（以 `nums[i]` 为结尾）的最大连续子序列和为 `dp[i]`
+- 递推公式：`dp[i] = max(dp[i - 1] + nums[i], nums[i])`
+- 初始化：`dp[0] = nums[0]`
+- 遍历顺序：i从1开始从小到大遍历
+- 模拟：返回 dp 数组最大值
+
+```java
+public int maxSubArray(int[] nums) {
+	int[] dp = new int[nums.length];
+	dp[0] = nums[0];
+	int res = nums[0];
+	for (int i = 1; i < nums.length; i++) {
+		dp[i] = Math.max(nums[i], nums[i] + dp[i - 1]);
+		res = Math.max(res, dp[i]);
+	}
+	return res;
+}
+```
+
+2）贪心
+
+分析：
+- 局部最优：**当前“连续和”为负数的时候立刻放弃，从下一个元素重新计算“连续和”**，因为负数加上下一个元素 “连续和”只会越来越小。
+- 全局最优：选取最大“连续和”
+
+```java
+public int maxSubArray(int[] nums) {
+	// 不能排序
+	int res = nums[0];
+	int temp = 0;
+	for (int i = 0; i < nums.length; i++) {
+		temp = nums[i] + temp;
+		res = Math.max(res, temp);
+		if (temp < 0) {
+			temp = 0;
+			continue;
+		}
+	}
+	return res;
+}
+```
+
+### 判断子序列 #rep
+
+[392. 判断子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/is-subsequence/description/)
+
+1）双指针 ✔
+
+分析：为什么本题可以用双指针？因为求的不是最长、最多、最大，仅仅是判断
+
+```java
+public boolean isSubsequence(String s, String t) {
+	if (s.length() == 0) {
+		return true;
+	}
+	if (s.length() > t.length()) {
+		return false;
+	}
+	for (int l = 0, r = 0; r < t.length(); r++) {
+		if (s.charAt(l) == t.charAt(r) && ++l == s.length()) {
+			return true;
+		}
+	}
+	return false;
+}
+```
+
+2）dp
+
+分析：可以照搬最长公共子序列，返回的结果是 `dp[chars1.length - 1][chars2.length - 1] == s.length()`
+
+```java
+public boolean isSubsequence(String s, String t) {
+	if (s.length() == 0) {
+		return true;
+	}
+	if (s.length() > t.length()) {
+		return false;
+	}
+	char[] chars1 = s.toCharArray();
+	char[] chars2 = t.toCharArray();
+	int[][] dp = new int[chars1.length][chars2.length];
+	// 初始化
+	for (int i = 0, j = 0; i < chars2.length; i++) {
+		if (chars1[0] == chars2[i]) {
+			j = 1;
+		}
+		dp[0][i] = j;
+	}
+	for (int i = 0, j = 0; i < chars1.length; i++) {
+		if (chars1[i] == chars2[0]) {
+			j = 1;
+		}
+		dp[i][0] = j;
+	}
+	// 递推
+	for (int i = 1; i < chars1.length; i++) {
+		for (int j = 1; j < chars2.length; j++) {
+			if (chars1[i] == chars2[j]) {
+				dp[i][j] = dp[i - 1][j - 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			}
+		}
+	}
+	return dp[chars1.length - 1][chars2.length - 1] == s.length();
+}
+```
+
+## 不同的子序列 #困难 
+
+|     | a   | b   | c   | d   | e   | e   |
+| --- | --- | --- | --- | --- | --- | --- |
+| a   | 1   | 1   | 1   | 1   | 1   | 1   |
+| c   | 1   | 1   | 2   | 2   | 2   | 2   |
+| e   | 1   | 1   | 2   | 2   | 3   | 3   |
+
+|     | r   | a   | b   | b   | b   | i   | t   |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| r   | 1   | 1   | 1   | 1   | 1   | 1   | 1   |
+| a   | 1   | 2   | 2   | 2   | 2   | 2   | 2   |
+| b   | 1   | 2   | 3   | 3   | 3   | 3   | 3   |
+| b   | 1   | 2   | 3   | 4   | 4   | 4   | 4   |
+| i   | 1   | 2   | 3   | 4   | 4   | 5   | 5   |
+| t   | 1   | 2   | 3   | 4   | 4   | 5   | 6   |
 
 
 ## 回文子串 #中等 #rep
