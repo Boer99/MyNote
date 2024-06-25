@@ -6799,9 +6799,19 @@ public boolean isSubsequence(String s, String t) {
 }
 ```
 
-## 不同的子序列 #困难 
 
+### 不同的子序列 #困难 
 
+[115. 不同的子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/distinct-subsequences/)
+
+dp五部曲：
+- 定义：以 j 为结尾的 s 子序列中出现以 i 为结尾的 t 的个数为 `dp[i][j]`
+- 递推公式：
+	- 当`s[j]` 与 `t[i]` 相等时，`dp[i][j] = dp[i - 1][j - 1] + dp[i - 1][j]`
+		- 例如： `s：bagg` 和 `t：bag` ，`s[3]` 和 `t[2]` 是相同的，但是字符串 s 也可以不用 `s[3]` 来匹配，即用 `s[0]s[1]s[2]` 组成的 bag。
+	- 当`s[i - 1]` 与 `t[j - 1]`不相等时，`dp[i][j] = dp[i - 1][j]`
+- 初始化：初始化 `dp[0][j]`即可，见代码
+- 遍历顺序：这里外层 i 遍历 t，内层 j 遍历 s，其实 j 从 i 开始遍历即可
 
 |     | r   | a   | b   | b   | b   | i   | t   |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -6812,14 +6822,38 @@ public boolean isSubsequence(String s, String t) {
 | i   | 0   | 0   | 0   | 0   | 0   | 3   | 3   |
 | t   | 0   | 0   | 0   | 0   | 0   | 0   | 3   |
 
-
 |     | b   | a   | b   | g   | b   | a   | g   |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | b   | 1   | 1   | 2   | 2   | 3   | 3   | 3   |
 | a   | 0   | 1   | 1   | 1   | 1   | 4   | 4   |
 | g   | 0   | 0   | 0   | 1   | 1   | 1   | 5   |
 
-
+```java
+public int numDistinct(String s, String t) {
+	if (s.length() < t.length()) {
+		return 0;
+	}
+	int[][] dp = new int[t.length()][s.length()];
+	// 初始化
+	for (int i = 0, v = 0; i < s.length(); i++) {
+		if (t.charAt(0) == s.charAt(i)) {
+			v++;
+		}
+		dp[0][i] = v;
+	}
+	// 递推
+	for (int i = 1; i < t.length(); i++) {
+		for (int j = i; j < s.length(); j++) {
+			if (t.charAt(i) == s.charAt(j)) {
+				dp[i][j] = dp[i - 1][j - 1] + dp[i][j - 1];
+			} else {
+				dp[i][j] = dp[i][j - 1];
+			}
+		}
+	}
+	return dp[t.length() - 1][s.length() - 1];
+}
+```
 
 
 ## 回文子串 #中等 #rep
