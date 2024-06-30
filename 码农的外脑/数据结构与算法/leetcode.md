@@ -1,9 +1,15 @@
 
 > 参考：
-> 
-> 代码随想录 https://programmercarl.com/
+> - 代码随想录 https://programmercarl.com/
+> - leetcode 题解
+> - 牛客面经收集题目
 
-# ---------- 大厂高频算法题收集
+# 经验
+
+- 字符串尽量转换为 char 数组操作，String 类的方法很容易弄错
+- dp 五部曲寻找递归的最好方式就是模拟 dp 数组
+
+# 大厂手撕收集
 
 未知：
 - 链表实现栈
@@ -14,39 +20,33 @@
 - 有向无环图，找 A 到 B 的最短路径
 - 力扣 440 [字典序的第K小数字](https://leetcode.cn/problems/k-th-smallest-in-lexicographical-order/)
 - 比 n 大的最小回文数
-- [5. 最长回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-palindromic-substring/description/) #携程
 - 实现一个 ArrayList
 - 字符串数组的最大公共前缀并给出时空复杂度
 - ipv4 地址编码、解码 #携程
 	- 编码: 将 `ipv4` 使用一个 `int` 类型存储
 	- 解码: `int` 类型解码为 `ipv4` 地址
 
-## 数组
-
-- [合并两个有序数组](#合并两个有序数组)（2） #repeat
-- [有序数组中的单一元素](#有序数组中的单一元素)（1） #repeat 
-- [寻找峰值](#寻找峰值)（1） #repeat 
+数组
 - [搜索旋转排序数组](https://leetcode.cn/problems/search-in-rotated-sorted-array/)（1）
 
-## 链表
-
+链表
 - [反转链表](#反转链表)（2） #repeat （不允许递归 #携程 ）
 - [K 个一组翻转链表](#K%20个一组翻转链表)（2+） #repeat 
 - [环形链表 II](#环形链表%20II)（3） #repeat 
 - [删除链表的倒数第N个节点](#删除链表的倒数第N个节点)（1） 
 - 链表交叉重排
 
-## 树
-
+树
 - [二叉树的右视图](#二叉树的右视图)（1）
 - 给定数组，判断其是否可能是二叉搜索树的后序遍历序列
 - leetcode 124.二叉树的最大路径和
 - 二叉树展开为链表 
 - [验证二叉树的前序序列化](https://leetcode.cn/problems/verify-preorder-serialization-of-a-binary-tree/)
 
-## 回溯
-
+回溯
 - 八皇后问题
+
+DP
 - 最长不重复子串
 - 最大连续子数组的和
 
@@ -54,7 +54,8 @@
 # 数组
 
 ## ---------- 归并
-## 合并两个有序数组
+
+## 合并两个有序数组 #手撕2 #rep
 
 [88. 合并两个有序数组 - 力扣（LeetCode）](https://leetcode.cn/problems/merge-sorted-array/)
 
@@ -123,7 +124,7 @@ public int search(int[] nums, int tg) {
 > 
 > 空间：`O(1)`
 
-## 有序数组中的单一元素
+## 有序数组中的单一元素 #手撕 #rep
 
 [540. 有序数组中的单一元素 - 力扣（LeetCode）](https://leetcode.cn/problems/single-element-in-a-sorted-array/description/)
 
@@ -158,7 +159,7 @@ class Solution {
 }
 ```
 
-## 寻找峰值
+## 寻找峰值 #手撕 #rep
 
 [162. 寻找峰值 - 力扣（LeetCode）](https://leetcode.cn/problems/find-peak-element/description/)
 
@@ -6485,7 +6486,9 @@ dp：
 
 |         | 10  | 9   | 2   | 5   | 3   | 7   | 101 | 18  |
 | ------- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `dp[i]` | 1   | 1   | 1   | 2   |     |     |     |     |
+| `dp[i]` | 1   | 1   | 1   | 2   | 2   | 3   | 4   | 4   |
+
+> 本题 `dp[i]` 如果定义为0-i 的序列包含的最长递增子序列的长度，那么 `dp[i]` 和之前的状态没有直接关系，找不出递推公式
 
 ```java
 class Solution {
@@ -6510,7 +6513,7 @@ class Solution {
 
 ### 最长连续递增序列 
 
-https://leetcode.cn/problems/longest-continuous-increasing-subsequence/
+[674. 最长连续递增序列 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-continuous-increasing-subsequence/description/)
 
 ```java
 class Solution {
@@ -6800,7 +6803,7 @@ public boolean isSubsequence(String s, String t) {
 ```
 
 
-### 不同的子序列 #困难 
+### 不同的子序列 #困难 #rep
 
 [115. 不同的子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/distinct-subsequences/)
 
@@ -6855,114 +6858,252 @@ public int numDistinct(String s, String t) {
 }
 ```
 
+### 两个字符串的删除操作 #中等
+
+[583. 两个字符串的删除操作 - 力扣（LeetCode）](https://leetcode.cn/problems/delete-operation-for-two-strings/description/)
+
+分析：同最长公共子序列
+
+```java
+public int minDistance(String word1, String word2) {
+	char[] chars1 = word1.toCharArray();
+	char[] chars2 = word2.toCharArray();
+	int[][] dp = new int[chars1.length][chars2.length];
+	// 初始化
+	for (int i = 0, v = 0; i < chars2.length; i++) {
+		if (chars1[0] == chars2[i]) {
+			v = 1;
+		}
+		dp[0][i] = v;
+	}
+	for (int i = 0, v = 0; i < chars1.length; i++) {
+		if (chars1[i] == chars2[0]) {
+			v = 1;
+		}
+		dp[i][0] = v;
+	}
+	// 递推
+	for (int i = 1; i < chars1.length; i++) {
+		for (int j = 1; j < chars2.length; j++) {
+			if (chars1[i] == chars2[j]) {
+				dp[i][j] = dp[i - 1][j - 1] + 1;
+			} else {
+				dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			}
+		}
+	}
+	return chars1.length + chars2.length - 2 * dp[chars1.length - 1][chars2.length - 1];
+}
+```
+
+### 编辑距离 #中等 #rep 
+
+[72. 编辑距离 - 力扣（LeetCode）](https://leetcode.cn/problems/edit-distance/description/)
+
+1）版本一：
+
+dp 五部曲
+- 定义：`dp[i][j]` 表示以下标 i-1为结尾的字符串 word1，和以下标 j-1为结尾的字符串 word2，最近编辑距离为 `dp[i][j]`
+	- 本题没用 i 和 j 作为结尾，因为**初始化很麻烦**
+- 递推公式：
+	- `if (word1[i - 1] == word2[j - 1])` 那么说明不用任何编辑，`dp[i][j]` 就应该是 `dp[i - 1][j - 1]`
+	- `if (word1[i - 1] != word2[j - 1])`，取下面三种情况的最大值
+		- 操作一：word1 删除一个元素，那么就是以下标 i - 2为结尾的 word1 与 j-1为结尾的 word2的最近编辑距离 再加上一个操作，即 `dp[i][j] = dp[i - 1][j] + 1;`
+		- 操作二：word2 删除一个元素，那么就是以下标 i - 1 为结尾的 word1 与 j-2 为结尾的 word2 的最近编辑距离 再加上一个操作，即 `dp[i][j] = dp[i][j - 1] + 1;`
+		- 操作三：替换元素，`word1` 替换 `word1[i - 1]`，使其与 `word2[j - 1]` 相同，所以 `dp[i][j] = dp[i - 1][j - 1] + 1;`
+- 初始化：
+- 遍历顺序：`dp[i][0] = i`，即下标 i-1 为结尾的字符串 word1，和空字符串 word2，最近编辑距离为 i，同理 `dp[0][j] = j;`
+
+> 添加元素等价于删除元素，word1 添加一个元素相当于 word2 删除一个元素，word2 添加一个元素，相当于 word1 删除一个元素
+
+|     |     | h   | o   | r   | s   | e   |
+| --- | --- | --- | --- | --- | --- | --- |
+|     | 0   | 1   | 2   | 3   | 4   | 5   |
+| r   | 1   | 1   | 2   | 2   | 3   | 4   |
+| o   | 2   | 2   | 1   | 2   | 3   | 4   |
+| s   | 3   | 3   | 2   | 2   | 2   | 3   |
+
+```java
+public static int minDistance2(String word1, String word2) {
+	int m = word1.length();
+	int n = word2.length();
+	int[][] dp = new int[m + 1][n + 1];
+	// 初始化
+	for (int i = 1; i <= m; i++) {
+		dp[i][0] = i;
+	}
+	for (int j = 1; j <= n; j++) {
+		dp[0][j] = j;
+	}
+	// 递推
+	for (int i = 1; i <= m; i++) {
+		for (int j = 1; j <= n; j++) {
+			if (word1.charAt(i - 1) == word2.charAt(j - 1)) {
+				dp[i][j] = dp[i - 1][j - 1];
+			} else {
+				dp[i][j] = Math.min(Math.min(dp[i - 1][j - 1], dp[i][j - 1]), dp[i - 1][j]) + 1;
+			}
+		}
+	}
+	return dp[m][n];
+}
+```
+
+2）`dp[i][j]` 表示以下标 i 为结尾的字符串 word1 和以下标 j 为结尾的字符串 word2 的最近编辑距离，**初始化很麻烦**
+
+以 u，aauu 为例，第一次 u 相等时 `dp[0][j]=dp[0][j-1]`，第二次 u 相等时 `dp[0][j]=dp[0][j-1]+1`，
+
+```java
+public int minDistance(String word1, String word2) {
+	if (word1.isEmpty()) {
+		return word2.length();
+	}
+	if (word2.isEmpty()) {
+		return word1.length();
+	}
+	char[] chars1 = word1.toCharArray();
+	char[] chars2 = word2.toCharArray();
+	int[][] dp = new int[chars1.length][chars2.length];
+	// 初始化
+	int count = 0;
+	if (chars1[0] != chars2[0]) {
+		dp[0][0] = 1;
+	} else {
+		count++;
+	}
+	for (int j = 1, count1 = count; j < chars2.length; j++) {
+		if (chars1[0] == chars2[j]) {
+			if (count1 == 0) {
+				dp[0][j] = dp[0][j - 1];
+				count1++;
+				continue;
+			}
+		}
+		dp[0][j] = dp[0][j - 1] + 1;
+	}
+	for (int i = 1, count2 = count; i < chars1.length; i++) {
+		if (chars1[i] == chars2[0]) {
+			if (count2 == 0) {
+				dp[i][0] = dp[i - 1][0];
+				count2++;
+				continue;
+			}
+		}
+		dp[i][0] = dp[i - 1][0] + 1;
+	}
+	// 递推
+	for (int i = 1; i < chars1.length; i++) {
+		for (int j = 1; j < chars2.length; j++) {
+			if (chars1[i] == chars2[j]) {
+				dp[i][j] = dp[i - 1][j - 1];
+			} else {
+				int temp = Math.min(dp[i - 1][j], dp[i][j - 1]); // 删除的最小操作数
+				dp[i][j] = Math.min(dp[i - 1][j - 1], temp) + 1;
+			}
+		}
+	}
+	return dp[chars1.length - 1][chars2.length - 1];
+}
+```
+
 
 ## 回文子串 #中等 #rep
 
 [647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) 
 
-给你一个字符串 `s` ，请你统计并返回这个字符串中 **回文子串** 的数目。
+分析：
+- 暴力解法：两层 for 循环，遍历区间起始位置和终止位置，然后还需要一层遍历判断这个区间是不是回文。所以时间复杂度：`O(n^3)`
 
-- **回文字符串** 是正着读和倒过来读一样的字符串。
-- **子字符串** 是字符串中的由连续字符组成的一个序列。
+2）动态规划：
 
-具有不同开始位置或结束位置的子串，即使是由相同的字符组成，也会被视作不同的子串。
+分析：
+- 本题如果定义 `dp[i]` 为 下标 i 结尾的字符串有 `dp[i]` 个回文串的话，我们会发现很难找到递归关系。因为 `dp[i]` 和 `dp[i-1]`，`dp[i + 1]` 看上去都没啥关系
+- 判断一个子字符串（字符串的下标范围 `[i,j]`）是否回文，依赖于，子字符串（下表范围 `[i + 1, j - 1]`） 是否是回文
 
-> 示例：
-> - 输入: `s = "abc"`
-> - 输出：`3`
-> - 解释：`三个回文子串: "a", "b", "c"`
+![400](assets/Pasted%20image%2020240629123021.png)
 
----
+dp：
+- `dp[i][j]`：表示区间范围 `[i,j]` 的子串是否是回文子串，如果是 `dp[i][j]` 为 true，否则为 false。
+- 递推公式：
+	- 当 `s[i] != s[j]`，`dp[i][j]` 一定是 false
+	- 当 `s[i] == s[j]`
+		- 下标 i 与 j 相同或相差为 1：是回文子串，例如 a、aa
+		- 下标 i 与 j 相差大于 1：和 `dp[i + 1][j - 1]` 相同
+- 初始化：不需要特别初始化，默认都是 false
+- 遍历顺序：需要由 `dp[i + 1][j - 1]` 推出 `dp[i][j]`，`dp[i + 1][j - 1]` 在 `dp[i][j]` 的左下角。从下到上，从左到右遍历。遍历区域为主对角线及其上半部分即可
 
-动态规划：
-
-*1）确定 dp 数组以及下标的含义*
-
-`boolean[][] dp[i][j]`：表示区间范围 `[i,j]` 的子串是否是回文子串，如果是 `dp[i][j]` 为 true，否则为 false。
-
-*2）确定递推公式*
-
-当 `s[i] != s[j]`，`dp[i][j]` 一定是 false
-
-当 `s[i] == s[j]`
-
-1. 下标 i 与 j 相同或相差为 1：是回文子串，例如 a、aa
-2. 下标 i 与 j 相差大于 1：`dp[i + 1][j - 1]` 为 true，则 `dp[i][j]=true`，否则 `dp[i][j]=false`
-
-*3）`dp[i][j]` 初始化为 false*
-
-*4）确定遍历顺序*
-
-需要由 `dp[i + 1][j - 1]` 推出 `dp[i][j]`，`dp[i + 1][j - 1]` 在 `dp[i][j]` 的左下角。
-
-- 从下到上，从左到右遍历
-
-只有 `i<=j` 才有意义，所以遍历区域为主对角线及其上半部分
-
-*5）以“aaa”为例*
-
-![400](assets/Pasted%20image%2020240414174949.png)
+|     | c   | b   | a   | b   | c   |
+| --- | --- | --- | --- | --- | --- |
+| c   | t   | f   | f   | f   | t   |
+| b   |     | t   | f   | t   | f   |
+| a   |     |     | t   | f   | f   |
+| b   |     |     |     | t   | f   |
+| c   |     |     |     |     | t   |
 
 ```java
-class Solution {
-    public int countSubstrings(String s) {
-        int res = 0;
-        int len = s.length();
-        boolean[][] dp = new boolean[len][len];
-        for (int i = len - 1; i >= 0; i--) {
-            for (int j = i; j <= len - 1; j++) {
-                if (s.charAt(i) == s.charAt(j)) {
-                    if (j - i <= 1) {
-                        res++;
-                        dp[i][j] = true;
-                    } else if (dp[i + 1][j - 1]) {
-                        res++;
-                        dp[i][j] = true;
-                    }
-                }
-            }
-        }
-        return res;
-    }
+public int countSubstrings(String s) {
+	int res = 0;
+	char[] chars = s.toCharArray();
+	int len = chars.length;
+	boolean[][] dp = new boolean[len][len];
+	for (int i = len - 1; i >= 0; i--) {
+		for (int j = i; j < len; j++) {
+			if (chars[i] == chars[j]) {
+				if (j - i <= 1) {
+					dp[i][j] = true;
+				} else {
+					dp[i][j] = dp[i + 1][j - 1];
+				}
+			}
+			if (dp[i][j]) {
+				res++;
+			}
+		}
+	}
+	return res;
 }
 ```
 
-## 最长回文子串
+## 最长回文子串 #中等 #手撕 #rep
 
-给你一个字符串 s，找到 s 中最长的回文子串
+分析：
+- 本题和回文子串的思路相似
 
-如果字符串的反序与原始字符串相同，则该字符串称为回文字符串。
+dp 五部曲：
+- `dp[i][j]`：字符串 s 在 `[i, j]` 范围内最长的回文子序列的长度
+- 递推公式：
+	- `s[i]` 与 `s[j]` 相同，`dp[i][j] = dp[i + 1][j - 1] + 2`
+	- `s[i]` 与 `s[j]` 不相同，`dp[i][j] = max(dp[i + 1][j], dp[i][j - 1])`
+- 初始化：对角线为 1，其他为 0
+- 遍历顺序：对角线以上，从下到上，从左到右
+- **返回值**：`dp[0][len-1]`
 
-> 示例：
-> - 输入: `s = "babad"`
-> - 输出：`"bab"`
-> - 解释："`aba"` 同样是符合题意的答案
-
----
-
-思路同 回文子串
+|     | b   | b   | b   | a   | b   |
+| --- | --- | --- | --- | --- | --- |
+| b   | 1   | 2   | 3   | 3   | 4   |
+| b   |     | 1   | 2   | 2   | 3   |
+| b   |     |     | 1   | 1   | 3   |
+| a   |     |     |     | 1   | 1   |
+| b   |     |     |     |     | 1   |
 
 ```java
-class Solution {
-    public String longestPalindrome(String s) {
-        int len = s.length();
-        int left = 0, right = 0;
-        boolean[][] dp = new boolean[len][len];
-        for (int i = len - 1; i >= 0; i--) {
-            for (int j = i; j <= len - 1; j++) {
-                if (s.charAt(i) == s.charAt(j)) {
-                    if (j - i <= 1 || dp[i + 1][j - 1]) {
-                        dp[i][j] = true;
-                        if (j - i + 1 > right - left + 1) {
-                            left = i;
-                            right = j;
-                        }
-                    }
-                }
-            }
-        }
-        return s.substring(left, right + 1);
-    }
+public int longestPalindromeSubseq(String s) {
+	char[] chars = s.toCharArray();
+	int[][] dp = new int[chars.length][chars.length];
+	for (int i = chars.length - 1; i >= 0; i--) {
+		for (int j = i; j < chars.length; j++) {
+			if (j == i) {
+				dp[i][j] = 1;
+				continue;
+			}
+			if (chars[i] == chars[j]) {
+				dp[i][j] = dp[i + 1][j - 1] + 2;
+			} else {
+				dp[i][j] = Math.max(dp[i + 1][j], dp[i][j - 1]);
+			}
+		}
+	}
+	return dp[0][chars.length - 1];
 }
 ```
 
