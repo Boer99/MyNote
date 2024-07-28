@@ -1,6 +1,6 @@
 /码农的外脑/.obsidian/
 
-*.pdf
+#*.pdf
 *.java
 *.txt
 *.xml
