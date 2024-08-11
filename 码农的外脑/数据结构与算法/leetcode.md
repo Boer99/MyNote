@@ -9,7 +9,7 @@
 - 字符串尽量转换为 char 数组操作，String 类的方法很容易弄错
 - dp 五部曲寻找递归的最好方式就是模拟 dp 数组
 - 数学公式：
-	- 概率论：c（组合）、p（排列）
+	- 概率：组合：$C_{n}^{m}=\frac{n!}{m!(n-m)!}$ ，排列：$P_{n}^{m}=\frac{n!}{(n-m)!}$
 
 # 大厂手撕收集
 
@@ -30,9 +30,7 @@
 
 树
 - 给定数组，判断其是否可能是二叉搜索树的后序遍历序列
-- leetcode 124.二叉树的最大路径和
 - 二叉树展开为链表 
-- [验证二叉树的前序序列化](https://leetcode.cn/problems/verify-preorder-serialization-of-a-binary-tree/)
 
 回溯
 - 八皇后问题
@@ -1983,8 +1981,26 @@ public class Main {
 
 # 栈与队列
 
-队列相关的实现类：
+栈和队列相关的实现类：
 ![](assets/Pasted%20image%2020240406171506.png)
+
+Java 中的 LinkedList 是采用双向循环列表实现的，利用 LinkedList 可以实现栈（stack）、队列（queue）、双向队列（double-ended queue）
+
+统一使用带 First/Last 后缀的方法
+- addFirst/Last
+- removeFirst/Last
+- peekFirst/Last
+- offerFirst/Last
+- pollFirst/Last
+- isEmpty
+- `get(int index)`
+
+```ad-tip
+`add()` 和 `offer()` 的区别在于，有容量限制的时候，add 会抛出异常，offer 可以根据返回值判断是否添加元素成功。remove 和 poll 同理
+
+大多数情况用 Deque 类型变量接收即可，某些情况下使用 LinkedList 类型变量接收（例如根据索引获取元素，需要用到从List接口继承的方法）
+```
+
 
 ## 用栈实现队列 #手撕
 
@@ -2308,21 +2324,37 @@ public int[] maxSlidingWindow(int[] nums, int k) {
 
 ## 补：前K个高频元素 #todo
 
-> 给你一个整数数组 `nums` 和一个整数 `k` ，请你返回其中出现频率前 `k` 高的元素。你可以按 **任意顺序** 返回答案。
->  
-> **示例 1:**
-> - **输入:** nums = [1,1,1,2,2,3], k = 2
-> - **输出:** [1,2]
->  
-> **说明：**
-> - `1 <= nums.length <= 105`
-> - `k` 的取值范围是 `[1, 数组中不相同的元素的个数]`
-> - 题目数据保证答案唯一，换句话说，数组中前 `k` 个高频元素的集合是唯一的
-> 
-> [347. 前 K 个高频元素 - 力扣（LeetCode）](https://leetcode.cn/problems/top-k-frequent-elements/description/)
+[347. 前 K 个高频元素 - 力扣（LeetCode）](https://leetcode.cn/problems/top-k-frequent-elements/description/)
+
+## 验证二叉树的前序序列化 #中等 #手撕 #rep
+
+[331. 验证二叉树的前序序列化 - 力扣（LeetCode）](https://leetcode.cn/problems/verify-preorder-serialization-of-a-binary-tree/description/)
+
+思路：
+
+前序遍历」是按照「根节点-左子树-右子树」的顺序遍历的，只有当根节点的所有左子树遍历完成之后，才会遍历右子树。对于本题的输入，我们可以先判断「左子树」是否有效的，然后再判断「右子树」是否有效的，最后判断「根节点-左子树-右子树」是否为有效的
+
+**把有效的叶子节点使用 `"#"` 代替。** 比如把 `4##` 替换成 `#`，最后栈中只剩一个 `#` 说明这个前序序列的输入格式是有效的
 
 ```java
-
+class Solution {
+    public boolean isValidSerialization(String preorder) {
+        LinkedList<String> stack = new LinkedList<>();
+        for (String s : preorder.split(",")) {
+            stack.addFirst(s);
+            while (stack.size() >= 3
+                    && stack.get(0).equals("#")
+                    && stack.get(1).equals("#")
+                    && !stack.get(2).equals("#")) {
+                stack.removeFirst();
+                stack.removeFirst();
+                stack.removeFirst();
+                stack.addFirst("#");
+            }
+        }
+        return stack.size() == 1 && stack.peekFirst().equals("#");
+    }
+}
 ```
 
 
@@ -2377,9 +2409,9 @@ class Solution {
 }
 ```
 
-> 时间：`O(n)`
-> 
-> 空间：`O(n)` 队列
+时空复杂度分析：
+- 时间：`O(n)`
+- 空间：`O(n)` 队列
 
 #todo 参考 [删除二叉搜索树中的节点 (1)](#删除二叉搜索树中的节点%20(1))，用 list 解决
 
@@ -2549,7 +2581,7 @@ class Solution {
 
 <br>
 
-## 二叉树的迭代遍历(1)
+## 二叉树的迭代遍历 #rep
 
 **思想：模拟递归，递归调用就是入栈**
 
@@ -2760,7 +2792,7 @@ class Solution {
 --- 
 迭代 todo
 
-## 对称二叉树(1)
+## 对称二叉树 #rep
 
 >给你一个二叉树的根节点 `root` ， 检查它是否轴对称。
 > 
@@ -3110,23 +3142,11 @@ class Solution {
 
 todo
 
-## 找树左下角的值(1)
+## 找树左下角的值 #rep
 
-> 题目 [513. 找树左下角的值 - 力扣（LeetCode）](https://leetcode.cn/problems/find-bottom-left-tree-value/description/)
+[513. 找树左下角的值 - 力扣（LeetCode）](https://leetcode.cn/problems/find-bottom-left-tree-value/description/)
 
-给定一个二叉树的 **根节点** `root`，请找出该二叉树的 **最底层 最左边** 节点的值。
-
-假设二叉树中至少有一个节点。
-
-示例：
-- 输入: `root = [2,1,3] `
-- 输出: 1
- 
-说明：
-- 二叉树的节点个数的范围是 `[1,10^4]`
-- `-2^31 <= Node.val <= 2^31 - 1`
-
-> 思路一：递归
+思路一：递归
 
 先序。先递归左子树以及 `depth > maxDepth` 能够确保同一层获取的是最左边的节点值。
 ```java
@@ -3160,27 +3180,12 @@ class Solution {
 
 > 思路二：迭代
 
-todo
+#todo
 
 ## 路径总和
 
-> 题目 [513. 找树左下角的值 - 力扣（LeetCode）](https://leetcode.cn/problems/find-bottom-left-tree-value/description/)
+[112. 路径总和 - 力扣（LeetCode）](https://leetcode.cn/problems/path-sum/description/)
 
-给你二叉树的根节点 `root` 和一个表示目标和的整数 `targetSum` 。判断该树中是否存在 **根节点到叶子节点** 的路径，这条路径上所有节点值相加等于目标和 `targetSum` 。如果存在，返回 `true` ；否则，返回 `false` 。
-
-**叶子节点** 是指没有子节点的节点。
-
-> 示例：
-> - 输入：`root = [5,4,8,11,null,13,4,7,2,null,null,null,1], targetSum = 22`
-> - 输出：`true`
-> - 解释：等于目标和的根节点到叶节点路径如上图所示。
->  
-> 说明：
-> - 树中节点的数目在范围 `[0, 5000]` 内
-> - `-1000 <= Node.val <= 1000`
-> - `-1000 <= targetSum <= 1000`
-
----
 先序简便写法。targetsum 每次减掉当前节点值，不用算当前 path 的总和
 
 ```java
@@ -3205,7 +3210,7 @@ class solution {
 
 #todo
 
-## 从中序与后序遍历序列构造二叉树(1)
+## 从中序与后序遍历序列构造二叉树 #rep
 
 > 题目 [106. 从中序与后序遍历序列构造二叉树 - 力扣（LeetCode）](https://leetcode.cn/problems/construct-binary-tree-from-inorder-and-postorder-traversal/description/)
 
@@ -3332,7 +3337,7 @@ class Solution {
 - 时间：`O(n)`
 - 空间：`O(log_2 n)` 递归调用栈
 
-## 合并二叉树(1)
+## 合并二叉树 #rep
 
 > 题目 [617. 合并二叉树 - 力扣（LeetCode）](https://leetcode.cn/problems/merge-two-binary-trees/description/)
 
@@ -3378,7 +3383,41 @@ class Solution {
 
 todo
 
+## 二叉树中的最大路径和 #困难 #手撕 #rep
+
+[124. 二叉树中的最大路径和 - 力扣（LeetCode）](https://leetcode.cn/problems/binary-tree-maximum-path-sum/description/)
+
+思路：
+- 每个子树中都有最大路径和，通过**后序遍历**获得所有子树的最大路径和，取最大值
+- 如何返回当前子树能向父节点“**提供**”的最大路径和？以下三种情况取最大值
+	- 从左子树网上 `root.val + dfs(root.left)`
+	- 从右子树网上 `root.val + dfs(root.right)`
+	- 子树提供不了收益，返回 0
+
+```java
+class Solution {
+    int res = Integer.MIN_VALUE;
+
+    public int maxPathSum(TreeNode root) {
+        traversal(root);
+        return res;
+    }
+
+    public int traversal(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = traversal(root.left);
+        int right = traversal(root.right);
+        res = Math.max(res, left + right + root.val);
+        int max = Math.max(root.val + left, root.val + right);
+        return max > 0 ? max : 0;
+    }
+}
+```
+
 ## ---------- 二叉搜索树
+
 ## 二叉搜索树中的搜索
 
 > 题目 [700. 二叉搜索树中的搜索 - 力扣（LeetCode）](https://leetcode.cn/problems/search-in-a-binary-search-tree/description/)
@@ -3421,7 +3460,7 @@ class Solution {
 
 todo
 
-## 验证二叉搜索树(1)
+## 验证二叉搜索树 #rep
 
 > 题目 [98. 验证二叉搜索树 - 力扣（LeetCode）](https://leetcode.cn/problems/validate-binary-search-tree/description/)
 
@@ -3527,7 +3566,7 @@ class Solution {
 
 Todo
 
-## 二叉搜索树中的众数 (1)
+## 二叉搜索树中的众数  #rep
 
 > [501. 二叉搜索树中的众数 - 力扣（LeetCode）](https://leetcode.cn/problems/find-mode-in-binary-search-tree/description/)
 
@@ -3682,7 +3721,7 @@ class Solution {
 - 时间：`O(n)`
 - 空间：`O(log_2 n)` 递归调用栈
 
-## 二叉树搜索树的最近公共祖先 (1)
+## 二叉树搜索树的最近公共祖先  #rep
 
 [501. 二叉搜索树中的众数 - 力扣（LeetCode）](https://leetcode.cn/problems/find-mode-in-binary-search-tree/description/)
 
@@ -3797,7 +3836,7 @@ Todo
 
 ```
 
-## 删除二叉搜索树中的节点 (1)
+## 删除二叉搜索树中的节点  #rep
 
 > 题目： [450. 删除二叉搜索树中的节点 - 力扣（LeetCode）](https://leetcode.cn/problems/delete-node-in-a-bst/description/)
 
@@ -3872,7 +3911,7 @@ Todo
 ```
 
 
-## 修建二叉搜索树(1)
+## 修建二叉搜索树 #rep
 
 > 题目： [669. 修剪二叉搜索树 - 力扣（LeetCode）](https://leetcode.cn/problems/trim-a-binary-search-tree/description/)
 
@@ -3893,7 +3932,7 @@ Todo
 
 ---
 【思路一：递归】
-- 不要收到 [修建二叉搜索树 (1)]( #修建二叉搜索树 %20 (1)) 的影响
+- 不要收到 [修建二叉搜索树  #rep]( #修建二叉搜索树 %20 (1)) 的影响
 - 利用二叉搜索树的特性
 - 前序
 
@@ -4038,7 +4077,7 @@ Todo
 
 ```
 
-## 补充：完全二叉树插入器 (1)
+## 补充：完全二叉树插入器  #rep
 
 > 题目：[919. 完全二叉树插入器 - 力扣（LeetCode）](https://leetcode.cn/problems/complete-binary-tree-inserter/description/)
 
@@ -4148,7 +4187,7 @@ void backtracking(参数) {
 
 **N 个数**里面按一定规则找出 **k 个数的集合**
 
-## 组合(1)
+## 组合 #rep
 
 > 题目：[77. 组合 - 力扣（LeetCode）](https://leetcode.cn/problems/combinations/)
 
@@ -4263,7 +4302,7 @@ class Solution {
 }
 ```
 
-## 电话号码的字母组合 (1)
+## 电话号码的字母组合  #rep
 
 [17. 电话号码的字母组合 - 力扣（LeetCode）](https://leetcode.cn/problems/letter-combinations-of-a-phone-number/description/)
 
@@ -4546,7 +4585,7 @@ class Solution {
 
 ## ---------- 分割
 
-## 分割回文串(1)
+## 分割回文串 #rep
 
 [40. 组合总和 II - 力扣（LeetCode）](https://leetcode.cn/problems/combination-sum-ii/description/)
 
@@ -4782,7 +4821,7 @@ class Solution {
 }
 ```
 
-## 非递减子序列 (1)
+## 非递减子序列  #rep
 
 [491. 非递减子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/non-decreasing-subsequences/description/)
 
@@ -5078,7 +5117,7 @@ class Solution {
 }
 ```
 
-## 摆动序列(1)
+## 摆动序列 #rep
 
 [376. 摆动序列 - 力扣（LeetCode）](https://leetcode.cn/problems/wiggle-subsequence/description/)
 
@@ -5138,7 +5177,7 @@ class Solution {
 动态规划 #todo
 
 
-## 跳跃游戏(1)
+## 跳跃游戏 #rep
 
 [55. 跳跃游戏 - 力扣（LeetCode）](https://leetcode.cn/problems/jump-game/description/)
 
@@ -5182,7 +5221,7 @@ class Solution {
 }
 ```
 
-## 跳跃游戏II(1)
+## 跳跃游戏II #rep
 
 [45. 跳跃游戏 II - 力扣（LeetCode）](https://leetcode.cn/problems/jump-game-ii/description/)
 
@@ -5232,7 +5271,7 @@ class Solution {
 }
 ```
 
-## K 次取反后最大化的数组和(1)
+## K 次取反后最大化的数组和 #rep
 
 给你一个整数数组 nums 和一个整数 k ，按以下方法修改该数组：
 
@@ -5285,7 +5324,7 @@ class Solution {
 }
 ```
 
-## 加油站(1)
+## 加油站 #rep
 
 > https://leetcode.cn/problems/gas-station/description/
 
@@ -5324,7 +5363,7 @@ class Solution {
 }
 ```
 
-## 分发糖果(1)
+## 分发糖果 #rep
 
 > [135. 分发糖果 - 力扣（LeetCode）](https://leetcode.cn/problems/candy/description/)
 
@@ -5429,7 +5468,7 @@ class Solution {
 }
 ```
 
-## 根据身高重建队列(1)
+## 根据身高重建队列 #rep
 
 > [406. 根据身高重建队列 - 力扣（LeetCode）](https://leetcode.cn/problems/queue-reconstruction-by-height/description/)
 
@@ -5476,7 +5515,7 @@ class Solution {
 }
 ```
 
-## 用最少数量的箭引爆气球(1)
+## 用最少数量的箭引爆气球 #rep
 
 > [452. 用最少数量的箭引爆气球 - 力扣（LeetCode）](https://leetcode.cn/problems/minimum-number-of-arrows-to-burst-balloons/description/)
 
@@ -5508,7 +5547,7 @@ public int findMinArrowShots(int[][] points) {
 }
 ```
 
-## 无重叠区间(1)
+## 无重叠区间 #rep
 
 > [435. 无重叠区间 - 力扣（LeetCode）](https://leetcode.cn/problems/non-overlapping-intervals/description/)
 
@@ -5536,7 +5575,7 @@ class Solution {
 }
 ```
 
-## 划分字母区间(1)
+## 划分字母区间 #rep
 
 > [划分字母区间](https://leetcode.cn/problems/partition-labels/)
 
@@ -5613,7 +5652,7 @@ class Solution {
 ```
 
 
-## 单调递增的数字(1)
+## 单调递增的数字 #rep
 
 [738. 单调递增的数字 - 力扣（LeetCode）](https://leetcode.cn/problems/monotone-increasing-digits/description/)
 
