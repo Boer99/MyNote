@@ -1,21 +1,19 @@
+```ad-summary
+参考：SpringCloud+RabbitMQ+Docker+Redis+搜索+分布式，系统详解springcloud微服务技术栈课（heima2021）
+```
 
-参考：
+# 导学
 
-- 尚硅谷 SpringCloud 框架开发教程 (SpringCloud Alibaba 微服务分布式架构丨 Spring Cloud)
-- 讲师：周阳
+微服务技术 > springcloud
 
-Boot 和 Cloud 课程使用版本选择
+微服务技术栈：
 
-- 上篇：
-	- SpringBoot：2.x
-	- Spring Cloud：H 版
-- 下篇：SpringCloud Alibaba
-	- SpringBoot: 2.2.2.release
-	- SpringCloud: Hoxton.SR1
-	- Cloud Alibaba: 2.1.0.release
-	- Java: Java8
-	- Maven: 3.5 及以上
-	- Mysql: 5.7 及以上
+![](assets/Pasted%20image%2020240812235104.png)
+
+学习路线：
+
+![](assets/Pasted%20image%2020240812235826.png)
+
 
 # ---------- 01_微服务介绍及工程搭建
 

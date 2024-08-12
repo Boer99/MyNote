@@ -30,7 +30,6 @@
 
 树
 - 给定数组，判断其是否可能是二叉搜索树的后序遍历序列
-- 二叉树展开为链表 
 
 回溯
 - 八皇后问题
@@ -3415,6 +3414,33 @@ class Solution {
     }
 }
 ```
+
+## 二叉树展开为链表 #中等 #手撕 
+
+思路：保证先序遍历的顺序，对于当前节点，把右子树拼到左子树的最右孩子下面，然后把左孩子变成右孩子，左指针置空
+
+```java
+class Solution {
+    public void flatten(TreeNode root) {
+        if (root == null) {
+            return;
+        }
+        if (root.left != null) {
+            // 找到左子树的最右孩子
+            TreeNode temp = root.left;
+            while (temp.right != null) {
+                temp = temp.right;
+            }
+            temp.right = root.right;
+            root.right = root.left;
+            root.left = null;
+        }
+        flatten(root.right);
+    }
+}
+```
+
+
 
 ## ---------- 二叉搜索树
 
