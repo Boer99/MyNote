@@ -2359,7 +2359,7 @@ class Solution {
 
 # 树
 
-递归模板!!！
+递归模板
 
 ```java
 T traversal(TreeNode root, ...){
@@ -2374,6 +2374,8 @@ T traversal(TreeNode root, ...){
 	return ;
 }
 ```
+
+前序 --> 子树的第一个节点是头节点，后序 --> 子树的最后一个节点是尾节点
 
 ## ---------- 层序遍历
 
@@ -4055,22 +4057,18 @@ Todo
 
 ## 把二叉搜索树转换为累加树
 
-> 题目： [538. 把二叉搜索树转换为累加树 - 力扣（LeetCode）](https://leetcode.cn/problems/convert-bst-to-greater-tree/description/)
+[538. 把二叉搜索树转换为累加树 - 力扣（LeetCode）](https://leetcode.cn/problems/convert-bst-to-greater-tree/description/)
 
+```ad-summary
 给出二叉 **搜索** 树的根节点，该树的节点值各不相同，请你将其转换为累加树（Greater Sum Tree），使每个节点 `node` 的新值等于原树中大于或等于 `node.val` 的值之和。
 
-> 示例：
-> - 输入：`[4,1,6,0,2,5,7,null,null,null,3,null,null,null,8]`
-> - 输出：`[30,36,21,36,35,26,15,null,null,null,33,null,null,null,8]`
->  
-> 说明：
-> - 树中的节点数介于 `0` 和 `10^4` 之间。
-> - 每个节点的值介于 `-10^4` 和 `10^4` 之间。
-> - 树中的所有值 **互不相同** 。
-> - 给定的树为二叉搜索树。
+示例：
+- 输入：`[4,1,6,0,2,5,7,null,null,null,3,null,null,null,8]`
+- 输出：`[30,36,21,36,35,26,15,null,null,null,33,null,null,null,8]`
+```
 
----
 【思路一：递归】
+
 - 逆中序：右中左
 
 ```java
@@ -4178,6 +4176,54 @@ class CBTInserter {
 复杂度分析：
 - 时间：`O(n)`
 - 空间：`O(n)`
+
+## 验证二叉搜索树的后序遍历序列 #中等 #手撕 
+
+[LCR 152. 验证二叉搜索树的后序遍历序列 - 力扣（LeetCode）](https://leetcode.cn/problems/er-cha-sou-suo-shu-de-hou-xu-bian-li-xu-lie-lcof/description/)
+
+```ad-summary
+请实现一个函数来判断整数数组 `postorder` 是否为二叉搜索树的后序遍历结果。
+
+**输入:** postorder = [4,9,6,5,8]
+**输出:** false 
+
+**输入:** postorder = [4,6,5,9,8]
+**输出:** true
+```
+
+递归分冶：
+
+- 划分左右子树： 遍历后序遍历的 [i,j] 区间元素，寻找 **第一个大于根节点 的节点**，索引记为 mid 。此时，可划分出左子树区间 [i,mid−1] 、右子树区间 [mid,j−1] 、根节点索引 j 。
+- 判断是否为二叉搜索树：
+	- 左子树区间内的所有节点都应 < postorder[j] 
+	- 右子树区间内的所有节点都应 > postorder[j] 
+- 递归遍历左子树区间和右子树区间
+
+```java
+class Solution {
+    public boolean verifyTreeOrder(int[] postorder) {
+        return verifyTreeOrder(postorder, 0, postorder.length - 1);
+    }
+
+    public boolean verifyTreeOrder(int[] postorder, int start, int end) {
+        if (start >= end) {
+            return true;
+        }
+        int mid = start;
+        while (mid < end && postorder[mid] < postorder[end]) {
+            mid++;
+        }
+        int temp = mid;
+        while (temp < end) {
+            if (postorder[end] > postorder[temp]) {
+                return false;
+            }
+            temp++;
+        }
+        return verifyTreeOrder(postorder, start, mid - 1) && verifyTreeOrder(postorder, mid, end-1);
+    }
+}
+```
 
 # 回溯
 
