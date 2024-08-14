@@ -14,144 +14,109 @@
 
 ![](assets/Pasted%20image%2020240812235826.png)
 
+# 认识微服务
 
-# ---------- 01_微服务介绍及工程搭建
+## 服务架构演变
 
-# SpringCloud 简介
+单体架构：将业务的所有功能集中在一个项目中开发，打成一个包部署
 
-SpringCloud 是分布式微服务架构的一站式解决方案，是多种微服务架构落地技术的集合体，俗称微服务全家桶
+- 优点：架构简单、部署成本低
+- 缺点：耦合度高
 
-各模块常用的技术支撑：
+分布式架构：根据业务功能对系统进行拆分，每个业务模块作为独立项目开发，称为一个服务
 
-- 服务注册与发现：eureka
-- 服务负载与调用：ribbon、feign
-- 服务熔断降级：hystrix
-- 服务网关：zuul
-- 服务分布式配置：Spring Cloud Config
-- 服务开发：SpringBoot
+- 优点：降低服务耦合、有利于服务升级拓展
+- 缺点：架构复杂，运维、监控、部署难度提高
+- 分布式架构的要考虑的问题：
+	- 服务拆分粒度如何?
+	- 服务集群地址如何维护?
+	- 服务之间如何实现远程调用?
+	- 服务健康状态如何感知?
 
-Cloud 各组件的停更/升级/替换
+微服务是一种经过良好架构设计的==分布式架构方案==，微服务架构特征：
 
-![img](assets/01_微服务介绍及工程搭建/1630904566825-e71eedb9-4525-49f9-b324-95b047ca5440.png)
+- 单一职责：微服务拆分粒度更小，每一个服务都对应唯一的业务能力，做到单一职责，避免重复业务开发
+- 面向服务：微服务对外暴露业务接口
+- 自治：团队独立、技术独立、数据独立、部署独立
+- 隔离性强：服务调用做好隔离、容错、降级，避免出现级联问题
 
-# SpringCloud Alibaba 简介
+微服务技术对比：
 
-> 学习资料的获取
-> 
-> - 官网： https://spring.io/projects/spring-cloud-alibaba#overview
-> - 英文：
-> 	- https://github.com/alibaba/spring-cloud-alibaba
-> 	- https://spring-cloud-alibaba-group.github.io/github-pages/greenwich/spring-cloud-alibaba.html
-> - 中文：[https://github.com/alibaba/spring-cloud-alibaba/blob/master/README-zh.md]()
+![](assets/Pasted%20image%2020240813235429.png)
 
-### 为什么出现 SpringCloud Alibaba？
+企业需求：
 
-Spring Cloud Netflix 项目进入维护模式，意味着 Spring Cloud Netflix 将不再开发新的组件
+![](assets/Pasted%20image%2020240813235606.png)
 
-https://spring.io/blog/2018/12/12/spring-cloud-greenwich-rc1-available-now
+## SpringCloud
 
-Spring Cloud 版本迭代算是比较快的，因而出现了很多重大 ISSUE 都还来不及 Fix 就又推另一个 Release 了。进入维护模式意思就是目前一直以后一段时间 Spring Cloud Netflix 提供的服务和功能就这么多了，不再开发新的组件和功能了。以后将以维护和 Merge 分支 Full Request 为主
+SpringCloud 是目前国内使用最广泛的微服务框架。官网地址：[Spring Cloud](https://spring.io/projects/spring-cloud)
 
-新组件功能将以其他替代平代替的方式实现
+SpringCloud 集成了各种微服务功能组件，并基于 SpringBoot 实现了这些组件的自动装配，从而提供了良好的开箱即用体验：
 
-### SpringCloud Alibaba 带来了什么？ 
+![](assets/Pasted%20image%2020240813235944.png)
 
-> 官网 https://github.com/alibaba/spring-cloud-alibaba/blob/master/README-zh.md
+SpringCloud 和 SpringBoot 版本兼容关系：
 
-能干什么 
+![600](assets/Pasted%20image%2020240814000537.png)
 
-- 服务限流降级：默认支持 Servlet、Feign、RestTemplate、Dubbo 和 RocketMQ 限流降级功能的接入，可以在运行时通过控制台实时修改限流降级规则，还支持查看限流降级 Metrics 监控。
+# 服务拆分及远程调用
 
-- 服务注册与发现：适配 Spring Cloud 服务注册与发现标准，默认集成了 Ribbon 的支持。
+## 服务拆分
 
-- 分布式配置管理：支持分布式系统中的外部化配置，配置更改时自动刷新。
+注意事项：
+1. 不同微服务，不要重复开发相同业务
+2. 微服务数据独立，不要访问其它微服务的数据库
+3. 微服务可以将自己的业务暴露为接口，供其它微服务调用
 
-- 消息驱动能力：基于 Spring Cloud Stream 为微服务应用构建消息驱动能力。
+项目结构：
+- cloud-demo
+	- order-service（根据 id 查询订单）
+	- user-service（根据 id 查询用户）
 
-- 阿里云对象存储：阿里云提供的海量、安全、低成本、高可靠的云存储服务。支持在任何应用、任何时间、任何地点存储和访问任意类型的数据。
+## 远程调用
 
-- 分布式任务调度：提供秒级、精准、高可靠、高可用的定时（基于 Cron 表达式）任务调度服务。同时提供分布式的任务执行模型，如网格任务。网格任务支持海量子任务均匀分配到所有 Worker（schedulerx-client）上执行。
+查询订单对应的用户信息，order-service远程调用user-service
 
-去哪里下载：[https://github.com/alibaba/spring-cloud-alibaba/blob/master/README-zh.md]()
-
-### 依赖
-
-```xml
-<dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-            <version>2.1.0.RELEASE</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
-</dependencyManagement>
-```
-
-
-# Rest 微服务工程构建
-
-## 构建 cloud-consumer-order80 模块
-
-使用 80 端口号的原因：消费者不用写端口号
-
-> 百度百科：
->
-> 80端口是为 [HTTP](https://baike.baidu.com/item/HTTP)（HyperText Transport Protocol)即[超文本传输协议](https://baike.baidu.com/item/超文本传输协议/8535513)开放的，此为上网冲浪使用次数最多的协议，主要用于 WWW（World Wide Web）即万维网传输信息的协议。
->
-> 可以通过 HTTP 地址（即常说的“网址”）加“: 80”来访问网站，因为浏览网页服务默认的[端口号](https://baike.baidu.com/item/端口号/10883658)都是 80，因此==只需输入网址即可，不用输入“: 80”了==。
-
-## RestTemplate
-
-RestTemplate 是 Spring 提供的一种用于简单便捷访问 restful 服务的**模板类**
+1）注册RestTemplate：在 order-service 的 OrderApplication 中注册 RestTemplate
 
 ```java
-@Configuration
-public class ApplicationContextConfig
-{
+@MapperScan("cn.itcast.order.mapper")
+@SpringBootApplication
+public class OrderApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(OrderApplication.class, args);
+    }
+
     @Bean
-    public RestTemplate restTemplate()
-    {
+    public RestTemplate restTemplate(){
         return new RestTemplate();
     }
 }
 ```
 
-RestTemplate 中方法的三个常用参数：
-
-`url`：REST 请求地址
-`requestMap`：请求参数
-`ResponseBean.class`：HTTP 响应转换被转换成的对象类型
+2）远程调用
 
 ```java
-@RestController
-public class OrderController {
+@Service
+public class OrderService {
 
-    public static final String PaymentSrv_URL = "http://localhost:8001";
-
-    @Autowired
+    @Resource
+    private OrderMapper orderMapper;
+    @Resource
     private RestTemplate restTemplate;
 
-    @GetMapping("/consumer/payment/create")
-    public CommonResult create(Payment payment) {
-        //客户端用浏览器是get请求，但是底层实质发送post调用服务端8001
-        return restTemplate.postForObject(PaymentSrv_URL + "/payment/create", payment, CommonResult.class);
-    }
+    private final static String URL = "http://localhost:8081/user/";
 
-
-    @GetMapping("/consumer/payment/get/{id}")
-    public CommonResult getPayment(@PathVariable("id") Long id) {
-        return restTemplate.getForObject(PaymentSrv_URL + "/payment/get/" + id, CommonResult.class);
+    public Order queryOrderById(Long orderId) {
+        Order order = orderMapper.findById(orderId);
+        User user = restTemplate.getForObject(URL + order.getUserId().toString(), User.class);
+        order.setUser(user);
+        return order;
     }
 }
 ```
-
-# ---------- 02_服务注册与发现
-
-
-# 基本概念
 
 ## 服务调用关系
 
@@ -161,6 +126,10 @@ public class OrderController {
 > 服务 A 调用服务 B，服务 B 调用服务 C，那么服务 B 是什么角色?
 
 提供者与消费者角色是相对的，一个服务可以同时是服务提供者和服务消费者
+
+
+# ---------- 服务注册与发现
+
 
 
 ## 什么是服务注册与发现？
@@ -267,16 +236,29 @@ CAP 理论的核心是：一个分布式系统不可能同时很好的满足一�
 
 ![500](assets/02_服务注册与发现/image-20220818123440290.png)
 
-
-
 # Eureka 注册中心
 
-## Eureka 介绍
+## 服务调用出现的问题
 
-Spring Cloud 封装了 Netflix 公司开发的 Eureka 模块来实现服务治理
+- 服务消费者该如何获取服务提供者的地址信息?
+- 如果有多个服务提供者，消费者该如何选择?
+- 消费者如何得知服务提供者的健康状态?
+
+## Eureka 的作用
+
+在 Eureka 架构中，微服务角色有两类：
+- Eureka Server：服务端，**注册中心**
+	- 记录服务信息
+	- 心跳监控
+- Eureka Client：客户端
+	- Provider：服务提供者（例如案例中的 user-service）
+		- 注册自己的信息到 Eureka Server
+		- 每隔 30 秒向 EurekaServer **发送心跳**
+	- consumer：服务消费者（例如案例中的 order-service ）
+		- 根据服务名称从 Eureka server 拉取服务列表
+		- 基于服务列表做负载均衡，选中一个微服务后发起远程调用
 
 Eureka 的作用：
-
 - 消费者该如何获取服务提供者具体信息?
 	- 服务提供者启动时向 eureka **注册**自己的信息
 	- eureka 保存这些信息
@@ -288,29 +270,20 @@ Eureka 的作用：
 	- eureka 会更新记录服务列表信息，心跳不正常会被剔除
 	- 消费者就可以拉取到最新的信息
 
-在 Eureka 架构中，微服务角色有两类：
-
-1）Eureka Server：服务端，**注册中心**
-
-- 记录服务信息
-- 心跳监控
-
-2）Eureka Client：客户端
-
-- Provider：服务提供者，例如案例中的 user-service
-	- 注册自己的信息到 Eureka Server
-	- 每隔 30 秒向 EurekaServer **发送心跳**
-- consumer：服务消费者，例如案例中的 order-service 
-	- 根据服务名称从 Eureka server 拉取服务列表
-	- 基于服务列表做负载均衡，选中一个微服务后发起远程调用
-
 ![](assets/Pasted%20image%2020240415191728.png)
 
-## 搭建 eureka-server
+## 动手实践
+
+整体流程：
+- 搭建 EurekaServer
+- 将 user-service、order-service 都注册到 eureka
+- 在 order-service 中完成服务拉取，然后通过负载均衡挑选一个服务，实现远程调用
+
+### 搭建 eureka-server
 
 eureka-server 必须是一个独立的微服务
 
-1）创建 cloud-eureka-server7001 模块，引入 eureka-server 依赖
+1）引入 eureka-server 依赖
 
 ```xml
 <dependencies>
@@ -327,9 +300,9 @@ eureka-server 必须是一个独立的微服务
 ```java
 @SpringBootApplication
 @EnableEurekaServer  //表示当前是Eureka的服务注册中心
-public class EurekaMain7001 {
+public class EurekaApplication {
     public static void main(String[] args) {
-        SpringApplication.run(EurekaMain7001.class, args);
+        SpringApplication.run(EurekaApplication.class, args);
     }
 }
 ```
@@ -337,30 +310,27 @@ public class EurekaMain7001 {
 3）配置文件
 
 ```yml
-server:  
-  port: 7001  
-spring:  
-  application:  
-    name: eureka-server7001  
-eureka:  
-  client:  
-    service-url:  
-      # EurekaServer的地址，现在是自己的地址，如果是集群，需要加上其它Server的地址  
-      defaultZone: http://127.0.0.1:7001/eureka
+server:
+  port: 10086
+spring:
+  application:
+    name: eureka-server
+eureka:
+  client:
+    service-url:
+      # EurekaServer的地址，现在是自己的地址，如果是集群，需要加上其它Server的地址
+      defaultZone: http://127.0.0.1:10086/eureka/
 ```
 
 测试：浏览器访问 http://localhost:7001
 
 - instances currently registered with euraka：已经注册到 Eureka 的实例
 
-![](assets/02_服务注册与发现/1630991672466-c5132bb3-724d-4111-9375-c3df5c264cd8.png)
+![](assets/Pasted%20image%2020240814231910.png)
 
-## 服务注册
+### 服务注册
 
-注册实例
-
-- 服务消费者：cloud-consumer-order80 模块
-- 服务生产者：cloud-provider-payment8001 模块
+将 user-service 服务注册到 EurekaServer（order-service 同理）
 
 1）添加 Eureka-Client 依赖
 
@@ -371,71 +341,45 @@ eureka:
 </dependency>
 ```
 
-2）配置文件
+2）配置文件添加如下配置：
 
 ```yml
-server:  
-  port: 8001  
-spring:  
-  application:  
-    name: cloud-payment-service # 微服务的注册名称  
-eureka:  
-  client:  
-    service-url:  
-      defaultZone: http://127.0.0.1:7001/eureka  
+spring:
+  application:
+    name: user-service # 微服务的注册名称
+eureka:
+  client:
+    service-url:
+      defaultZone: http://127.0.0.1:10086/eureka
 ```
 
-```yaml
-server:  
-  port: 80
-spring:  
-  application:  
-    name: cloud-order-service  
-eureka:  
-  client:  
-    service-url:  
-      defaultZone: http://localhost:7001/eureka
-```
+另外，可以将服务多次启动模拟多实例部署，但为了避免端口冲突，需要修改端口设置
 
-另外，可以将 cloud-payment-service 多次启动模拟多实例部署，但为了避免端口冲突，需要修改端口设置
+- 再启动一个服务，VM options 设置 `-Dserver.port=8082`
 
-- 再启动一个 cloud-payment-service，VM options 设置 `-Dserver.port=8082`
+![](assets/Pasted%20image%2020240814234025.png)
 
-测试：访问 [http://localhost:7001]()，可以看到注册进来的实例
-
-![](assets/Pasted%20image%2020240416231114.png)
-
-## 服务发现 & 负载均衡
+### 服务发现 & 负载均衡
 
 服务拉取：基于服务名称获取**服务列表**，然后再对服务列表做**负载均衡**
 
-在 cloud-consumer-order80 中完成服务拉取
-
-1）修改消费者服务调用的 url 路径，用**服务名**代替 ip、端口
+1）修改 order-service 中调用的 url 路径，==用服务名代替 ip、端口==
 
 ```java
-@RestController
-public class OrderController {
-    //    public static final String PaymentSrv_URL = " http://localhost:8001" ;
-    // 通过在 eureka 上注册过的微服务名称调用
-    public static final String PaymentSrv_URL = " http://cloud-payment-service" ;
-}
+private final static String URL = "http://user-service/user/";
 ```
 
 2）使用 `@LoadBalanced` 注解赋予 RestTemplate 负载均衡的能力
 
 ```java
-@Configuration
-public class ApplicationContextConfig {
-    @Bean
-    @LoadBalanced //赋予 RestTemplate 负载均衡的能力
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
+@Bean
+@LoadBalanced //赋予 RestTemplate 负载均衡的能力
+public RestTemplate restTemplate() {
+	return new RestTemplate();
 }
 ```
 
-测试：访问 [http://localhost/consumer/test]()，负载均衡效果达到，8001/8002 端口交替出现
+> 查看两个 user-service 的 mybatis 日志，都被调用了
 
 ## actuator 微服务信息完善
 
