@@ -404,12 +404,262 @@ SpringAMQP 提供了几个类，用来声明队列、交换机及其绑定关系
 - Exchange：用于声明交换机，可以用工厂类 ExchangeBuilder 构建
 - Binding：用于声明队列和交换机的绑定关系，可以用工厂类 BindingBuilder 构建
 
+1）配置类方式
+
+```java
+@Configuration
+public class FanoutConfig {
+    @Bean
+    public FanoutExchange fanoutExchange2() {
+//        return ExchangeBuilder.fanoutExchange("hmall.fanout2").build();
+        return new FanoutExchange("hmall.fanout2");
+    }
+
+    @Bean
+    public Queue fanoutQueue3() {
+        return new Queue("fanout.queue3");
+    }
+
+    @Bean
+    public Queue fanoutQueue4() {
+        return new Queue("fanout.queue4");
+    }
+
+    @Bean
+    public Binding bindingQueue1(Queue fanoutQueue3, FanoutExchange fanoutExchange2){
+        return BindingBuilder.bind(fanoutQueue3).to(fanoutExchange2);
+    }
+
+    @Bean
+    public Binding bindingQueue2(){
+        return BindingBuilder.bind(fanoutQueue4()).to(fanoutExchange2());
+    }
+}
+```
+
+```java
+@Configuration  
+public class DirectConfig {  
+    @Bean  
+    public DirectExchange directExchange2() {  
+//        return ExchangeBuilder.fanoutExchange("hmall.fanout2").build();  
+        return new DirectExchange("hmall.direct2");  
+    }  
+  
+    @Bean  
+    public Queue directQueue3() {  
+        return new Queue("direct.queue3");  
+    }  
+  
+    @Bean  
+    public Queue directQueue4() {  
+        return new Queue("direct.queue4");  
+    }  
+  
+    @Bean  
+    public Binding bindingRed(Queue directQueue3, DirectExchange directExchange2){  
+        return BindingBuilder.bind(directQueue3).to(directExchange2).with("red");  
+    }  
+  
+    @Bean  
+    public Binding bindingBlue(){  
+        return BindingBuilder.bind(directQueue3()).to(directExchange2()).with("blue");  
+    }  
+}
+```
+
+2）注解式，更方便
+
+```java
+@Slf4j
+@Component
+public class MqListener {
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "direct.ann.q1", durable = "true"),
+            exchange = @Exchange(name = "hmall.ann.direct", type = ExchangeTypes.DIRECT),
+            key = {"red", "blue"}
+    ))
+    public void listenDirectAnnQ1(String msg) {
+        log.info("消费者收到了direct.ann.q1的消息: {}", msg);
+    }
+
+    @RabbitListener(bindings = @QueueBinding(
+            value = @Queue(name = "direct.ann.q2", durable = "true"),
+            exchange = @Exchange(name = "hmall.ann.direct", type = ExchangeTypes.DIRECT),
+            key = {"red", "yellow"}
+    ))
+    public void listenDirectAnnQ2(String msg) {
+        log.info("消费者收到了direct.ann.q2的消息: {}", msg);
+    }
+}
+```
+
+## 消息转换器
+
+需求：测试利用 SpringAMOP 发送对象类型的消息
+1. 声明一个队列，名为 object.queue 
+2. 编写单元测试，向队列中直接发送一条消息，消息类型为 Map 
+
+1）发送消息
+```java
+@Test
+public void testSendMessage2ObjectQueue() {
+	Map<String, Object> jack = new HashMap<>();
+	jack.put("name", "jack");
+	jack.put("age", 18);
+	rabbitTemplate.convertAndSend("object.q", jack);
+}
+```
+
+2）接收消息
+```java
+@RabbitListener(queues = "object.q")
+public void listenTopicQueueMessage2(Map<String, Object> msg) {
+	log.info("消费者收到了object.q的消息: {}", msg);
+}
+```
+
+3）对象序列化方式
+
+建议采用 JSON 序列化代替默认的 JDK 序列化（可读性差，体积大）
+
+在生产者和消费者服务中引入 jackson 依赖，并配置 MessageConverter
+
+```xml
+<dependency>
+	<groupId>com.fasterxml.jackson.core</groupId>
+	<artifactId>jackson-databind</artifactId>
+</dependency>
+```
+
+```java
+@Bean
+public MessageConverter jackson2JsonMessageConverter() {
+	return new Jackson2JsonMessageConverter();
+}
+```
+
+![[Pasted image 20240816111939.png]]
 
 
+# 生产者可靠性
 
+## 生产者重连
 
+有的时候由于网络波动，可能会出现客户端连接 MQ 失败的情况。通过配置我们可以开启连接失败后的重连机制：
 
+```yml
+spring:  
+  rabbitmq:  
+    template:  
+      retry:  
+        enabled: true # 开启超时重试  
+        initial-interval: 1000ms # 失败后的初始等待时间  
+        multiplier: 1 # 失败后下次的等待时长倍数  
+        max-attempts: 3 # 最大重试次数
+```
 
+```ad-tip
+当网络不稳定的时候，利用重试机制可以有效提高消息发送的成功率。不过 SpringAMQP 提供的重试机制是阻塞式的重试，也就是说多次重试等待的过程中，当前线程是被阻塞的，会影响业务性能。
 
+如果对于业务性能有要求，建议==禁用重试机制==。如果一定要使用，请合理配置等待时长和重试次数，当然也可以考虑使==用异步线程来发送消息==。
+```
 
+## 生产者确认
+
+RabbitMQ 提供 了 Publisher confirm 和 Publisher Return 两种确认机制。开启确机制认后，在 MQ 成功收到消息后会返回确认消息给生产者。返回的结果有以下几种情况:
+
+- 消息投递到了 MQ，但是**路由失败**（代码错了、交换机配置错误）。此时会==通过 Publisher Return 返回路由异常原因，然后返回 ACK，告知投递成功==
+- **临时**消息投递到了 MQ，并且入队成功，返回 ACK，告知投递成功
+- **持久**消息投递到了 MQ，并且入队完成持久化，返回 ACK，告知投递成功
+- 其它情况都会返回 **NACK**，告知投递失败
+
+SpringAMQP 实现生产者确认
+
+1）publisher 服务中添加开启生产者确认的配置
+
+这里 publisher-confirm-type 有三种模式可选
+
+- none: 关闭 confirm 机制
+- simple: 同步阻塞等待 MQ 的回执消息
+- correlated: MQ 异步回调方式返回回执消息
+
+```yml
+spring:  
+  rabbitmq:  
+    publisher-confirm-type: correlated # 开启publisher confirm机制  
+    publisher-returns: true # 开启publisher return机制
+```
+
+2）每个RabbitTemplate只能配置一个ReturnCallback，因此需要在项目启动过程中配置
+
+> 没理解这里的因果关系
+
+```java
+@Slf4j
+@Configuration
+public class MqConfirmConfig implements ApplicationContextAware {
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        RabbitTemplate template = applicationContext.getBean(RabbitTemplate.class);
+        template.setReturnCallback((message, replyCode, replyText, exchange, routingKey) -> {
+            log.info("路由失败，收到消息的return callback，exchange：{}，routingKey：{}，message：{}，replyCode：{}，replyText：{}",
+                    exchange, routingKey, message, replyCode, replyText);
+        });
+    }
+}
+```
+
+3）发送消息，指定消息的ConfirmCallback
+
+```java
+@Test
+public void testConfirmCallback() throws InterruptedException {
+	CorrelationData cd = new CorrelationData(UUID.randomUUID().toString());
+	cd.getFuture().addCallback(new ListenableFutureCallback<CorrelationData.Confirm>() {
+		// spring内部的失败，几乎不会发生，不用管
+		@Override
+		public void onFailure(Throwable throwable) {
+			log.error("消息回调失败: {}", throwable.getMessage());
+		}
+
+		// 回调成功
+		@Override
+		public void onSuccess(CorrelationData.Confirm confirm) {
+			log.info("收到confirm callback回调");
+			if (confirm.isAck()) {
+				log.info("消息投递成功，收到ack");
+			} else {
+				log.error("消息投递失败，收nack，原因：{}", confirm.getReason());
+			}
+		}
+	});
+//        rabbitTemplate.convertAndSend("hmall.direct", "red", "测试确认机制", cd);
+	rabbitTemplate.convertAndSend("hmall.direct", "不存在的routingKey", "测试确认机制", cd);
+	Thread.sleep(2000); // JVM直接销毁了看不到，需要睡眠一下
+}
+```
+
+```ad-note
+如何处理生产者的确认消息？
+
+- 生产者确认需要额外的网络和系统资源开销，尽量不要使用。
+	- 如果一定要使用，无需开启 Publisher-Return 机制，因为一般路由失败是自己业务问题
+- 对于 nack 消息可以==有限次数重试==，依然失败则记录异常消息
+```
+
+# MQ 的可靠性
+
+在默认情况下，RabbitMQ 会将接收到的信息保存在内存中以降低消息收发的延迟。这样会导致两个问题:
+
+- 一旦 MQ 宕机，内存中的消息会丢失
+- 内存空间有限，当消费者故障或处理过慢时，会导致消息积压，引发 MQ 阻塞
+
+## 数据持久化
+
+rabbitmq实现持久化包括：
+
+- 交换机持久化
+- 队列持久化
+- 消息持久化
 

@@ -1,6 +1,10 @@
- 
-> 参考 
-> - MySQL数据库入门到精通 heima 2022
+
+
+```ad-important
+参考：MySQL数据库入门到精通 heima 2022
+
+!!!官方文档最权威：[MySQL :: MySQL 8.0 Reference Manual :: 17.7.1 InnoDB Locking](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html)
+```
 
 # -------------------- 入门篇
 # 基本概念
@@ -2814,14 +2818,14 @@ InnoDB 中引入了意向锁，使得==表锁不用检查每行数据是否加�
 
 1）*行锁*（Record Lock）：锁定单个**行记录**的锁，防止其他事务对此行进行 update 和 delete。
 
-- 在 RC、RR 隔离级别下都支持
+- ==在 RC、RR 隔离级别下都支持==
 
 ![700](assets/Pasted%20image%2020240326004222.png)
 
 2）*间隙锁*（Gap Lock）：锁定索引**记录间隙**（不含该记录），确保索引记录间隙不变，防止其他事务在这个间隙进行 insert，产生幻读
 
-- 在 RR 隔离级别下都支持
-
+- ==在 RR 隔离级别下都支持
+==
 ![700](assets/Pasted%20image%2020240326004624.png)
 
 3）*临键锁*（Next-Key Lock）：行锁和间隙锁**组合**，同时锁住数据，并锁住数据**前面**的间隙 Gap。
