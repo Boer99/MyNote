@@ -1,6 +1,8 @@
 
 ```ad-summary
-参考：
+项目地址：[GitHub - Boer99/learn-rabbitmq](https://github.com/Boer99/learn-rabbitmq)
+
+参考：heima2022
 ```
 
 # 背景

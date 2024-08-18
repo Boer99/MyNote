@@ -1,5 +1,5 @@
 ```ad-summary
-参考：SpringCloud+RabbitMQ+Docker+Redis+搜索+分布式，系统详解springcloud微服务技术栈课（heima2021）
+参考：heima2021
 ```
 
 # 导学
@@ -127,114 +127,6 @@ public class OrderService {
 
 提供者与消费者角色是相对的，一个服务可以同时是服务提供者和服务消费者
 
-
-# ---------- 服务注册与发现
-
-
-
-## 什么是服务注册与发现？
-
-在服务注册与发现中，有一个**注册中心**。
-
-- *服务注册*：每个服务节点在启动运行的时候，都会向注册中心注册服务，
-	- 即将自己的地址信息 (ip、端口以及服务名字等) 上报给注册中心，注册中心负责将地址信息保存起来
-
-![700](assets/Pasted%20image%2020240415174645.png)
-
-- *服务发现*：**服务消费者**拿着服务的信息找注册中心要对方的地址信息。
-	- 通常情况下，服务节点拿到地址信息之后，还会在**本地缓存**一份，保证在注册中心宕机时仍然可以正常调用服务。
-
-![700](assets/Pasted%20image%2020240415174733.png)
-
-- *服务健康检查*：为了保证服务地址列表中都是可用服务的地址信息，注册中心通常会通过 **心跳机制** 来检测服务是否可用，
-- *不可用服务剔除*：注册中心会主动剔除不可用服务
-- *服务状态变更通知*：如果服务信息发生变更，注册中心会将变更**推送**给相关联的服务，更新服务地址信息
-
-![500](assets/Pasted%20image%2020240415175553.png)
-
-> 调用 RPC 远程调用框架核心设计思想：在于注册中心，因为使用注册中心管理每个服务与服务之间的一个依赖关系 (服务治理概念)。在**任何 rpc 远程框架**中，都会有一个注册中心
-
-## 为什么需要服务注册与发现？
-
-#todo
-
-## 常见的注册中心
-
-比较常用的注册中心有 ZooKeeper、Eureka、Nacos，这三个都是使用 Java 语言开发，相对来说更适合 Java 技术栈
-
-> 其他的还有像 ETCD、Consu，这里就不做介绍了。
-
-1）严格意义上来说，*ZooKeeper* 设计之初并不是未来做注册中心的，只是前几年国内使用 Dubbo 的场景下比较喜欢使用它来做注册中心。
-
-- 对于 CAP 理论来说，ZooKeeper 保证的是 **CP**。任何时刻对 ZooKeeper 的读请求都能得到一致性的结果，
-- 但是，ZooKeeper 不保证每次请求的可用性（比如在 Leader 选举过程中或者半数以上的机器不可用的时候服务就是不可用的）
-
-> 一致性（Consistency）、可用性（Availability）、分区容错性（Partition tolerance）
-
-针对注册中心这个场景来说，重要的是可用性，**AP** 会更合适一些。ZooKeeper 更适合做分布式协调，服务注册中心就交给专业的来做吧!
-
-2）*Eureka*，一款非常值得研究的注册中心。Eureka 是 Netflix 公司开源的一个注册中心，配套的还有 Feign、Ribbon、Zuul、Hystrix 等知名的微服务系统构建所必须的组件。
-
-- 对于 CAP 理论来说，Eureka 保证的是 **AP**。Eureka 集群只要有一台 Eureka 正常服务，整个注册中心就是可用的，
-- 只是查询到的数据可能是过期的（集群中的各个节点异步方式同步数据，不保证强一致性）
-
-> Spring Cloud 2020.0.0 版本移除了 Netflix 除 Eureka 外的所有组件，因为在 2018 年的时候。Netflix 宣布其开源的核心组件 Hystrix、Ribbon、Zuul、Eureka 等进入维护状态，不再进行新特性开发，只修 BUG。于是，Spring 官方不得不考虑移除 Netflix 的组件。
-
-不推荐使用 Eureka 作为注册中心，阿里开源的 Nacos 或许是更好的选择。
-
-3）Nacos，一款即可以用来做**注册中心**，又可以用来做**配置中心**的优秀项目
-
-- Nacos 属实是后起之秀，借鉴吸收了其他注册中心的优点，与 Spring Boot、Dubbo、Spring CloudKubernetes **无缝对接**，兼容性很好
-- Nacos 不仅支持 **CP** 也支持 **AP**
-- Nacos 性能强悍 (比 Eureka 能支持更多的服务实例)
-- 易用性较强 (文档丰富、数据模型简单且自带后台管理界面)
-- 支持 99.9% 高可用
-
-推荐使用 Nacos 来做注册中心
-
-## 注册中心的异同点
-
-![image-20220818122943977](assets/02_服务注册与发现/image-20220818122943977.png)
-
-### CAP 理论
-
-`Consistency（一致性）`：即更新操作成功并返回客户端后，所有节点在同一时间的数据完全一致。
-
-- 对于客户端，一致性指的是并发访问时更新过的数据如何获取的问题。
-- 对于服务端，则是更新如何复制分布到整个系统，以保证数据最终一致。
-
-`Avaliability（可用性）`：即服务一直可用，而且是正常响应时间。系统能够很好的为用户服务，不出现用户操作失败或者访问超时等用户体验不好的情况。
-
-`Partition Tolerance（分区容错性）`：即分布式系统在遇到某节点或网络故障的时候，仍然能够对外提供满足一致性和可用性的服务。分区容错性要求应用虽然是一个分布式系统，但看上去切好像是在一个可以运转正常的整体。比如现在的分布式系统中有某一个或者几个机器宕掉了，其他剩下的机器还能够正常运转满足系统要求，对于用户而言并没有什么体验上的影响。
-
-==CAP 理论关注粒度是数据，而不是整体系统设计的策略==
-
-![500](assets/02_服务注册与发现/image-20220818123335449.png)
-
-CAP 理论的核心是：一个分布式系统不可能同时很好的满足一致性，可用性和分区容错性这三个需求，最多只能同时较好的满足两个。
-
-因此，根据 CAP 原理将 NoSQL 数据库分成了满足 CA 原则、满足 CP 原则和满足 AP 原则三 大类：
-
-- CA - 单点集群，满足一致性，可用性的系统，通常在可扩展性上不太强大。
-- CP - 满足一致性，分区容忍性的系统，通常性能不是特别高。
-- AP - 满足可用性，分区容忍性的系统，通常可能对一致性要求低一些。
-
-
-### AP 架构
-
-当网络分区出现后，为了保证可用性，系统 B 可以返回旧值，保证系统的可用性。
-
-**结论：违背了一致性 C 的要求，只满足可用性和分区容错，即 AP**
-
-![500](assets/02_服务注册与发现/image-20220818123427722.png)
-
-### CP 架构
-
-当网络分区出现后，为了保证一致性，就必须拒接请求，否则无法保证一致性
-
-**结论：违背了可用性 A 的要求，只满足一致性和分区容错，即 CP**
-
-![500](assets/02_服务注册与发现/image-20220818123440290.png)
 
 # Eureka 注册中心
 
@@ -381,180 +273,23 @@ public RestTemplate restTemplate() {
 
 > 查看两个 user-service 的 mybatis 日志，都被调用了
 
-## actuator 微服务信息完善
-
-#### 主机名称：服务名称的规范和修改
-
-按照规范的要求只暴露服务名，不带有主机名。 
-
-修改生产者 8001/8002 的 yml
-
-![img](assets/02_服务注册与发现/1631704450338-fc5f7714-c957-486d-b04e-4e695aa2d235.png) ![img](assets/02_服务注册与发现/1631704456633-f75ccbc5-51e6-416e-83a0-af005591f4c9.png)
-
-测试：仅暴露服务名
-
-![](assets/02_服务注册与发现/1631703666885-18109b60-277c-4942-ad91-569682e434f0-166082498556021.png)
-
-#### 访问信息有 IP 信息提示
-
-![](assets/02_服务注册与发现/1631704600433-da87fdc9-56cc-45b2-907c-b1be857f81a6.png)
-
-我现在点击这个微服务的链接，没有 ip 信息提示。 实际工作中，我们都会说这个微服务是部署在几号机器上面的几号端口。我们要让访问信息 有 ip 信息提示。 
-
-在每个微服务的 yml 中添加如下
-
-![img](assets/02_服务注册与发现/1631704693453-7470f0d0-fe04-4283-a267-78c02a129522.png)
-
-## 服务发现 Discovery
-
-服务发现：对于注册进 eureka 里面的微服务，可以通过服务发现来获得该服务的信息
-
-不排除我们微服务要对外提供一种功能。那么我们就需要拿到在 eureka 上注册了的微服务的信息，例如：主机名称、端口号。
-
-修改 cloud-provider-payment8001 的 controller，注入`DiscoveryClient`（注意写在 80 和 8002 中也都可以获得所有的微服务信息，这里只是在 8001 上进行测试）
-
-```java
-@RestController
-@Slf4j
-public class PaymentController {
-
-    @Value("${server.port}")
-    private String serverPort;
-
-    @Resource
-    private PaymentService paymentService;
-
-    @Resource
-    private DiscoveryClient discoveryClient;
-
-    @GetMapping(value = "/payment/discovery")
-    public Object discovery() {
-        List<String> services = discoveryClient.getServices();
-        for (String element : services) {
-            log.info(element);
-        }
-
-        List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PAYMENT-SERVICE");
-        for (ServiceInstance element : instances) {
-            log.info(element.getServiceId() + "\t"
-                    + element.getHost() + "\t" + element.getPort() + "\t" + element.getUri());
-        }
-        return this.discoveryClient;
-    }
-}
-```
-
-8001 主启动类上添加 `@EnableDiscoveryClient`
-
-```java
-@SpringBootApplication
-@EnableEurekaClient
-@EnableDiscoveryClient //服务发现
-public class PaymentMain8001 {
-    public static void main(String[] args) {
-        SpringApplication.run(PaymentMain8001.class, args);
-    }
-}
-```
-
-测试： http://localhost:8001/payment/discovery
-
-![image.png](assets/02_服务注册与发现/1631707101134-9f79116e-e133-46ef-bca6-68312f355846.png)
-
-![image.png](assets/02_服务注册与发现/1631707370541-72b5368b-b30b-4c1a-b05d-c29ac27b7016.png)
-
-## eureka 自我保护
-
-#### 概述
-
-什么是保护模式？
-
-保护模式主要用于一组客户端和 EurekaServer 之间存在网络分区场景下的保护。一旦进入保护模式 EurekaServer 将会尝试保护其服务注册表中的信息，不再删除服务注册表中的数据，也就是不会注销任何微服务。 
-
-如果在 EurekaServer 的首页看到以下这段提示，则说明 Eureka 进入了保护模式：
-
-![img](assets/02_服务注册与发现/1631707780822-bd921fea-2ace-4224-a1ca-1c6f8ae7dcf7.png)
-
-综上，自我保护模式是一种应对网络异常的安全保护措施。它的架构哲学是宁可同时保留所有微服务（健康的微服务和不健康的微服务都会保留）也不盲目注销任何健康的微服务。使用自我保护模式，可以让 Eureka 集群更加的健壮、稳定。
-
-一句话：某时刻某一个微服务不可用了，Eureka 不会立刻清理，依旧会对该微服务的信息进行保存。
-
-
-
-为什么会产生 Eureka 自我保护机制？
-
-因为可能存在这样的情况： EurekaClient 可以正常运行，但是与 EurekaServer 网络不通。 此时 EurekaServer 不会立刻将 EurekaClient 服务剔除。 
-
-默认情况下，如果 EurekaServer 在一定时间内没有接收到某个微服务实例的心跳，EurekaServer 将会注销该实例（默认 90 秒）。但是当网络分区故障发生(延时、卡顿、拥挤)时，微服务与 EurekaServer 之间无法正常通信，以上行为可能变得非常危险了——因为微服务本身其实是健康的，此时本不应该注销这个微服务。Eureka 通过“自我保护模式”来解决这个问题——当 EurekaServer 节点在短时间内丢失过多客户端时（可能发生了网络分区故障），那么这个节点就会进入自我保护模式。
-
-
-
-属于 CAP 里面的 AP 分支。
-
-
-
-#### 禁止自我保护？
-
-##### 修改注册中心 eurekaServer 端 7001
-
-出厂默认，自我保护机制是开启的，`eureka.server.enable-self-preservation=true`
-
-修改 yml
-
-```yml
-eureka:
-  server:
-    # 关闭自我保护机制，保证不可用服务被及时踢除
-    enable-self-preservation: false
-    eviction-interval-timer-in-ms: 2000
-```
-
-测试关闭效果：访问 7001
-
-<img src="assets/02_服务注册与发现/image-20220818203551421.png" alt="image-20220818203551421" style="zoom:67%;" />
-
-
-
-##### 修改生产者客户端 eurekaClient 端 8001
-
-默认：
-
-```yml
-eureka.instance.lease-renewal-interval-in-seconds=30
-eureka.instance.lease-expiration-duration-in-seconds=90
-```
-
-修改 yml
-
-```yml
-eureka:
-  instance:
-    instance-id: payment8001
-    prefer-ip-address: true # 访问路径可以显示 IP 地址
-    # Eureka 客户端向服务端发送心跳的时间间隔，单位为秒(默认是 30 秒)
-    lease-renewal-interval-in-seconds: 1
-    # Eureka 服务端在收到最后一次心跳后等待时间上限，单位为秒(默认是 90 秒)，超时将剔除服务
-    lease-expiration-duration-in-seconds: 2
-```
 
 # Ribbon 负载均衡
 
-Spring Cloud Ribbon 是基于 Netflix Ribbon 实现的一套客户端**负载均衡**的工具
-
-负载均衡流程
+## 流程
 
 ![](assets/Pasted%20image%2020240416233649.png)
 
-> Ribbon 负载均衡 VS Nginx 负载均衡？
-> 
-> - Nginx 是服务器负载均衡，客户端所有请求都会交给 nginx，然后由 nginx 实现转发请求。即负载均衡是由==服务端实现==的。
-> - Ribbon 本地负载均衡，在调用微服务接口时候，会在注册中心上获取注册信息服务列表之后缓存到 JVM 本地，从而在==本地实现== RPC 远程服务调用技术
+```ad-tip
+Ribbon 负载均衡 VS Nginx 负载均衡？
+
+- Nginx 是服务器负载均衡，客户端所有请求都会交给 nginx，然后由 nginx 实现转发请求。即负载均衡是由==服务端实现==的。
+- Ribbon 本地负载均衡，在调用微服务接口时候，会在注册中心上获取注册信息服务列表之后缓存到 JVM 本地，从而在==本地实现== RPC 远程服务调用技术
+```
 
 ## 原理
 
-> 源码跟踪 #todo
-
-SpringCloudRibbon 的底层采用了一个拦截器，拦截了 RestTemplate 发出的请求，对地址做了修改
+SpringCloud Ribbon 的底层采用了一个拦截器，拦截了 RestTemplate 发出的请求，对地址做了修改
 
 基本流程如下：
 
@@ -562,7 +297,7 @@ SpringCloudRibbon 的底层采用了一个拦截器，拦截了 RestTemplate 发
 - RibbonLoadBalancerClient 会从请求 url 中获取服务名称，也就是 user-service
 - DynamicServerListLoadBalancer 根据 user-service 到 eureka 拉取服务列表
 	- eureka 返回列表，localhost:8081、localhost:8082
-- IRule 利用内置负载均衡规则，从列表中选择一个，例如 localhost:8081
+- 根据具体的 **IRule** 负载均衡策略，从列表中选择一个
 - RibbonLoadBalancerClient 修改请求地址
 
 ![](assets/Pasted%20image%2020240417000140.png)
@@ -575,7 +310,7 @@ SpringCloudRibbon 的底层采用了一个拦截器，拦截了 RestTemplate 发
 
 | **内置负载均衡规则类**             | **规则描述**                                                                                                                                                                                                                                                                |
 | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RoundRobinRule            | 简单轮询服务列表来选择服务器。它是 Ribbon 默认的负载均衡规则。                                                                                                                                                                                                                                     |
+| RoundRobinRule            | 简单轮询服务列表来选择服务器。它是 Ribbon **默认**的负载均衡规则。                                                                                                                                                                                                                                 |
 | AvailabilityFilteringRule | 对以下两种服务器进行忽略：<br> （1）在默认情况下，这台服务器如果 3 次连接失败，这台服务器就会被设置为“短路”状态。短路状态将持续 30 秒，如果再次连接失败，短路的持续时间就会几何级地增加。 <br>（2）并发数过高的服务器。如果一个服务器的并发连接数过高，配置了 AvailabilityFilteringRule 规则的客户端也会将其忽略。并发连接数的上限，可以由客户端的 `<clientName>.<clientConfigNameSpace>.ActiveConnectionsLimit` 属性进行配置。 |
 | WeightedResponseTimeRule  | 为每一个服务器赋予一个权重值。服务器响应时间越长，这个服务器的权重就越小。这个规则会随机选择服务器，这个权重值会影响服务器的选择。                                                                                                                                                                                                       |
 | **ZoneAvoidanceRule**     | 以区域可用的服务器为基础进行服务器的选择。使用 Zone 对服务器进行分类，这个 Zone 可以理解为一个机房、一个机架等。而后再对 Zone 内的多个服务做轮询。                                                                                                                                                                                      |
@@ -626,29 +361,25 @@ Ribbon 默认是采用**懒加载**，即第一次访问时才会去创建 LoadB
 ribbon:  
   eager-load:  
     enabled: true # 开启饥饿加载
-    clients: cloud-payment-service # 指定对cloud-payment-service服务饥饿加载
+    clients: userservice # 指定对userservice服务饥饿加载
 ```
 
-# Nacos 服务注册中心
 
-> 对应着我们前面学的：Eureka/Consul/Zookeeper（服务注册） Config+Bus（配置中心）
+# Nacos 注册中心
+
+官网文档：[https://nacos.io/zh-cn/index.html]()
 
 ## Nacos 简介
 
-> Nacos——**Na**ming **Co**nfiguration **S**ervice
+[Nacos](https://nacos.io/)（**Na**ming **Co**nfiguration **S**ervice）是阿里巴巴的产品，现在是 [SpringCloud](https://spring.io/projects/spring-cloud) 中的一个组件。相比 [Eureka](https://github.com/Netflix/eureka) 功能更加丰富，在国内受欢迎程度较高。
 
-[Nacos](https://nacos.io/)是阿里巴巴的产品，现在是[SpringCloud](https://spring.io/projects/spring-cloud)中的一个组件。相比[Eureka](https://github.com/Netflix/eureka)功能更加丰富，在国内受欢迎程度较高。
+官网：一个更易于构建云原生应用的动态服务发现、配置管理和服务的管理平台。
 
-- 一个更易于构建云原生应用的动态服务发现、配置管理和服务的管理平台。
-- Nacos 就是注册中心 + 配置中心的组合， **Nacos = Eureka + Config + Bus**
+## 安装和运行
 
-> 官网文档：[https://nacos.io/zh-cn/index.html]()
+下载地址：[https://github.com/alibaba/Nacos]()
 
-### 安装并运行 Nacos
-
-> 下载地址：[https://github.com/alibaba/Nacos]()
-
-运行 bin 目录下的 startup.cmd，默认的是集群模式启动
+1）运行 bin 目录下的 startup.cmd，默认的是集群模式启动
 
 ```bash
 # 单机模式启动
@@ -658,129 +389,49 @@ startup.cmd -m standalone
 sh startup.sh -m standalone
 ```
 
-运行成功，访问 [http://localhost:8848/nacos]()，默认账号密码都是 nacos
+2）运行成功，访问 http://localhost:8848/nacos ，默认账号密码都是 nacos
 
-## Nacos 注册中心
+## 服务注册到 Nacos
 
-### 服务注册到 Nacos
+1）父工程中添加管理依赖
 
-1）依赖
-
-父工程管理版本
 ```xml
 <dependencyManagement>
-    <dependencies>
-        <dependency>
-            <groupId>com.alibaba.cloud</groupId>
-            <artifactId>spring-cloud-alibaba-dependencies</artifactId>
-            <version>2.1.0.RELEASE</version>
-            <type>pom</type>
-            <scope>import</scope>
-        </dependency>
-    </dependencies>
+	<dependencies>
+		<dependency>
+			<groupId>com.alibaba.cloud</groupId>
+			<artifactId>spring-cloud-alibaba-dependencies</artifactId>
+			<version>2.2.5.RELEASE</version>
+			<type>pom</type>
+			<scope>import</scope>
+		</dependency>
+	</dependencies>
 </dependencyManagement>
 ```
 
-spring-cloud-alibaba-dependencies中规定了版本号
-```xml
-<properties>  
-    <sentinel.version>1.7.1</sentinel.version>  
-    <oss.version>3.1.0</oss.version>  
-    <seata.version>1.0.0</seata.version>  
-    <nacos.client.version>1.1.4</nacos.client.version>  
-    <nacos.config.version>0.8.0</nacos.config.version>  
-    <acm.version>1.0.9</acm.version>  
-    <ans.version>1.0.1</ans.version>  
-    <aliyun.sdk.version>4.4.1</aliyun.sdk.version>  
-    <alicloud.context.version>1.0.5</alicloud.context.version>  
-    <aliyun.sdk.edas.version>2.44.0</aliyun.sdk.edas.version>  
-    <schedulerX.client.version>2.1.6</schedulerX.client.version>  
-    <aliyun.java.sdk.dysmsapi>1.1.0</aliyun.java.sdk.dysmsapi>  
-    <aliyun.sdk.mns>1.1.8.6</aliyun.sdk.mns>  
-    <aliyun.java.sdk.dyvmsapi>1.1.1</aliyun.java.sdk.dyvmsapi>  
-	<spring.context.support.version>1.0.5</spring.context.support.version>  
-</properties>
-```
+2）注释掉 order-service 和 user-service 中原有的 eureka 依赖
 
-需要注册的服务引入 nacos-discovery 依赖
+3）添加 nacos 客户端依赖
 
 ```xml
-<dependencies>
-    <!--SpringCloud ailibaba nacos -->
-    <dependency>
-        <groupId>com.alibaba.cloud</groupId>
-        <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
-    </dependency>
-</dependencies>
+<dependency>
+	<groupId>com.alibaba.cloud</groupId>
+	<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+</dependency>
 ```
 
-2）配置 nacos 地址
+4）客户端添加 nacos 地址
 
 ```yml
-server:
-  port: 8081
-
 spring:
-  application:
-    name: userservice
   cloud:
     nacos:
       server-addr: localhost:8848 # 配置Nacos地址 ，注册到 Nacos
 ```
 
-```yml
-server:
-  port: 8088
+5）启动并测试
 
-spring:
-  application:
-    name: orderservice
-  cloud:
-    nacos:
-      server-addr: localhost:8848
-```
-
-3）业务类
-
- 服务提供者：返回端口号功能
-
-```java
-@RestController
-public class PaymentController {
-    @Value("${server.port}")
-    private String serverPort;
-
-    @GetMapping(value = "/payment/nacos/{id}")
-    public String getPayment(@PathVariable("id") Integer id) {
-        return "nacos registry, serverPort: " + serverPort + "\t id" + id;
-    }
-}
-```
-
-服务消费者
-
-```java
-@RestController  
-@RequestMapping("/consumer")  
-@Slf4j  
-public class OrderNac
-
-osController {  
-    @Resource  
-    private RestTemplate restTemplate;  
-  
-    private String serverURL = "http://nacos-payment-provider";  
-  
-    @GetMapping("/payment/{id}")  
-    public String paymentInfo(@PathVariable("id") Long id) {  
-        String result = restTemplate.getForObject(serverURL + "/payment/" + id, String.class);  
-        return result;  
-    }  
-}
-```
-
-
-4）启动成功，访问 http://localhost:9001/payment/1
+![](assets/Pasted%20image%2020240816002259.png)
 
 
 ## 服务分级存储模型
@@ -803,15 +454,17 @@ Nacos 就将同一机房内的实例 划分为一个**集群**
 
 ![](assets/Pasted%20image%2020240417172307.png)
 
-1）Nacos 服务分级存储模型
+Nacos 服务分级存储模型
 
 1. 一级是**服务**，例如 userservice
 2. 二级是**集群**，例如 杭州或上海
 3. 三级是**实例**，例如 杭州机房的某台部署了 userservice 的服务器
 
-### 实例集群配置
+服务调用尽可能选择本地集群的服务，跨集群调用延迟较高。本地集群不可访问时，再去访问其它集群
 
-如何设置实例的集群属性：修改 `application.yml` 文件，添加集群配置属性
+### 服务集群属性
+
+1）配置文件中添加集群属性
 
 ```yml
 spring:
@@ -822,79 +475,86 @@ spring:
         cluster-name: HZ # 集群名称
 ```
 
----
-
-复制多个 nacos-payment-provider 实例，通过以下参数启动
+2）复制多个实例，通过以下参数启动
 
 ```bash
--Dserver.port=9001 -Dspring.cloud.nacos.discovery.cluster-name=HZ
--Dserver.port=9002 -Dspring.cloud.nacos.discovery.cluster-name=HZ
--Dserver.port=9003 -Dspring.cloud.nacos.discovery.cluster-name=SH
+-Dserver.port=8082 -Dspring.cloud.nacos.discovery.cluster-name=HZ
+-Dserver.port=8083 -Dspring.cloud.nacos.discovery.cluster-name=HZ
+-Dserver.port=8084 -Dspring.cloud.nacos.discovery.cluster-name=SH
 ```
 
-查看控制台
+3）查 Nacos 看控制台
 
 ![](assets/Pasted%20image%2020240417181122.png)
 
 ### NacosRule 负载均衡策略
 
-默认的 `ZoneAvoidanceRule` 并不能实现根据同集群优先来实现负载均衡。
+默认的 ZoneAvoidanceRule 并不能根据**同集群优先**来实现负载均衡。
 
-Nacos 中提供了一个 `NacosRule` 的实现，可以**优先从同集群中挑选实例**
+Nacos 中提供了一个 NacosRule
+- 优先从同集群中挑选实例
+- 本地集群找不到提供者，才去其它集群寻找，并且会报警告
+- 确定了可用实例列表后，再采用随机负载均衡挑选实例
 
-在服务消费者中配置：
+1）在 order-service 中配置集群属性，并配置调用 user-service 的负载均衡的 IRule 为 NacosRule：
 
 ```yml
-nacos-payment-provider:
-  ribbon:
-    NFLoadBalancerRuleClassName: com.alibaba.cloud.nacos.ribbon.NacosRule # 负载均衡规则
+spring:  
+  cloud:  
+    nacos:  
+      server-addr: localhost:8848 # 配置Nacos地址 ，注册到 Nacos      discovery:  
+        cluster-name: HZ  
+user-service:  
+  ribbon:  
+    NFLoadBalancerRuleClassName: com.alibaba.cloud.nacos.ribbon.NacosRule
 ```
 
-> 将 cloudalibaba-consumer-nacos-order83 的集群也配置为 HZ，设置 NacosRule 负载均衡策略，调用生产者服务返回的端口号都是 HZ 集群的
+2）将 user-service 的 权重都设置为 1
 
-## 权重配置
+## 根据权重负载均衡
 
 > 服务器设备性能有差异，部分实例所在机器性能较好，另一些较差，我们希望性能好的机器承担更多的用户请求。
 
-默认情况下 NacosRule 是同集群内随机挑选，不会考虑机器的性能问题。
+默认情况下 NacosRule 是同集群内随机挑选，不会考虑机器的性能问题。Nacos 提供了权重配置来控制访问频率，==权重越大则访问频率越高==。
 
-Nacos 提供了权重配置来控制访问频率，==权重越大则访问频率越高==。
-
-直接在 nacos 控制台编辑权重即可：
+1）在 nacos 控制台编辑实例的权重
 
 ![500](assets/Pasted%20image%2020240417202003.png)
 
-## 环境隔离
+2）将实例的权重设置为 0.1，测试可以发现该实例被访问到的频率大大降低
+
+## 环境隔离-namespace
 
 Nacos 提供了 namespace 来实现环境隔离功能
 
 - nacos 中可以有多个 namespace
 - namespace 下可以有 group、service 等
-- 不同 namespace 之间相互隔离，例如==不同 namespace 的服务互相不可见==
+- 不同 namespace 之间相互隔离（不可见）
 
 ![500](assets/Pasted%20image%2020240417203257.png)
 
 默认情况下，所有 service、data、group 都在名为 **public** 的 namespace 下
 
-给微服务配置 namespace ，通过修改配置文件：
+1）在 Nacos 控制台创建 namespace
+
+2）给微服务配置 namespace：
 
 ```yml
 spring:  
   cloud:  
     nacos:  
       discovery:  
-        namespace: 65527313-eef9-439e-a3e0-bf2187879a5d # namespace的id，开发环境
+        namespace: 65527313-eef9-439e-a3e0-bf2187879a5d # namespace的id
 ```
 
 > 将 consumer 服务配置在 dev namespace 下，provider 服务配置在 public namespace 下，consumer 调用不到 provider 服务
-
 
 ## Nacos 和 Eureka 的异同
 
 Nacos 的服务实例分为两种类型：
 
 - *临时实例*（默认）：如果实例宕机超过一定时间，会从服务列表剔除
-- *非临时实例*：如果实例宕机，不会从服务列表剔除，也可以叫**永久实例**
+- *非临时实例 / 永久实例*：如果实例宕机，不会从服务列表剔除
 
 配置一个服务实例为永久实例：
 
@@ -903,7 +563,7 @@ Nacos 的服务实例分为两种类型：
    cloud:  
      nacos:  
        discovery:  
-         ephemeral: false # 设置为非临时实例
+         ephemeral: false # 设置为永久实例
 ```
 
 Nacos 和 Eureka 整体结构类似，服务注册、服务拉取、心跳等待，但是也存在一些差异：
@@ -915,7 +575,6 @@ Nacos 和 Eureka 整体结构类似，服务注册、服务拉取、心跳等待
     - Nacos 支持服务端主动检测提供者状态：
 	    - 临时实例（干儿子）采用**心跳**模式，
 	    - 非临时实例（亲儿子）采用**主动检测**模式
-	    - 临时实例心跳不正常会被剔除，非临时实例则不会被剔除
     - Nacos 支持服务列表变更的**消息推送**模式，服务列表更新更及时
     - CAP：
 	    - Nacos 集群**默认**采用 AP 方式。当集群中存在非临时实例时，采用 CP 模式；
@@ -923,4 +582,552 @@ Nacos 和 Eureka 整体结构类似，服务注册、服务拉取、心跳等待
 
 ![](assets/Pasted%20image%2020240417204836.png)
 
+# Nacos 配置管理
+
+## 统一配置管理
+
+配置更改热更新（开关、模板等类型的配置）
+
+1）在nacos中添加配置信息
+
+![](assets/Pasted%20image%2020240817120106.png)
+
+```yml
+pattern:
+  dateformat: yyyy-MM-dd HH:mm:ss
+```
+
+## 微服务配置拉取
+
+配置获取的步骤：
+
+![](assets/Pasted%20image%2020240817121353.png)
+
+> bootstrap 的读取先于 application，用于配置 nacos 地址
+
+1）引入Nacos的配置管理客户端依赖
+
+```xml
+<dependency>
+	<groupId>com.alibaba.cloud</groupId>
+	<artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+```
+
+2）在 userservice 中的 resource 目录添加一个 bootstrap.yml 文件
+
+```yml
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: dev # 开发环境
+  cloud:
+    nacos:
+      server-addr: localhost:8848
+      config:
+        file-extension: yaml # 文件后缀名
+```
+
+3）在 user-service 中将pattern.dateformat 这个属性注入到 UserController 中做测试
+
+```java
+@RestController
+@RequestMapping("/user")
+public class UserController {
+    @Resource
+    private UserService userService;
+
+	@Value("${pattern.dateformat}")
+    private String dateformat;
+
+    @GetMapping("now")
+    public String now() {
+        log.debug(dateformat);
+        return LocalDateTime.now().format(DateTimeFormatter.ofPattern(dateformat));
+    }
+}
+```
+
+## 配置热更新
+
+Nacos 中的配置文件变更后，微服务无需重启就可以感知，可以通过以下两种配置实现：
+`
+1）方式一：在 `@Value` 注入的变量所在类上添加注解 `@RefreshScope`
+
+```java
+@RefreshScope  
+public class UserController {}
+```
+
+2）使用 `@ConfigurationProperties` 注解（推荐）
+
+```java
+@Data
+@Component
+@ConfigurationProperties(prefix = "pattern")
+public class PatternProperties {
+    private String dateformat;
+}
+```
+
+```java
+@Resource
+private PatternProperties patternProperties;
+
+@GetMapping("now")
+public String now() {
+	return LocalDateTime.now().format(DateTimeFormatter.ofPattern(patternProperties.getDateformat()));
+}
+```
+
+## 多环境配置共享
+
+微服务启动时会从 nacos 读取多个配置文件:
+
+- `[spring.application.name]-[spring.profiles.active].yaml`，例如: `userservice-dev.yaml `
+- `[spring.application.name].yaml`，例如: `userservice.yaml` 
+
+无论 profile 如何变化，`[spring.application.name].yaml` 这个文件一定会加载，因此多环境**共享配置**可以写入这个文件
+
+**多种配置的优先级**：`[服务名]-[profile].yaml` > `[服务名].yaml` > 本地配置
+
+## nacos 集群搭建
+
+[集群部署说明 | Nacos 官网](https://nacos.io/docs/v2/guide/admin/cluster-mode-quick-start/)
+
+官方的 nacos 集群图：
+
+![](assets/Pasted%20image%2020240817162757.png)
+
+其中包含 3 个 nacos 节点，然后一个负载均衡代理 3 个 Nacos，这里的负载均衡器可以使用 nginx
+
+![400](assets/Pasted%20image%2020240817161935.png)
+
+搭建集群的基本步骤：[集群部署说明 | Nacos 官网](https://nacos.io/docs/v2/guide/admin/cluster-mode-quick-start/)
+
+1）下载
+
+2）搭建数据库，初始化数据库表结构
+
+[nacos/distribution/conf/mysql-schema.sql at master · alibaba/nacos · GitHub](https://github.com/alibaba/nacos/blob/master/distribution/conf/mysql-schema.sql)
+
+
+3）配置集群配置文件
+
+nacos/conf/cluster.conf
+
+```yml
+# ip:port
+127.0.0.1:8845
+127.0.0.1:8846
+127.0.0.1:8847
+```
+
+在 nacos/conf/application.properties 配置
+- nacos 的端口
+- 数据库连接地址
+
+```properties
+server.port=8845
+```
+
+4）启动 nacos 集群 #todo 
+
+5）nginx 反向代理 #todo
+
+
+# http 客户端 Feign
+
+官方地址： https://github.com/OpenFeign/feign
+
+## 介绍
+
+用 RestTemplate 发起远程调用代码存在以下问题:
+- 代码可读性差，编程体验不统一
+- 参数复杂 URL 难以维护
+
+```java
+User user = restTemplate.getForObject(URL + order.getUserId().toString(), User.class);
+```
+
+Feign 是一个声明式的 http 客户端，其作用就是帮助我们优雅的实现 http 请求的发送 ，解决上面提到的问题。
+
+## 基本使用
+
+1）引入依赖
+
+```xml
+<dependency>
+	<groupId>org.springframework.cloud</groupId>
+	<artifactId>spring-cloud-starter-openfeign</artifactId>
+</dependency>
+```
+
+2）启动类添加注解开启 Feign 的功能
+
+```java
+@EnableFeignClients
+@SpringBootApplication
+public class OrderApplication {}
+```
+
+3）编写 Feign 客户端
+
+```java
+@FeignClient("user-service")
+public interface UserClient {
+    @GetMapping("/user/{id}")
+    User queryById(@PathVariable("id") Long id);
+}
+```
+
+主要是基于 SpringMVC 的注解来声明远程调用的信息，比如
+
+- 服务名称：userservice
+- 请求方式：GET
+- 请求路径：/user/{id}
+- 请求参数：Long id
+- 返回值类型：User\
+
+> 直接从 controller 复制，别忘了路径前缀 /user
+
+4）用Feign客户端代替 RestTemplate
+
+```java
+@Service
+public class OrderService {
+    @Resource
+    private OrderMapper orderMapper;
+	@Resource
+    private UserClient userClient;
+
+    public Order queryOrderById(Long orderId) {
+        Order order = orderMapper.findById(orderId);
+        User user = userClient.queryById(order.getUserId());
+        order.setUser(user);
+        return order;
+    }
+}
+```
+
+## 自定义配置
+
+Feign 运行自定义配置来覆盖默认配置，可以修改的配置如下：
+
+![](assets/Pasted%20image%2020240817194546.png)
+
+一般我们需要配置的就是日志级别，配置Feign日志有两种方式：
+
+1）方式一：配置文件
+
+全局生效：
+
+```yml
+feign:
+  client:
+    config:
+      default: # 全局配置
+        logger-level: FULL
+```
+
+局部生效：
+
+```yml
+feign:
+  client:
+    config:
+      user-service: # 服务名称
+        logger-level: FULL
+```
+
+2）方式二：代码
+
+![700](assets/Pasted%20image%2020240817195911.png)
+
+## 性能优化
+
+Feign 底层的客户端实现：
+
+- URLConnection: 默认实现，不支持连接池
+- Apache HttpClient: 支持连接池
+- OKHttp: 支持连接池
+
+因此优化 Feign 的性能主要包括：
+
+- 使用连接池代替默认的 URLConnection 
+- 日志级别，最好用 basic 或 none
+
+### 连接池配置
+
+Feign 添加 HttpClient 的支持
+
+1）引入依赖
+
+```xml
+<dependency>
+	<groupId>io.github.openfeign</groupId>
+	<artifactId>feign-httpclient</artifactId>
+</dependency>
+```
+
+2）配置连接池
+
+```yml
+feign:
+  client:
+    config:
+      default: # 全局配置
+        logger-level: BASIC # 日志级别
+  httpclient:
+    enabled: true
+    max-connections: 200 # 最大连接数
+    max-connections-per-route: 50 # 每个路径的最大连接数
+```
+
+## 最佳实践
+
+1）方式一（继承）: 给消费者的 FeignClient 和提供者的 controller 定义统一的父接口作为标准。
+
+![](assets/Pasted%20image%2020240817202453.png)
+
+官方不推荐这种方式：
+
+- 服务紧耦合
+- 父接口参数列表中的映射不会被继承
+
+![](assets/Pasted%20image%2020240817203050.png)
+
+2）方式二（抽取）: 将 FeignClient 抽取为独立模块，并且把接口有关的 POJO、默认的 Feign 配置都放到这个模块中，提供给所有消费者使用
+
+![](assets/Pasted%20image%2020240817203419.png)
+
+### 方式二实操
+
+> 具体见代码
+
+实现最佳实践方式二的步骤如下:
+
+1. 首先创建一个 module，命名为 feign-api，然后引入 feign 的 starter 依赖
+2. 将 order-service 中编写的 UserClient、User、DefaultFeignConfiguration 都复制到 feign-api 项目中
+3. 在 order-service 中引入 feign-api 的依赖
+4. 修改 order-service 中的所有与上述三个组件有关的 import 部分，改成导入 feign-api 中的包
+5. 重启测试
+
+当定义的 FeignClient 不在 SpringBootApplication 的扫描包范围时，这些 FeignClient 无法使用。有两种方式解决: 
+
+方式一：指定 FeignClient 所在包
+```java
+@EnableFeignClients(basePackages = {"cn.itcast.feign.clients"})
+@SpringBootApplication  
+public class OrderApplication {}
+```
+
+方式二：指定 FeignClient 字节码
+
+```java
+@EnableFeignClients(clients = {UserClient.class})
+@SpringBootApplication  
+public class OrderApplication {}
+```
+
+
+# 统一网关 Gateway
+
+## 介绍
+
+网关功能：
+
+- 身份认证和权限校验
+- 服务路由、负载均衡
+- 请求限流
+
+![](assets/Pasted%20image%2020240817222537.png)
+
+Zuul 是基于 Servlet 的实现，属于阻塞式编程。而 SpringCloudGateway 则是基于 Spring5 中提供的 WebFlux，属于响应式编程的实现，具备更好的性能。
+
+## 搭建
+
+1）创新的 module，引入SpringCloudGateway 的依赖和 nacos 的服务发现依赖
+
+```xml
+<dependencies>
+	<dependency>
+		<groupId>org.springframework.cloud</groupId>
+		<artifactId>spring-cloud-starter-gateway</artifactId>
+	</dependency>
+	<dependency>
+		<groupId>com.alibaba.cloud</groupId>
+		<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+	</dependency>
+</dependencies>
+```
+
+2）配置
+
+路由配置包括：
+
+- 路由 id：路由的唯一标示
+- 路由目标(uri)：路由的目标地址，http 代表固定地址，lb 代表根据服务名负载均衡
+- 路由断言(predicates)：判断路由的规则，符合则转发到目标地址
+
+```yml
+server:
+  port: 10010
+spring:
+  application:
+    name: gateway # 微服务的注册名称
+  cloud:
+    nacos:
+      server-addr: localhost:8848 # 配置Nacos地址 ，注册到 Nacos
+    gateway:
+      routes:
+        - id: user-service # 路由标识，必须唯一
+          uri: lb://user-service # 路由的目标地址
+          predicates:
+            - Path=/user/** # 路径断言，/user开头的符合
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/order/**
+```
+
+请求转发流程：
+![](assets/Pasted%20image%2020240817231655.png)
+
+## 路由断言工厂
+
+我们在配置文件中写的断言规则（predicates）只是字符串，这些字符串会被 Predicate Factory 读取并处理，转变为路由判断的条件
+
+Spring 提供了 11 种基本的 Predicate 工厂：
+
+![](assets/Pasted%20image%2020240817233513.png)
+
+## 路由过滤器
+
+GatewayFilter 是网关中提供的一种过滤器，可以对进入网关的请求和微服务返回的响应做处理
+
+![](assets/Pasted%20image%2020240817235849.png)
+
+
+Spring 提供了 31 种过滤器工厂
+
+- AddRequestHeader：给当前请求添加一个请求头
+- RemoveRequestHeader：移除请求中的一个请求头
+- AddResponseHeader：给响应结果中添加一个响应头
+- RemoveResponseHeader：从响应结果中移除有一个响应头
+- RequestRateLimiter：限制请求的流量
+
+---
+
+给所有进入 userservice 的请求添加一个请求头：Truth=itcast is freaking awesome!
+
+实现方式：在 gateway 中修改 application.yml 文件，给 userservice 的路由添加过滤器
+
+```yml
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: user-service # 路由标识，必须唯一
+          uri: lb://user-service # 路由的目标地址
+          predicates:
+            - Path=/user/** # 路径断言，/user开头的符合
+          filters:
+            - AddRequestHeader=Truth, hello gateway!
+```
+
+### 默认过滤器
+
+如果要对所有的路由都生效，则可以将过滤器工厂写到 default 下
+
+```yml
+spring:
+  cloud:
+    gateway:
+      default-filters:
+        - AddRequestHeader=Truth, hello gateway!
+```
+
+### 全局过滤器
+
+全局过滤器的作用也是处理一切进入网关的请求和微服务响应。
+
+- 与 GatewayFilter 的作用一样，区别在于 GatewayFilter 通过配置定义，处理逻辑是固定的。而 GlobalFilter 的逻辑需要自己写代码实现。
+- 定义方式是实现 GlobalFilter 接口
+
+---
+
+需求：定义全局过滤器，拦截请求，判断请求的参数是否满足下面条件，如果同时满足则放行，否则拦截
+
+- 参数中是否有 authorization
+- authorization 参数值是否为 admin
+
+1）实现 GlobalFilter 接口
+
+2）添加 `@Order` 注解或实现 Ordered 接口
+
+3）编写处理逻辑
+
+```java
+@Component
+public class AuthorizeFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        ServerHttpRequest request = exchange.getRequest();
+        MultiValueMap<String, String> queryParams = request.getQueryParams();
+        String auth = queryParams.getFirst("authorization");
+        if ("admin".equals(auth)) {
+            return chain.filter(exchange);
+        }
+        exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+        return exchange.getResponse().setComplete();
+    }
+
+    @Override
+    public int getOrder() {
+        return -1;
+    }
+}
+```
+
+### 过滤器执行顺序
+
+请求进入网关会碰到三类过滤器：当前路由的过滤器、DefaultFilter、GlobalFilter 
+
+请求路由后，会将当前路由过滤器和 DefaultFilter、GlobalFilter，合并到一个过滤器链(集合)中，排序后依次执行每个过滤器
+
+![](assets/Pasted%20image%2020240818122903.png)
+
+过滤器的执行顺序：
+
+- 每一个过滤器都必须指定一个 int 类型的 order 值，order 值越小，执行顺序越靠前
+- GlobalFilter 通过实现 Ordered 接口，或者添加 `@Order` 注解来指定 order 值，由我们自己指定
+- 路由过滤器和 defaultFilter 的 order 由 Spring 指定，默认是按照声明顺序从 1 递增。
+- 当过滤器的 order 值一样时，会按照 ==defaultFilter > 路由过滤器 > GlobalFilter== 的顺序执行
+
+可以参考下面几个类的源码来查看:
+- `org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator#getFilters()` 方法是先加载 defaultFilters，然后再加载某个 route 的 filters，然后合并。
+- `org.springframework.cloud.gateway.handler.FilteringWebHandler#handle()` 方法会加载全局过滤器与前面的过滤器合并后根据 order 排序，组织过滤器链
+
+## 跨域问题处理
+
+跨域：域名不一致就是跨域，主要包括
+
+- 域名不同: [www.taobao.com]() 和 [www.taobao.org]() 和 [www.jd.com]() 和 [miaosha.jd.com]()
+- 域名相同，端口不同：[localhost:8080]() 和 [localhost:8081]()
+
+跨域问题：浏览器禁止请求的发起者与服务端发生**跨域 ajax 请求**，请求被浏览器拦截的问题
+
+- 解决方案：CORS
+
+网关处理跨域采用的同样是 CORS 方案，并且只需要简单配置即可实现
+
+- 允许哪些域名跨域?
+- 允许哪些请求头?
+- 允许哪些请求方式?
+- 是否允许使用 cookie?
+- 有效期是多久?
+
+![600](assets/Pasted%20image%2020240818125516.png)
 
