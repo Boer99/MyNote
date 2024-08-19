@@ -399,18 +399,12 @@ java -cp 路径 Main 参数
 
 用户提交恶意代码，怎么办?
 
-1）执行阻塞，占用资源不释放（sleep，线程阻塞）
-
-2）占用内存，不释放（堆内存溢出）
-
-3）读取服务器文件（文件信息泄露）
-
-4）写文件，越权植入木马
-
-5）直接通过 Process 执行其他程序
-
-6）执行高危命令
-
+- 1）执行阻塞，占用资源不释放（sleep，线程阻塞）
+- 2）占用内存，不释放（堆内存溢出）
+- 3）读取服务器文件（文件信息泄露）
+- 4）写文件，越权植入木马
+- 5）直接通过 Process 执行其他程序
+- 6）执行高危命令
 
 解决方法：
 
@@ -502,6 +496,8 @@ Docker 容器技术能够实现（底层是用 cgroup、namespace 等方式实�
 private static final String AUTH_REQUEST_HEADER = "auth";  
 private static final String AUTH_REQUEST_SECRET = "secretKey";
 ```
+
+## 单体项目改造为微服务
 
 
 
