@@ -7,6 +7,7 @@
 # 经验
 
 - 字符串尽量转换为 char 数组操作，String 类的方法很容易弄错
+- String 等值判断用 `equal()` 方法，不要用 `==`
 - dp 五部曲寻找递归的最好方式就是模拟 dp 数组
 - 数学公式：
 	- 概率：组合：$C_{n}^{m}=\frac{n!}{m!(n-m)!}$ ，排列：$P_{n}^{m}=\frac{n!}{(n-m)!}$
@@ -16,20 +17,17 @@
 未知：
 - 链表实现栈
 - 因数分解 
+- 实现一个 ArrayList
+- ipv4 地址编码、解码 #携程
+	- 编码: 将 `ipv4` 使用一个 `int` 类型存储
+	- 解码: `int` 类型解码为 `ipv4` 地址
+- 比 n 大的最小回文数
 
 未处理：
 - [43. 字符串相乘 - 力扣（LeetCode）](https://leetcode.cn/problems/multiply-strings/description/)
 - 有向无环图，找 A 到 B 的最短路径
-- 力扣 440 [字典序的第K小数字](https://leetcode.cn/problems/k-th-smallest-in-lexicographical-order/)
-- 比 n 大的最小回文数
-- 实现一个 ArrayList
+- 力扣 440 [字典序的第K小数字](https://leetcode.cn/problems/k-th-smallest-in-lexicographical-order/) #困难
 - 字符串数组的最大公共前缀并给出时空复杂度
-- ipv4 地址编码、解码 #携程
-	- 编码: 将 `ipv4` 使用一个 `int` 类型存储
-	- 解码: `int` 类型解码为 `ipv4` 地址
-
-树
-- 给定数组，判断其是否可能是二叉搜索树的后序遍历序列
 
 回溯
 - 八皇后问题
@@ -683,11 +681,41 @@ class Solution {
 }
 ```
 
-> 本题模拟过程，时空复杂度不必在意 	
-> 
-> 时间：`O(n^2)`
-> 
-> 空间：`O(1)`
+## 最长公共前缀 #手撕 #rep 
+
+```ad-abstract
+编写一个函数来查找字符串数组中的最长公共前缀。
+
+如果不存在公共前缀，返回空字符串 `""`。
+
+**输入：**strs = ["flower","flow","flight"]
+**输出：**"fl"
+```
+
+思路：
+- 横向/纵向遍历字符数组都可以，这里采用纵向
+- 不需要额外记录前缀，记录第一个字符串的索引即可
+
+```java
+class Solution {
+    public String longestCommonPrefix(String[] strs) {
+        if (strs.length == 0) {
+            return "";
+        }
+        for (int i = 0; i < strs[0].length(); i++) { // i为列索引
+            char c = strs[0].charAt(i);
+            for (int j = 1; j < strs.length; j++) {
+                String str = strs[j];
+                if (i >= str.length() - 1 || c != str.charAt(i)) {
+                    // i列上不想等 or i列在j串上索引越界 
+                    return strs[0].substring(0, i);
+                }
+            }
+        }
+        return strs[0];
+    }
+}
+```
 
 # 链表
 
@@ -6821,7 +6849,9 @@ https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fe
 
 ## ---------- 子序列/子数组
 
+```ad-note
 序列不要求连续，数组要求连续
+```
 
 ### 最长递增子序列 #中等 #手撕2 #rep
 
@@ -6941,6 +6971,14 @@ class Solution {
 ### 最长公共子序列 #中等 #rep
 
 [1143. 最长公共子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-common-subsequence/description/)
+
+```ad-abstract
+给定两个字符串 `text1` 和 `text2`，返回这两个字符串的最长 **公共子序列** 的长度。如果不存在 **公共子序列** ，返回 `0` 。
+
+**输入：**text1 = "abcde", text2 = "ace" 
+**输出：**3  
+**解释：**最长公共子序列是 "ace" ，它的长度为 3 。
+```
 
 分析：
 - 本题和 最长重复子数组 区别在于这里**不要求是连续**的了，但要有相对顺序
