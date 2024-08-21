@@ -584,6 +584,75 @@ public class Main {
 }
 ```
 
+## 字符串的排列 #中等 #手撕 #rep
+
+[字符串的排列](https://leetcode.cn/problems/permutation-in-string/)
+
+```ad-abstract
+给你两个字符串 `s1` 和 `s2` ，写一个函数来判断 `s2` 是否包含 `s1` 的排列。如果是，返回 `true` ；否则，返回 `false` 。
+
+换句话说，`s1` 的排列之一是 `s2` 的 **子串** 。
+
+**输入：**s1 = "ab" s2 = "eidbaooo"
+**输出：**true
+**解释：**s2 包含 s1 的排列之一 ("ba").
+```
+
+思路：
+- 滑动窗口，如何比较比较窗口内的字符串和 s1 的某个排列相等？当两个字符串每个字符的个数均相等时 --> 哈希字典
+- 优化：
+	- 不用每个窗口都重新获取字典，根据每次移除的元素和新进来的元素来更新字典即可
+	- 窗口大小固定，只要记录右边界索引即可
+
+```java
+// 优化前
+public boolean checkInclusion(String s1, String s2) {
+	char[] arr1 = s1.toCharArray();
+	char[] arr2 = s2.toCharArray();
+	int[] set1 = new int[26];
+	for (int i = 0; i < s1.length(); i++) {
+		set1[s1.charAt(i) - 'a']++;
+	}
+	for (int s = 0, e = s1.length() - 1; e < s2.length(); s++, e++) {
+		int[] set2 = new int[26];
+		for (int i = s; i <= e; i++) {
+			set2[s2.charAt(i) - 'a']++;
+		}
+		if (Arrays.equals(set1, set2)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// 优化后
+public boolean checkInclusion(String s1, String s2) {
+	if (s1.length() > s2.length()) {
+		return false;
+	}
+	char[] arr1 = s1.toCharArray();
+	char[] arr2 = s2.toCharArray();
+	int[] set1 = new int[26];
+	int[] set2 = new int[26];
+	int size = s1.length();
+	for (int i = 0; i < size; i++) {
+		set1[s1.charAt(i) - 'a']++;
+		set2[s2.charAt(i) - 'a']++;
+	}
+	if (Arrays.equals(set1, set2)) {
+		return true;
+	}
+	for (int end = size; end < s2.length(); end++) {
+		set2[s2.charAt(end) - 'a']++;
+		set2[s2.charAt(end - size) - 'a']--;
+		if (Arrays.equals(set1, set2)) {
+			return true;
+		}
+	}
+	return false;
+}
+```
+
 ## ---------- 模拟过程
 
 ## 螺旋矩阵

@@ -1,5 +1,7 @@
 ```ad-summary
 参考：heima2021
+
+官方文档：[Spring Cloud Alibaba 是什么 - Spring Cloud Alibaba官网 (aliyun.com)](https://sca.aliyun.com/docs/2021/overview/what-is-sca/?spm=5176.29160081.0.0.74807a3ck9HpqP)
 ```
 
 # 导学
@@ -49,6 +51,17 @@
 ![](assets/Pasted%20image%2020240813235606.png)
 
 ## SpringCloud
+
+```ad-note
+官方说明：
+
+Spring Cloud 是分布式微服务架构的一站式解决方案，它提供了一套简单易用的编程模型，使我们能在 Spring Boot 的基础上轻松地实现微服务系统的构建。 **Spring Cloud 提供以微服务为核心的分布式系统构建标准。**
+
+Spring Cloud 本身并不是一个开箱即用的框架，它是一套微服务规范，共有两代实现。
+
+- Spring Cloud Netflix 是 Spring Cloud 的第一代实现，主要由 Eureka、Ribbon、Feign、Hystrix 等组件组成。
+- Spring Cloud Alibaba 是 Spring Cloud 的第二代实现，主要由 Nacos、Sentinel、Seata 等组件组成。
+```
 
 SpringCloud 是目前国内使用最广泛的微服务框架。官网地址：[Spring Cloud](https://spring.io/projects/spring-cloud)
 

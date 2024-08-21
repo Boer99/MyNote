@@ -9,23 +9,34 @@
 
 ## 系统功能
 
+- 公共模块
+	- common 公共模块 (yuoj-backend-common)：全局异常处理器、请求响应封装类、公用的工具类等
+	- model 模型模块 (yuoj-backend-model)：很多服务公用的实体类
+	- 公用接口模块 (yuoj-backend-service-client)：只存放接口，不存放实现(多个服务之间要共享)
+
 - 用户模块
-	- 注册(后端已实现)
-	- 登录(后端已实现，前端已实现)
+	- 注册
+	- 登录
+	- 用户管理
 
 - 题目模块
-	- 创建题目(管理员)
-	- 删除题目(管理员)
-	- 修改题目(管理员)
-	- 搜索题目(用户)
-	- 在线做题(题目详情页)
+	- 创建题目（管理员）
+	- 删除题目（管理员）
+	- 修改题目（管理员）
+	- 搜索题目（用户）
+	- 在线做题（题目详情页）
+	- 题目提交
 
 - 判题模块
-	- 提交判题(结果是否正确与错误)
-	- 错误处理(内存溢出、安全性、超时)自主实现 代码沙箱(安全沙箱 C .
-	- 开放接口(提供一个独立的新服务)
+	- 执行判题逻辑
+	- 错误处理（内存溢出、安全性、超时）
+	- 自主实现 代码沙箱（安全沙箱）
+	- 开放接口（提供一个独立的新服务）
+
+
 
 # 前端
+
 ## 前端组件库
 
 [Arco Design - 企业级产品的完整设计和开发解决方案](https://arco.design/)
@@ -38,9 +49,11 @@ Markdown 编辑器组件：[bytedance/bytemd: ByteMD v1 repository (github.com)]
 
 [microsoft/monaco-editor: A browser based code editor (github.com)](https://github.com/microsoft/monaco-editor)
 
+
+
 # 后端
 
-## 后端初始化
+## 初始化项目
 
 名字替换
 
@@ -499,5 +512,151 @@ private static final String AUTH_REQUEST_SECRET = "secretKey";
 
 ## 单体项目改造为微服务
 
+用户登录功能：需要改造为分布式登录其他内容（代码：git）
+
+> 其他内容：
+> - 有没有用到单机的锁? 改造为分布式锁
+> - 有么有用到本地缓存? 改造为分布式缓存(Redis)
+> - 需不需要用到分布式事务? 比如操作多个库
+
+### 模块划分
+
+模块划分见 [系统功能](#系统功能)（代码：git）
+
+### 路由划分
+
+用 springboot 的 context-path 统一修改各项目的接口前缀，比如：
+
+- 用户服务:
+	- /api/user
+	- /api/user/inner（内部调用，网关层面要做限制）
+- 题目服务：
+	- /api/question（也包括题目提交信息）
+	- /api/question/inner（内部调用，网关层面要做限制）
+- 判题服务：
+	- /api/judge
+	- /api/judge/inner（内部调用，网关层面要做限制）
+
+需要修改每个服务提供者的 context-path 全局请求路由（配置文件中）
+
+```java
+server:
+  servlet:
+    context-path: /api/user
+```
+
+```java
+@RestController
+//@RequestMapping("/user")
+@RequestMapping("/") // controller上的统一路径去掉
+public class UserController {}
+```
+
+### 初始化项目
+
+[Cloud Native App Initializer (aliyun.com)](https://start.aliyun.com/)
+
+### 服务调用
+
+现在的问题是，题目服务依赖用户服务，但是代码已经分到不同的包，找不到对应的 Bean。
+可以使用 Open Feign 组件实现跨服务的远程调用。
+
+1）梳理服务的调用关系，确定哪些服务(接口)需要给内部调用
+
+- 用户服务:没有其他的依赖
+- 题目服务:
+	- userService.getByld(userld)
+	- userService.getUserVO(user)
+	- userService.listBylds(userldSet)
+	- userService.isAdmin(loginUseruserService.getLoginUser(request)
+	- judgeService.doJudge(questionSubmitld)
+- 判题服务:
+	- questionService.getByld(questionld)
+	- questionSubmitService.getByld(questionSubmitld)
+	- questionSubmitService.updateByld(questionSubmitUpdate)
+
+2）确认要提供哪些服务
+
+- 用户服务：
+	- userService.getByld(userld)
+	- userService.getUserVO(user)
+	- userService.listBylds(userldSet)
+	- userService.isAdmin(loginUser)
+	- userService.getLoginUser(request)
+- 题目服务:
+	- questionService.getByld(questionld)
+	- questionSubmitService.getByld(questionSubmitld)
+	- questionSubmitService.updateByld(questionSubmitUpdate)
+- 判题服务
+	- judgeService.doJudge(questionSubmitld)
+
+3）实现 client 接口（代码见 git）
+
+注意：
+- 像 isAdmin() 这种方法没必要远程调用，用默认方法实现即可
+- 为什么 getById()，getLoginUser() 这种前端也能访问的接口，要再提供一个 inner 接口呢？
+	- 这两个解耦前端访问是需要认证和权限校验的，同理 getQuestionById() 也是，只有本人和管理员才能看到题目的完整信息（比如答案）
+
+```java
+@FeignClient(name = "yuoj-backend-user-service",path = "/api/user/inner")
+public interface UserFeignClient {
+
+    @GetMapping("/get/id")
+    User getById(@RequestParam("userId") long userId);
+
+    @GetMapping("/get/ids")
+    List<User> listByIds(@RequestParam("idList") Collection<Long> idList);
+
+    default User getLoginUser(HttpServletRequest request) {
+        // 先判断是否已登录
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        return currentUser;
+    }
+
+    default boolean isAdmin(User user) {
+        return user != null && UserRoleEnum.ADMIN.getValue().equals(user.getUserRole());
+    }
+
+    default UserVO getUserVO(User user){
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
+    }
+}
+```
+
+4）修改各业务服务的调用代码为 feignClient（代码见 git）
+
+5）编写服务的实现类
+
+```java
+@RestController
+@RequestMapping("/inner")
+public class UserInnerController implements UserFeignClient {
+    @Resource
+    private UserService userService;
+
+    @Override
+    @GetMapping("/get/id")
+    public User getById(@RequestParam("userId") long userId) {
+        return userService.getById(userId);
+    }
+
+    @Override
+    @GetMapping("/get/ids")
+    public List<User> listByIds(@RequestParam("idList") Collection<Long> idList) {
+        return userService.listByIds(idList);
+    }
+}
+```
+
+6）主启动类 Feign 注解、配置文件配置服务发现 nacos 地址
 
 
