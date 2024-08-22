@@ -788,6 +788,12 @@ class Solution {
 
 # 链表
 
+```ad-important
+链表的题基本都绕不过这两个点：
+1. 虚拟头节点
+2. 前置节点
+```
+
 ## 移除链表元素
 
 > 给你一个链表的头节点 `head` 和一个整数 `val` ，请你**删除**链表中所有满足 `Node.val == val` 的节点，并返回 **新的头节点** 。
@@ -833,6 +839,37 @@ class Solution {
 ## 设计链表
 
 [707. 设计链表 - 力扣（LeetCode）](https://leetcode.cn/problems/design-linked-list/)
+
+## 合并两个有序链表 #美团24
+
+```java
+ public ListNode mergeTwoLists(ListNode list1, ListNode list2) {
+	// if (list1 == null) {
+	// return list2;
+	// }
+	// if (list2 == null) {
+	// return list1;
+	// }
+	ListNode dummy = new ListNode();
+	dummy.next = list1;
+	ListNode pre = dummy;
+	while (list1 != null && list2 != null) {
+		if (list1.val <= list2.val) {
+			list1 = list1.next;
+		} else {
+			ListNode temp = list2.next;
+			pre.next = list2;
+			list2.next = list1;
+			list2 = temp;
+		}
+		pre = pre.next;
+	}
+	if (list2 != null) {
+		pre.next = list2;
+	}
+	return dummy.next;
+}
+```
 
 
 ## 反转链表 #手撕2 #rep2

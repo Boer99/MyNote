@@ -659,4 +659,15 @@ public class UserInnerController implements UserFeignClient {
 
 6）主启动类 Feign 注解、配置文件配置服务发现 nacos 地址
 
+### 网关
+
+微服务网关(yuoj-backend-gateway)：Gateway 聚合所有的接口，统一接受处理前端的请求
+
+为什么要用?
+- 所有的服务端口不同，增大了前端调用成本
+- 所有服务是分散的，你可需要集中进行管理、操作，比如集中解决跨域、鉴权、接口文档、服务的路由、接口安全性、流量染色
+
+> Gateway 是应用层网关：会有一定的业务逻辑(比如根据用户信息判断权限)
+> 
+> Nginx 是接入层网关：比如每个请求的日志，通常没有业务逻辑
 
