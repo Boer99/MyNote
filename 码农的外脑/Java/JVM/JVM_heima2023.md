@@ -2451,18 +2451,13 @@ Parallel Scavenge 允许手动设置“最大暂停时间”和“吞吐量”�
 
 > #《深入理解Java虚拟机》 
 > 
-> JDK 9 发布之日，G1 宣告取代 Parallel Scavenge 加 Parallel Old 组合，
->  成为**服务端模式**下的默认垃圾收集器，而 CMS 则沦落至被声明为不推荐使用
->  （Deprecate）的收集器。如果对 JDK 9 及以上版本的 HotSpot 虚拟机使用参数 `-XX：+UseConcMarkSweepGC` 来开启 CMS 收集器的话，用户会收到一个警告信息，提示 CMS  未来将会被废弃
->  
->  它可以面向堆内存任何部分来组成回收集（Collection Set，一般简称 CSet）进行回收，衡量标准不再是它属于哪个分代，而是**哪块内存中存放的垃圾数量最多，回收收益最大**，这就是 G1 收集器的 **Mixed GC** 模式。
->  
->  
+> JDK 9 发布之日，G1 宣告取代 Parallel Scavenge 加 Parallel Old 组合，成为**服务端模式**下的默认垃圾收集器，而 CMS 则沦落至被声明为不推荐使用（Deprecate）的收集器。如果对 JDK 9 及以上版本的 HotSpot 虚拟机使用参数 `-XX：+UseConcMarkSweepGC` 来开启 CMS 收集器的话，用户会收到一个警告信息，提示 CMS  未来将会被废弃
+> 
+> 它可以面向堆内存任何部分来组成回收集（Collection Set，一般简称 CSet）进行回收，衡量标准不再是它属于哪个分代，而是**哪块内存中存放的垃圾数量最多，回收收益最大**，这就是 G1 收集器的 **Mixed GC** 模式。
 
 Garbage First，**JDK9 之后默认**的垃圾回收器，JDK9 之后强烈建议使用 G1 垃圾回收器
 
 > 1）*Parallel Scavenge* 关注吞吐量，允许用户设置最大暂停时间，但是会**减少年轻代可用空间**的大小。
-> 
 > 2）*CMS* 关注暂停时间，但是**吞吐量方面会下降**。
 
 而 G1 设计目标就是将上述两种垃圾回收器的**优点融合**：

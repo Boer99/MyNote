@@ -26,7 +26,7 @@
 未处理：
 - [43. 字符串相乘 - 力扣（LeetCode）](https://leetcode.cn/problems/multiply-strings/description/)
 - 有向无环图，找 A 到 B 的最短路径
-- 力扣 440 [字典序的第K小数字](https://leetcode.cn/problems/k-th-smallest-in-lexicographical-order/) #困难
+- 力扣 440 [字典序的第K小数字](https://leetcode.cn/problems/k-th-smallest-in-lexicographical-order/) #hard
 - 字符串数组的最大公共前缀并给出时空复杂度
 
 回溯
@@ -329,7 +329,7 @@ public class Solution {
 - 时间：`O(n)`
 - 空间：`O(n)`
 
-## 搜索旋转排序数组 #中等 #手撕 #rep
+## 搜索旋转排序数组 #手撕 #rep
 
 [33. 搜索旋转排序数组 - 力扣（LeetCode）](https://leetcode.cn/problems/search-in-rotated-sorted-array/description/)
 
@@ -419,7 +419,7 @@ public class Solution {
 > 
 > 空间：`O(1)`
 
-## 最长不重复子串 #中等 #手撕 #rep
+## 最长不重复子串 #手撕 #rep
 
 [LCR 016. 无重复字符的最长子串 - 力扣（LeetCode）](https://leetcode.cn/problems/wtcaE1/description/)
 
@@ -584,7 +584,7 @@ public class Main {
 }
 ```
 
-## 字符串的排列 #中等 #手撕 #rep
+## 字符串的排列 #手撕 #rep
 
 [字符串的排列](https://leetcode.cn/problems/permutation-in-string/)
 
@@ -997,7 +997,7 @@ class Solution {
 > 空间：`O(n)`
 
 
-## 删除链表的倒数第N个节点 #中等 #手撕
+## 删除链表的倒数第N个节点 #手撕
 
 > 给你一个链表，删除链表的倒数第 `n` 个结点，并且返回链表的头结点。
 > 
@@ -1090,7 +1090,7 @@ public class Solution {
 > 
 > 空间：`O(1)`
 
-## 环形链表 II #中等 #手撕3 #rep
+## 环形链表 II #手撕3 #rep
 
 [142. 环形链表 II - 力扣（LeetCode）](https://leetcode.cn/problems/linked-list-cycle-ii/)
 
@@ -1121,7 +1121,7 @@ public class Solution {
 > 
 > 空间：`O(1)`
 
-## K 个一组翻转链表 #困难 #手撕3 #rep
+## K 个一组翻转链表 #hard #手撕3 #rep
 
 [25. K 个一组翻转链表 - 力扣（LeetCode）](https://leetcode.cn/problems/reverse-nodes-in-k-group/description/)
 
@@ -1172,7 +1172,7 @@ class Solution {
 }
 ```
 
-## 重排链表 #中等 #手撕3 #rep 
+## 重排链表 #手撕3 #rep 
 
 [143. 重排链表 - 力扣（LeetCode）](https://leetcode.cn/problems/reorder-list/description/)
 
@@ -1700,7 +1700,14 @@ class Solution {
 > 
 > 空间：`O(1)`
 
+
 # 字符串
+
+常用类：
+- String
+- StringBuilder
+	- deleteCharAt(int index)：删除指定索引位置的元素
+
 
 ## 反转字符串
 
@@ -2393,7 +2400,7 @@ public int evalRPN(String[] tokens) {
 > 
 > 空间：`O(n)` 维护栈
 
-## 滑动窗口最大值 #困难 #笔试 #rep
+## 滑动窗口最大值 #hard #笔试 #rep
 
 [239. 滑动窗口最大值 - 力扣（LeetCode）](https://leetcode.cn/problems/sliding-window-maximum/description/)
 
@@ -2459,7 +2466,7 @@ public int[] maxSlidingWindow(int[] nums, int k) {
 
 [347. 前 K 个高频元素 - 力扣（LeetCode）](https://leetcode.cn/problems/top-k-frequent-elements/description/)
 
-## 验证二叉树的前序序列化 #中等 #手撕 #rep
+## 验证二叉树的前序序列化 #手撕 #rep
 
 [331. 验证二叉树的前序序列化 - 力扣（LeetCode）](https://leetcode.cn/problems/verify-preorder-serialization-of-a-binary-tree/description/)
 
@@ -2592,7 +2599,7 @@ class Solution {
 > 
 > 空间：`O(n)` 队列
 
-## 二叉树的右视图 #中等 #手撕 #rep
+## 二叉树的右视图 #手撕 #rep
 
 > 给定一个二叉树的 **根节点** `root`，想象自己站在它的右侧，按照从顶部到底部的顺序，返回从右侧所能看到的节点值。
 > 
@@ -2631,6 +2638,51 @@ class Solution {
 > 时间：`O(n)`
 > 
 > 空间：`O(n)` 队列
+
+## 103. 二叉树的锯齿形层序遍历 #字节24 #rep
+
+[103. 二叉树的锯齿形层序遍历 - 力扣（LeetCode）](https://leetcode.cn/problems/binary-tree-zigzag-level-order-traversal/description/)
+
+```ad-summary
+给你二叉树的根节点 `root` ，返回其节点值的 **锯齿形层序遍历** 。（即先从左往右，再从右往左进行下一层遍历，以此类推，层与层之间交替进行）。
+
+**输入：**root = [3,9,20,null,null,15,7]
+**输出：**[[3],[20,9],[15,7]]
+```
+
+思路：怎么让每一层的节点按正常顺序进入，顺序遍历出来是倒序呢 --> 双向队列
+
+```java
+ public List<List<Integer>> zigzagLevelOrder(TreeNode root) {
+	List<List<Integer>> res = new ArrayList<>();
+	if (root == null)
+		return res;
+	LinkedList<TreeNode> queue = new LinkedList<>();
+	queue.offerLast(root);
+	boolean order = true;
+	while (!queue.isEmpty()) {
+		int size = queue.size();
+		LinkedList<Integer> level = new LinkedList<>();
+		while (size-- > 0) {
+			TreeNode node = queue.pollFirst();
+			if (order) {
+				level.offerLast(node.val); // 队尾进
+			} else {
+				level.offerFirst(node.val); // 队尾进
+			}
+			if (node.left != null)
+				queue.offerLast(node.left);
+			if (node.right != null)
+				queue.offerLast(node.right);
+		}
+		res.add(level);
+		order = !order;
+	}
+	return res;
+}
+```
+
+
 
 ## ---------- 递归遍历
 
@@ -3516,9 +3568,36 @@ class Solution {
 
 > 思路二：迭代
 
-todo
+#todo
 
-## 二叉树中的最大路径和 #困难 #手撕 #rep
+# 二叉树的直径 #字节24 
+
+[543. 二叉树的直径 - 力扣（LeetCode）](https://leetcode.cn/problems/diameter-of-binary-tree/)
+
+思路：遍历每个节点，求出直径，取最大值，思路同 [二叉树中的最大路径和 #hard #手撕 #rep](#二叉树中的最大路径和%20hard%20手撕%20rep)
+
+```java
+class Solution {
+    int res;
+
+    public int diameterOfBinaryTree(TreeNode root) {
+        traversal(root);
+        return res;
+    }
+
+    public int traversal(TreeNode root) {
+        if (root == null) {
+            return 0;
+        }
+        int left = traversal(root.left);
+        int right = traversal(root.right);
+        res = Math.max(left + right, res);
+        return Math.max(left, right) + 1;
+    }
+}
+```
+
+## 二叉树中的最大路径和 #hard #手撕 #rep
 
 [124. 二叉树中的最大路径和 - 力扣（LeetCode）](https://leetcode.cn/problems/binary-tree-maximum-path-sum/description/)
 
@@ -3551,7 +3630,7 @@ class Solution {
 }
 ```
 
-## 二叉树展开为链表 #中等 #手撕 
+## 二叉树展开为链表 #手撕 
 
 思路：保证先序遍历的顺序，对于当前节点，把右子树拼到左子树的最右孩子下面，然后把左孩子变成右孩子，左指针置空
 
@@ -4311,7 +4390,7 @@ class CBTInserter {
 - 时间：`O(n)`
 - 空间：`O(n)`
 
-## 验证二叉搜索树的后序遍历序列 #中等 #手撕 
+## 验证二叉搜索树的后序遍历序列 #手撕 
 
 [LCR 152. 验证二叉搜索树的后序遍历序列 - 力扣（LeetCode）](https://leetcode.cn/problems/er-cha-sou-suo-shu-de-hou-xu-bian-li-xu-lie-lcof/description/)
 
@@ -5267,6 +5346,53 @@ class Solution {
 
 #todo 
 
+# ---------- 其他
+
+# 22. 括号生成 #字节24 
+
+```ad-summary
+数字 `n` 代表生成括号的对数，请你设计一个函数，用于能够生成所有可能的并且 **有效的** 括号组合。
+
+**输入：**n = 3
+**输出：**["((()))","(()())","(())()","()(())","()()()"]
+```
+
+```java
+class Solution {
+    List<String> res = new ArrayList<>();
+    StringBuilder path = new StringBuilder();
+    int leftNum;
+    int rightNum;
+
+    public List<String> generateParenthesis(int n) {
+        backtrack(n);
+        return res;
+    }
+
+    public void backtrack(int n) {
+        if (path.length() == n * 2) {
+            if (leftNum == rightNum) {
+                res.add(path.toString());
+            }
+            return;
+        }
+        path.append('(');
+        leftNum++;
+        backtrack(n);
+        leftNum--;
+        path.deleteCharAt(path.length() - 1);
+        if (leftNum > rightNum) {
+            path.append(')');
+            rightNum++;
+            backtrack(n);
+            rightNum--;
+            path.deleteCharAt(path.length() - 1);
+        }
+    }
+}
+```
+
+
 # 贪心算法
 
 贪心算法一般分为如下四步：
@@ -5957,7 +6083,7 @@ class Solution {
 - 时间复杂度：$O(2^n)$
 - 空间复杂度：$O(n)$
 
-## 爬楼梯
+## 爬楼梯 #字节24
 
 [70. 爬楼梯 - 力扣（LeetCode）](https://leetcode.cn/problems/climbing-stairs/description/)
 
@@ -6012,7 +6138,7 @@ class Solution {
 }	
 ```
 
-## 不同路径 #中等 #笔试
+## 不同路径 #笔试
 
 [62. 不同路径 - 力扣（LeetCode）](https://leetcode.cn/problems/unique-paths/description/)
 
@@ -6045,7 +6171,7 @@ class Solution {
 }
 ```
 
-## 不同路径 II #中等
+## 不同路径 II
 
 [63. 不同路径 II - 力扣（LeetCode）](https://leetcode.cn/problems/unique-paths-ii/description/)
 
@@ -6085,7 +6211,7 @@ class Solution {
 }
 ```
 
-## 整数拆分 #中等 #rep 
+## 整数拆分 #rep 
 
 [343. 整数拆分 - 力扣（LeetCode）](https://leetcode.cn/problems/integer-break/)
 
@@ -6115,7 +6241,7 @@ class Solution {
 }
 ```
 
-## 不同的二叉搜索树 #中等 #rep
+## 不同的二叉搜索树 #rep
 
 https://leetcode.cn/problems/unique-binary-search-trees/description/
 
@@ -6229,7 +6355,7 @@ public static void main(String[] args) {
 }
 ```
 
-### 分隔等和子集 #中等 #rep
+### 分隔等和子集 #rep
 
 https://leetcode.cn/problems/partition-equal-subset-sum/description/
 
@@ -6267,7 +6393,7 @@ public boolean canPartition(int[] nums) {
 }
 ```
 
-### 最后一块石头的重量 ll #中等 #rep
+### 最后一块石头的重量 ll #rep
 
 https://leetcode.cn/problems/last-stone-weight-ii/description/
 
@@ -6303,7 +6429,7 @@ public int lastStoneWeightII(int[] stones) {
 }
 ```
 
-### 目标和 #中等 #rep 
+### 目标和 #rep 
 
 dp：
 - `dp[j]` 表示：填满容量为 j 的背包，有 `dp[j]` 种方法
@@ -6330,7 +6456,7 @@ public int findTargetSumWays(int[] nums, int target) {
 }
 ```
 
-### 一和零 #中等 #rep
+### 一和零 #rep
 
 [474. 一和零 - 力扣（LeetCode）](https://leetcode.cn/problems/ones-and-zeroes/submissions/536636963/)
 
@@ -6403,7 +6529,7 @@ public static void main(String[] args) {
 }
 ```
 
-### 零钱兑换 ll #中等 #手撕 #rep
+### 零钱兑换 ll #手撕 #rep
 
 https://leetcode.cn/problems/coin-change-ii
 
@@ -6447,7 +6573,7 @@ public int change(int amount, int[] coins) {
 }
 ```
 
-### 组合总和 Ⅳ #中等 
+### 组合总和 Ⅳ 
 
 https://leetcode.cn/problems/combination-sum-iv/
 
@@ -6511,7 +6637,7 @@ public static void main(String[] args) {
 }
 ```
 
-### 零钱兑换 #中等 #rep
+### 零钱兑换 #rep
 
 [322. 零钱兑换 - 力扣（LeetCode）](https://leetcode.cn/problems/coin-change/)
 
@@ -6553,7 +6679,7 @@ public int coinChange(int[] coins, int amount) {
 }
 ```
 
-### 完全平方数 #中等
+### 完全平方数
 
 [279. 完全平方数 - 力扣（LeetCode）](https://leetcode.cn/problems/perfect-squares/description/)
 
@@ -6590,7 +6716,7 @@ public int numSquares(int n) {
 }
 ```
 
-### 单词拆分 #中等 
+### 单词拆分 
 
 [139. 单词拆分 - 力扣（LeetCode）](https://leetcode.cn/problems/word-break/description/)
 
@@ -6630,7 +6756,7 @@ public boolean wordBreak(String s, List<String> wordDict) {
 
 leetcode 暂无题目
 
-## 打家劫舍 #中等
+## 打家劫舍
 
 [198. 打家劫舍 - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber/)
 
@@ -6658,7 +6784,7 @@ class Solution {
 }
 ```
 
-## 打家劫舍 ll #中等 #rep 
+## 打家劫舍 ll #rep 
 
 [213. 打家劫舍 II - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber-ii/description/)
 
@@ -6694,7 +6820,7 @@ public int rob(int[] nums) {
 }
 ```
 
-## 打家劫舍 lll #中等 #树形dp #rep
+## 打家劫舍 lll #树形dp #rep
 
 [337. 打家劫舍 III - 力扣（LeetCode）](https://leetcode.cn/problems/house-robber-iii/)
 
@@ -6876,7 +7002,7 @@ class Solution {
 }
 ```
 
-## 买卖股票的最佳时机 II #中等 #rep
+## 买卖股票的最佳时机 II #rep
 
 [122. 买卖股票的最佳时机 II - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/description/)
 
@@ -6934,7 +7060,7 @@ class Solution {
 }
 ```
 
-## 买卖股票的最佳时机 lll #困难 #todo 
+## 买卖股票的最佳时机 lll #hard #todo 
 
 |          | 3   | 3   | 5   | 0   | 0   | 3   | 1   | 4   |
 | -------- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -6943,13 +7069,13 @@ class Solution {
 | 第二次持有股票  | 0   |     |     |     |     |     |     |     |
 | 第二次不持有股票 | 0   |     |     |     |     |     |     |     |
 
-## 买卖股票的最佳时机 4 #困难 #todo 
+## 买卖股票的最佳时机 4 #hard #todo 
 
-## 买卖股票的最佳时机含冷冻期 #中等 #todo
+## 买卖股票的最佳时机含冷冻期 #todo
 
 https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-cooldown
 
-## 买卖股票的最佳时机含手续费 #中等 #todo
+## 买卖股票的最佳时机含手续费 #todo
 
 https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fee/
 
@@ -6959,7 +7085,7 @@ https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-with-transaction-fe
 序列不要求连续，数组要求连续
 ```
 
-### 最长递增子序列 #中等 #手撕2 #rep
+### 最长递增子序列 #手撕2 #rep
 
 https://leetcode.cn/problems/longest-increasing-subsequence/description/
 
@@ -7019,7 +7145,7 @@ class Solution {
 ```
 
 
-### 最长重复子数组 #中等 #rep 
+### 最长重复子数组 #rep 
 
 https://leetcode.cn/problems/maximum-length-of-repeated-subarray/description/
 
@@ -7074,7 +7200,7 @@ class Solution {
 }
 ```
 
-### 最长公共子序列 #中等 #rep
+### 最长公共子序列 #字节24 #rep
 
 [1143. 最长公共子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-common-subsequence/description/)
 
@@ -7086,18 +7212,47 @@ class Solution {
 **解释：**最长公共子序列是 "ace" ，它的长度为 3 。
 ```
 
-分析：
-- 本题和 最长重复子数组 区别在于这里**不要求是连续**的了，但要有相对顺序
+分析：本题和 最长重复子数组 区别在于这里**不要求是连续**的了，但要有相对顺序
 
-dp：
+dp 五部曲：
 - `dp[i][j]`：长度为 `[0, i]` 的字符串 text1 与长度为 `[0, j - 1]` 的字符串 text2 的最长公共子序列为 `dp[i][j]`
 - 递推公式：
-	- 如果 `text1[i]` 与 `text2[j]` 相同，那么找到了一个公共元素，所以 `dp[i][j] = dp[i - 1][j - 1] + 1`;
+	- 如果 `text1[i]` 与 `text2[j]` 相同，那么找到了一个公共元素，所以 `dp[i][j] = dp[i - 1][j - 1] + 1`
 	- 如果 `text1[i]` 与 `text2[j]` 不相同，那就看看 `text1[0, i - 1]` 与 `text2[0, j]` 的最长公共子序列 和 `text1[0, i]` 与 `text2[0, j - 1]` 的最长公共子序列，取最大的。即：`dp[i][j] = max(dp[i - 1][j], dp[i][j - 1])`
 - 初始化：`dp[0][i]` 和 `dp[i][0]`，看代码
 - 遍历顺序：从递推公式，可以看出，有三个方向可以推出 `dp[i][j]`，i 和 j 从 1 开始从小到大遍历，谁在外层都可以
 
 ![300](assets/Pasted%20image%2020240622161956.png)
+
+1）不需要初始化（推荐）
+
+dp数组
+```
+0000 
+0111 
+0111 
+0122 
+0122 
+0123
+```
+
+```java
+public int longestCommonSubsequence(String text1, String text2) {
+	char[] chars1 = text1.toCharArray();
+	char[] chars2 = text2.toCharArray();
+	int[][] dp = new int[chars1.length+1][chars2.length+1];
+	for (int i = 1; i < chars1.length+1; i++) {
+		for (int j = 1; j < chars2.length+1 ;j++) {
+			int max = Math.max(dp[i - 1][j], dp[i][j - 1]);
+			max = Math.max(dp[i - 1][j - 1], max);
+			dp[i][j] = chars1[i-1] == chars2[j-1] ? dp[i - 1][j - 1] + 1 : max;
+		}
+	}
+	return dp[chars1.length ][chars2.length ];
+}
+```
+
+2）需要初始化（不推荐，麻烦且易出错）
 
 |     | a   | b   | c   | d   | e     |
 | --- | --- | --- | --- | --- | ----- |
@@ -7137,7 +7292,7 @@ public int longestCommonSubsequence(String text1, String text2) {
 }
 ```
 
-### 不相交的线 #中等 #rep
+### 不相交的线 #rep
  
 [1035. 不相交的线 - 力扣（LeetCode）](https://leetcode.cn/problems/uncrossed-lines/description/)
 
@@ -7180,7 +7335,7 @@ public int maxUncrossedLines(int[] nums1, int[] nums2) {
 }
 ```
 
-### 最大子数组和 #中等 #手撕2
+### 最大子数组和 #手撕2
 
 [53. 最大子数组和 - 力扣（LeetCode）](https://leetcode.cn/problems/maximum-subarray/description/)
 
@@ -7297,7 +7452,7 @@ public boolean isSubsequence(String s, String t) {
 ```
 
 
-### 不同的子序列 #困难 #rep
+### 不同的子序列 #hard #rep
 
 [115. 不同的子序列 - 力扣（LeetCode）](https://leetcode.cn/problems/distinct-subsequences/)
 
@@ -7352,7 +7507,7 @@ public int numDistinct(String s, String t) {
 }
 ```
 
-### 两个字符串的删除操作 #中等
+### 两个字符串的删除操作
 
 [583. 两个字符串的删除操作 - 力扣（LeetCode）](https://leetcode.cn/problems/delete-operation-for-two-strings/description/)
 
@@ -7390,7 +7545,7 @@ public int minDistance(String word1, String word2) {
 }
 ```
 
-### 编辑距离 #中等 #rep 
+### 编辑距离 #rep 
 
 [72. 编辑距离 - 力扣（LeetCode）](https://leetcode.cn/problems/edit-distance/description/)
 
@@ -7500,8 +7655,95 @@ public int minDistance(String word1, String word2) {
 }
 ```
 
+### 32. 最长有效括号 #hard #字节24 
 
-## 回文子串 #中等 #rep
+[32. 最长有效括号 - 力扣（LeetCode）](https://leetcode.cn/problems/longest-valid-parentheses/description/)
+
+```ad-summary
+给你一个只包含 `'('` 和 `')'` 的字符串，找出最长有效（格式正确且连续）括号子串的长度。
+
+**输入：**s = ")()())"
+**输出：**4
+**解释：**最长有效括号子串是 "()()"
+```
+
+1）动态规划
+
+- 定义 `dp[i]` 表示以==下标 i 字符结尾==的最长有效括号的长度
+- 递推公式：
+	- 当 `s[i]=')'` 且 `s[i−1]='('`，`dp[i]=dp[i−2]+2`
+	- 当 `s[i]=')'` 且 `s[i−1]=')'`
+		- 如果 `s[i−dp[i−1]−1]='('`，那么 `dp[i]=dp[i−1]+dp[i−dp[i−1]−2]+2`
+
+```java
+public int longestValidParentheses(String s) {
+	int res = 0;
+	int[] dp = new int[s.length()];
+	for (int i = 1; i < s.length(); i++) {
+		char c = s.charAt(i);
+		if (c == ')') {
+			if (s.charAt(i - 1) == '(') {
+				dp[i] = i >= 2 ? dp[i - 2] + 2 : 2;
+			} else {
+				int temp = i - dp[i - 1] - 1;
+				if (temp >= 0 && s.charAt(temp) == '(') {
+					dp[i] = temp - 1 >= 0 ? dp[temp - 1] + dp[i - 1] + 2 : dp[i - 1] + 2;
+				}
+			}
+		}
+		res = Math.max(res, dp[i]);
+	}
+	return res;
+}
+```
+
+2）计数器（看思想）
+
+在此方法中，我们利用两个计数器 left 和 right 。首先，我们==从左到右遍历==字符串，对于遇到的每个 ‘(’，我们增加 left 计数器，对于遇到的每个 ‘)’ ，我们增加 right 计数器。每当 left 计数器与 right 计数器相等时，我们计算当前有效字符串的长度，并且记录目前为止找到的最长子字符串。当 right 计数器比 left 计数器大时，我们将 left 和 right 计数器同时变回 0。
+
+这样的做法贪心地考虑了以当前字符下标结尾的有效括号长度，每次当右括号数量多于左括号数量的时候之前的字符我们都扔掉不再考虑，重新从下一个字符开始计算，但这样会漏掉一种情况，就是遍历的时候左括号的数量始终大于右括号的数量，即 (() ，这种时候最长有效括号是求不出来的。
+
+解决的方法也很简单，我们只需要==从右往左遍历==用类似的方法计算即可，只是这个时候判断条件反了过来：
+- 当 left 计数器比 right 计数器大时，我们将 left 和 right 计数器同时变回 0
+- 当 left 计数器与 right 计数器相等时，我们计算当前有效字符串的长度，并且记录目前为止找到的最长子字符串
+
+```java
+class Solution {
+    public int longestValidParentheses(String s) {
+        int left = 0, right = 0, maxlength = 0;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '(') {
+                left++;
+            } else {
+                right++;
+            }
+            if (left == right) {
+                maxlength = Math.max(maxlength, 2 * right);
+            } else if (right > left) {
+                left = right = 0;
+            }
+        }
+        left = right = 0;
+        for (int i = s.length() - 1; i >= 0; i--) {
+            if (s.charAt(i) == '(') {
+                left++;
+            } else {
+                right++;
+            }
+            if (left == right) {
+                maxlength = Math.max(maxlength, 2 * left);
+            } else if (left > right) {
+                left = right = 0;
+            }
+        }
+        return maxlength;
+    }
+}
+```
+
+
+
+## 回文子串 #rep
 
 [647. 回文子串 - 力扣（LeetCode）](https://leetcode.cn/problems/palindromic-substrings/description/) 
 
@@ -7558,7 +7800,7 @@ public int countSubstrings(String s) {
 }
 ```
 
-## 最长回文子串 #中等 #手撕 #rep
+## 最长回文子串 #手撕 #rep
 
 分析：
 - 本题和回文子串的思路相似
@@ -7600,4 +7842,5 @@ public int longestPalindromeSubseq(String s) {
 	return dp[0][chars.length - 1];
 }
 ```
+
 

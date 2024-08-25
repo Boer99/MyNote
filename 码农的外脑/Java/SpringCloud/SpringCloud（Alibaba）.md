@@ -1115,13 +1115,13 @@ public class AuthorizeFilter implements GlobalFilter, Ordered {
 过滤器的执行顺序：
 
 - 每一个过滤器都必须指定一个 int 类型的 order 值，order 值越小，执行顺序越靠前
-- GlobalFilter 通过实现 Ordered 接口，或者添加 `@Order` 注解来指定 order 值，由我们自己指定
-- 路由过滤器和 defaultFilter 的 order 由 Spring 指定，默认是按照声明顺序从 1 递增。
+	- GlobalFilter 通过实现 Ordered 接口，或者添加 `@Order` 注解来指定 order 值，由我们自己指定
+	- 路由过滤器和 defaultFilter 的 order 由 Spring 指定，默认是按照声明顺序从 1 递增。
 - 当过滤器的 order 值一样时，会按照 ==defaultFilter > 路由过滤器 > GlobalFilter== 的顺序执行
 
-可以参考下面几个类的源码来查看:
-- `org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator#getFilters()` 方法是先加载 defaultFilters，然后再加载某个 route 的 filters，然后合并。
-- `org.springframework.cloud.gateway.handler.FilteringWebHandler#handle()` 方法会加载全局过滤器与前面的过滤器合并后根据 order 排序，组织过滤器链
+> 可以参考下面几个类的源码来查看:
+> - `org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator#getFilters()` 方法是先加载 defaultFilters，然后再加载某个 route 的 filters，然后合并。
+> - `org.springframework.cloud.gateway.handler.FilteringWebHandler#handle()` 方法会加载全局过滤器与前面的过滤器合并后根据 order 排序，组织过滤器链
 
 ## 跨域问题处理
 

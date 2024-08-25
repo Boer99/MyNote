@@ -2161,7 +2161,7 @@ explain select * from tb_user where profession = '软件工程' and status = '0'
 
 #### 范围查询 
 
-联合索引中，某个索引字段出现范围查询（`> , <`），其右侧的列索引失效
+==联合索引==中，某个索引字段出现范围查询（`> , <`），其右侧的列索引失效
 
 ```sql
 explain select * from tb_user where profession = '软件工程' and age > 30 and status= '0';

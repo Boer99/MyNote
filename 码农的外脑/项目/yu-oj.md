@@ -61,7 +61,7 @@ Markdown 编辑器组件：[bytedance/bytemd: ByteMD v1 repository (github.com)]
 - 全局替换：springboot-init --> yuoj-backend，springbootinit-->yuoj
 - 包名替换
 
-## 库表设计
+## 库表/系统设计
 
 ### 用户表
 
@@ -211,7 +211,7 @@ create table if not exists question_submit
 - Runtime Error 运行错误(用户程序的问题)
 - System Error 系统错误(做系统人的问题)
 
-## 实体类的 json 字段设计
+### 实体类的 json 字段设计
 
 1）json 数组用 List 操作
 
@@ -491,11 +491,9 @@ Docker 容器技术能够实现（底层是用 cgroup、namespace 等方式实�
 
 作用：大幅节省重复代码量，便于项目扩展、更好维护
 
-### 提供代码沙箱 API
+### api 接口加密
 
 直接在 controller 暴露 CodeSandbox 定义的接囗（不安全，别人也可以调用代码沙箱）
-
-#### api 接口加密
 
 1）调用方与服务提供方之间约定一个字符串（最好**加密**）
 
@@ -513,6 +511,10 @@ private static final String AUTH_REQUEST_SECRET = "secretKey";
 ## 单体项目改造为微服务
 
 用户登录功能：需要改造为分布式登录其他内容（代码：git）
+
+解决 cookie 跨路径问题
+
+
 
 > 其他内容：
 > - 有没有用到单机的锁? 改造为分布式锁
@@ -664,10 +666,54 @@ public class UserInnerController implements UserFeignClient {
 微服务网关(yuoj-backend-gateway)：Gateway 聚合所有的接口，统一接受处理前端的请求
 
 为什么要用?
-- 所有的服务端口不同，增大了前端调用成本
+- 所有的服务==端口==不同，增大了前端调用成本
 - 所有服务是分散的，你可需要集中进行管理、操作，比如集中解决跨域、鉴权、接口文档、服务的路由、接口安全性、流量染色
 
 > Gateway 是应用层网关：会有一定的业务逻辑(比如根据用户信息判断权限)
 > 
 > Nginx 是接入层网关：比如每个请求的日志，通常没有业务逻辑
+
+#### 聚合文档
+
+以一个全局的视角集中查看管理接口文档
+
+1）给所有业务服务引入依赖，并开启配置
+
+[快速开始 | Knife4j (xiaominfo.com)](https://doc.xiaominfo.com/docs/quick-start#spring-boot-2)
+
+2）给网关引入依赖，并开启配置
+
+[Spring Cloud Gateway网关聚合 | Knife4j (xiaominfo.com)](https://doc.xiaominfo.com/docs/middleware-sources/spring-cloud-gateway/spring-gateway-introduction)
+
+#### 全局配置跨域
+
+在网关服务中添加以下配置：
+```java
+@Configuration
+public class CosConfig {
+    @Bean
+    public CorsWebFilter corsFilter() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.addAllowedMethod("*");
+        config.setAllowCredentials(true);
+        // todo 实际改为线上真实域名、本地域名
+        config.setAllowedOriginPatterns(Arrays.asList("*"));
+        config.addAllowedHeader("*");
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource(new PathPatternParser());
+        source.registerCorsConfiguration("/**", config);
+        return new CorsWebFilter(source);
+    }
+}
+```
+
+#### 权限校验
+
+可以使用 Spring Cloud Gateway 的 Filter 请求拦截器，接受到请求后根据请求的路径判断能否访问
+
+> 扩展：可以在网关实现接口限流
+
+## 消息队列解耦
+
+此处选用消息队列改造项目，解耦判题服务和题目服务，题目服务只需要向消息队列发消息，判题服务从消息队列中取消息去执行判题，然后异步更新数据库即可。
+
 
