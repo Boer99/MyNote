@@ -14,7 +14,7 @@ Spring 是一个家族，通常 Spring 框架指的都是 Spring Framework，是
 
 Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发效率
 
-## Spring 包含的模块有哪些？ #repeat 
+## Spring 包含的模块有哪些？ #rep 
 
 > 讲一下你知道的模块 #得物_24_实习_Java 
 
@@ -71,7 +71,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 # IOC、DI
 
-## 介绍 Spring IoC(1)  #repeat
+## 介绍 Spring IoC(1)  #rep
 
 #PDD_23_秋招_后端 
 
@@ -91,17 +91,16 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 ## 注册 Bean
 
-### 注册 Bean 的方式 #repeat 
+### 注册 Bean 的方式 #rep 
 
 config 配置类上加 `@Configuration` + `@ComponentScan` 
-
 - `@Component` 及其衍生注解
 - Bean 类中通过 `@Bean` 方法
 - config 配置类上加 `@Import({class1, class2})`
 	- 手动加入配置类到核心配置
 - 编程式注册：通过 AnnotationConfigApplicationContext 实例的 `registerBean()` 方法
 
-### @Component 和 @Bean 的区别是什么 #repeat
+### @Component 和 @Bean 的区别是什么 #rep
 
 1）作用对象：`@Component` 作用于类，`@Bean` 作用于方法
 
@@ -127,7 +126,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 > 
 > Spring 官方文档：强制依赖使用构造器注入，可选依赖使用 setter 注入
 
-### @Autowired 和 @Resource 的区别是什么？ #repeat
+### @Autowired 和 @Resource 的区别是什么？ #rep
 
 > 自动装配具体是怎么实现的？(1)
 
@@ -144,7 +143,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 
 4）`@Autowired` 支持在构造函数、方法、字段和参数上使用。`@Resource` 主要用于**字段和方法**上的注入，不支持在构造函数或参数上使用
 
-## Bean 的作用域有哪些? #repeat
+## Bean 的作用域有哪些? #rep
 
 - *singleton*（默认） : IoC 容器中只有唯一的 bean 实例
 - *prototype* : 每次获取都会创建一个新的 bean 实例。也就是说，连续 `getBean()` 两次，得到的是不同的 Bean 实例
@@ -156,7 +155,7 @@ config 配置类上加 `@Configuration` + `@ComponentScan`
 - *application/global-session*：每个 Web 应用在启动时创建一个 Bean（**应用 Bean**），该 bean 仅在当前应用启动时间内有效
 - *websocket*：每一次 WebSocket 会话产生一个新的 bean
 
-## Bean 是线程安全的吗？ #repeat
+## Bean 是线程安全的吗？ #rep
 
 Bean 是否线程安全，取决于其**作用域和状态**
 
@@ -174,7 +173,7 @@ Bean 是否线程安全，取决于其**作用域和状态**
 1. 在 Bean 中尽量避免定义**可变**的成员变量
 2. 在类中定义一个 ThreadLocal 成员变量，将需要的可变成员变量保存在 ThreadLocal 中（推荐的一种方式）
 
-## bean 生命周期 #repeat
+## bean 生命周期 #rep
 
 > #饿了么
 
@@ -309,7 +308,7 @@ public class Main {
 }
 ```
 
-### beanPostProcessor #repeat
+### beanPostProcessor #rep
 
 > Spring 中的后置处理器的作用是什么？ #顺丰_23_秋招_Java 
 > 
@@ -331,7 +330,7 @@ BPP 的典型使用：Abstract**AutoProxyCreator**
 
 # AOP
 
-## 介绍 Spring aop  #repeat
+## 介绍 Spring aop  #rep
 
 
 #得物_24_实习_Java 
@@ -354,7 +353,7 @@ AOP 切面编程涉及到的一些专业术语：
 | 切面(Aspect)     | 切入点(Pointcut)+通知(Advice)                                                     |
 | Weaving(织入)    | 将通知应用到目标对象，进而生成代理对象的过程动作。织入可以在编译时，类加载时和运行时完成。在编译时进行织入就是静态代理，而在运行时进行织入则是动态代理。 |
 
-## AspectJ 定义的通知类型有哪些？ #repeat
+## AspectJ 定义的通知类型有哪些？ #rep
 
 > AOP 的通知类型和这个差不多
 
@@ -368,7 +367,7 @@ AOP 切面编程涉及到的一些专业术语：
 
 > 前、后、前+后
 
-## Spring AOP 和 AspectJ AOP 有什么区别？ #repeat
+## Spring AOP 和 AspectJ AOP 有什么区别？ #rep
 
 Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系统中最完整的 AOP 框架了
 
@@ -380,7 +379,7 @@ Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系�
 	- Spring AOP 仅支持方法切入点，AspectJ 支持所有切入点
 - 如果切面比较少，那么两者性能差异不大。如果**切面太多的话，最好选择 AspectJ** ，它比 Spring AOP 快很多
 
-## Spring AOP 底层原理/怎么实现？(3) #repeat
+## Spring AOP 底层原理/怎么实现？(3) #rep
 
 #PDD_23_秋招_基础电商_后端 #字节_23_实习_Java 
 
@@ -395,7 +394,7 @@ Spring AOP 就是基于**动态代理**的
 
 ![](assets/Pasted%20image%2020240320233941.png)
 
-## Cglib 和 JDK 动态代理 #repeat
+## Cglib 和 JDK 动态代理 #rep
 
 > #todo 原理？ #小红书_电商_实习_后端
 > 
@@ -460,7 +459,7 @@ public class LoggingAspect implements Ordered {
 }
 ```
 
-## Spring AOP 在什么场景下会失效？ #repeat
+## Spring AOP 在什么场景下会失效？ #rep
 
 #todo_完善
 
@@ -483,12 +482,12 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - 事务作用：在数据层保障一系列的数据库操作同成功同失败
 - Spring 事务作用：在数据层或业务层保障一系列的数据库操作同成功同失败
 
-## Spring 管理事务的方式有几种？ #repeat
+## Spring 管理事务的方式有几种？ #rep
 
 - **编程式事务**：在代码中硬编码(在分布式系统中推荐使用) : 通过 `TransactionTemplate` 或者 `TransactionManager` 手动管理事务，事务范围过大会出现事务未提交导致超时，因此事务要比锁的粒度更小。
 - **声明式事务**：在 XML 配置文件中配置或者直接基于注解（单体应用或者简单业务系统推荐使用） : 实际是通过 AOP 实现（基于 `@Transactional` 的全注解方式使用最多）
 
-## spring 事务有哪些传播行为？ #repeat
+## spring 事务有哪些传播行为？ #rep
 
 #PDD_23_秋招_后端 
 
@@ -514,7 +513,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - *NOT_SUPPORTED*：以**非事务**方式运行，如果当前存在事务，则把当前事务**挂起**
 - *NEVER*：以**非事务**方式运行，如果当前存在事务，则**抛出异常**
 
-## Spring 事务的隔离级别 #repeat 
+## Spring 事务的隔离级别 #rep 
 
 - *DEFAULT*：使用后端数据库默认的隔离级别，
 	- MySQL 默认 `REPEATABLE_READ`，Oracle 默认 `READ_COMMITTED`
@@ -530,7 +529,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 
 - *SERIALIZABLE*（可串行化）：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，事务之间不可能产生干扰，但严重影响程序的性能（通常不会用）
 
-## 事务注解的 rollbackFor 属性 #repeat
+## 事务注解的 rollbackFor 属性 #rep
 
 `@Transactional(rollbackFor = Exception.class)` 设置事务的回滚策略
 
@@ -545,9 +544,7 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 
 # 设计模式
 
-## Spring 框架有哪些比较经典的设计模式 #repeat
-
-#顺丰_23_秋招_Java 
+## Spring 框架有哪些比较经典的设计模式 #秋招24 #rep
 
 - **工厂设计模式** : Spring 使用工厂模式通过 `BeanFactory`、`ApplicationContext` 创建 bean 对象 #todo
 - **代理设计模式** : Spring AOP 功能的实现 #todo
@@ -557,19 +554,20 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - **观察者模式:** Spring 事件驱动模型就是观察者模式很经典的一个应用 #todo
 - **适配器模式** : Spring AOP 的增强或通知(Advice)使用到了适配器模式、spring MVC 中也是用到了适配器模式适配 `Controller` #todo
 
-## 工厂模式 #repeat
+
+## 工厂模式 #rep
 
 > BeanFactory 和 FactoryBean 有什么区别？
 
-Spring IOC 容器就像是一个工厂一样，我们完全不用考虑对象是如何被创建出来的。 IOC 容器负责创建、管理对象（生命周期、作用域）
+==Spring IOC 容器就像是一个工厂一样==，我们完全不用考虑对象是如何被创建出来的。 IOC 容器负责创建、管理对象（生命周期、作用域）
 
-1）通过 `BeanFactory` 或 `ApplicationContext` 创建 bean 对象
+**1）通过 BeanFactory 或 ApplicationContext 创建 bean 对象**
 
-- BeanFactory：IoC 容器的顶层接口
+- **BeanFactory**：IoC 容器的顶层接口
 	- 特点：延迟加载（获取 bean 的时候才创建）
 	- 优势：相比于 ApplicationContext 来说会占用更少的内存，程序启动速度更快
 
-- ApplicationContext：BeanFactory 的子接口
+- **ApplicationContext**：BeanFactory 的子接口
 	- 特点：容器启动的时候，一次性创建所有 bean（可以配置延迟加载）
 	- 优势：`BeanFactory` 仅提供了最基本的依赖注入支持，ApplicationContext 扩展了 BeanFactory
 	- 实现类：
@@ -580,9 +578,9 @@ Spring IOC 容器就像是一个工厂一样，我们完全不用考虑对象是
 
 > #Bo 工厂方法模式，BeanFactory、ApplicationContext 是抽象工厂，底层实现是具体工厂
 
-2）FactoryBean
+**2）FactoryBean**
 
-FactoryBean 是一个接口，用于定义一个**工厂 Bean**，FactoryBean 接口的类造出来的对象不是当前类的对象，而是**泛型类型**的对象
+FactoryBean 是一个==接口==，用于定义一个**工厂 Bean**，FactoryBean 接口的类==造出来的对象不是当前类的对象，而是**泛型类型**的对象==
 
 - 如果某个 Bean 实现了 FactoryBean 接口，那么 Spring 容器不直接返回这个 Bean 实例，而是返回 `FactoryBean#getObject()` 方法所返回的对象
 
@@ -610,6 +608,7 @@ public class UserDaoFactoryBean implements FactoryBean<UserDao> {
     }
 }
 ```
+
 
 # 循环依赖
 
@@ -674,7 +673,7 @@ Spring MVC 是一款很优秀的 MVC 框架，可以帮助我们进行更**简�
 
 > Spring MVC 下我们一般把后端项目分为 Service 层（处理业务）、Dao 层（数据库操作）、Entity 层（实体类）、Controller 层(控制层，返回数据给前台页面)
 
-## Spring MVC 的核心组件 #repeat
+## Spring MVC 的核心组件 #rep
 
 记住了下面这些组件，也就记住了 SpringMVC 的工作原理。
 
@@ -686,7 +685,7 @@ Spring MVC 是一款很优秀的 MVC 框架，可以帮助我们进行更**简�
 
 # 原理
 
-## SpringMVC 是如何将不同的 Request 路由到不同 Controller 中的？ #repeat
+## SpringMVC 是如何将不同的 Request 路由到不同 Controller 中的？ #rep
 
 > 在计算机程序处理中，但凡涉及到路由，那包含到的数据结构一定是和 map 相关的。所以对于 url 和 controller 之间的映射，如果交给我们来设计的话，可能会用一个大的 **map 将 url 和 controller 中对应的方法作为键值对**存储起来，以此来达到路由的目的。
 
@@ -713,7 +712,7 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 ![](assets/Pasted%20image%2020240321192118.png)
 
 
-## Spring MVC 的执行流程(1) #repeat
+## Spring MVC 的执行流程(1) #rep
 
 #小红书_暑期实习_Java后端 #PDD_23_秋招_后端 
 
@@ -753,7 +752,7 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 
 ![](assets/Pasted%20image%2020240321131100.png)
 
-## 全局异常处理器怎么做的（项目）？ #repeat 
+## 全局异常处理器怎么做的（项目）？ #rep 
 
 #小红书_实习_后端 
 
@@ -819,7 +818,7 @@ Spring 旨在简化 J2EE 企业应用程序开发。Spring Boot **旨在简化 S
 
 Spring Boot 只是简化了配置，如果你需要构建 MVC 架构的 Web 程序，你还是需要使用 Spring MVC 作为 MVC 框架，只是说 Spring Boot 帮你**简化了 Spring MVC 的很多配置**，真正做到开箱即用！
 
-## 为什么要有 SpringBoot（优点）？ #repeat 
+## 为什么要有 SpringBoot（优点）？ #rep 
 
 Spring 旨在简化 J2EE 企业应用程序开发。Spring Boot **旨在简化 Spring 开发**（减少配置文件，开箱即用！）
 
@@ -836,7 +835,7 @@ starter 定义了使用某种技术时对于**依赖的固定搭配格式**，�
 
 # 原理
 
-## springboot 怎么实现自动化配置？ #repeat 
+## springboot 怎么实现自动化配置？ #rep 
 
 #PDD_23_秋招_后端 
 
@@ -881,6 +880,7 @@ public @interface EnableAutoConfiguration
 
 
 # 未知
+
 ## 如果小红书内部需要做一个 starter，你会从哪些方面去考虑、设计
 
 #小红书_实习_后端 
