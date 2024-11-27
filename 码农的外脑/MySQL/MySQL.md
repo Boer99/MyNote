@@ -6,7 +6,7 @@
 !!!官方文档最权威：[MySQL :: MySQL 8.0 Reference Manual :: 17.7.1 InnoDB Locking](https://dev.mysql.com/doc/refman/8.0/en/innodb-locking.html)
 ```
 
-# -------------------- 入门篇
+# ----------入门篇
 # 基本概念
 
 ### db、dbms、sql
@@ -1522,7 +1522,7 @@ DELETE FROM 表名 [ WHERE 条件 ] ;
 	面试的时候把这句话说上：他就不会认为你是初级程序员了！
 
 
-# ---------- 事务
+# 事务
 
 ## 简介
 
@@ -1597,7 +1597,7 @@ ROLLBACK;
 - 可串行化：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行（不能并发），这样事务之间就完全不可能产生干扰
 
 | 隔离级别             | 脏读  | 不可重复读 | 幻读  |
-| ---------------- | --- | ----- | --- |
+| ------| --- | ----- | --- |
 | READ-UNCOMMITTED | √   | √     | √   |
 | READ-COMMITTED   | ×   | √     | √   |
 | REPEATABLE-READ  | ×   | ×     | √   |
@@ -1618,9 +1618,9 @@ SELECT @@TRANSACTION_ISOLATION;
 SET [ SESSION | GLOBAL ] TRANSACTION ISOLATION LEVEL { READ UNCOMMITTED | READ COMMITTED | REPEATABLE READ | SERIALIZABLE }
 ```
 
-# -------------------- 进阶篇
+# ----------进阶篇
 
-# ---------- 存储引擎
+# 存储引擎
 
 ## MySQL 体系结构
 
@@ -1750,7 +1750,7 @@ Memory 引擎的表数据时存储在**内存**中的，由于受到硬件问题
 > 两个 nosql 数据库：MongoDB 取代 MyISAM，Redis 取代 MEMORY
 
 
-# ---------- SQL 性能分析
+# SQL 性能分析
 
 ### sql 执行频率
 
@@ -1841,7 +1841,7 @@ Explain 执行计划中各个字段的含义：
 - rows：MySQL 认为必须要执行查询的行数，在 innodb 引擎的表中，是一个估计值， 可能并不总是准确的。
 - filtered：表示返回结果的行数占需读取行数的百分比，filtered 的值越大越好
 
-# ---------- 索引
+# 索引
 
 ## 索引概述
 
@@ -1952,7 +1952,7 @@ MySQL 索引数据结构在原 B+Tree 的基础上，增加一个指向相邻叶
 在 MySQL 数据库，将索引的具体类型主要分为以下几类：主键索引、唯一索引、常规索引、全文索引
 
 | 分类   | 含义                     | 特点                | 关键字         |
-| ---- | ---------------------- | ----------------- | ----------- |
+| ---- | ------------| -------| -|
 | 主键索引 | 列值唯一且非空值               | 建表时**默认**创建，只能有一个 | PRIMARY KEY |
 | 唯一索引 | 列值唯一                   | 可以有多个             | UNIQUE      |
 | 常规索引 | 快速定位特定数据               | 可以有多个             |             |
@@ -2310,7 +2310,7 @@ explain select * from tb_user where profession = '软件工程' and age = 31 and
 > 不同的 mysql 版本对于 extra 的展示不同，我这里是 Using index 和 null
 
 | Extra（额外的）               | 含义                     |
-| ------------------------ | ---------------------- |
+| --------------| ------------|
 | Using where; Using Index | 查找使用了索引，需要的数据都在索引列中能找到 |
 | Using index condition    | 查找使用了索引，但是需要回表查询数据     |
 
@@ -2360,7 +2360,7 @@ explain select id,phone,name from tb_user where phone='17799990002' and name='�
 - *尽量使用联合索引*，减少单列索引：可以**覆盖索引**，节省存储空间
 - *要控制索引的数量*：索引并不是多多益善，索引越多，**维护索引结构**的代价也就越大，会影响 删改的效率
 
-# ---------- SQL 优化
+# SQL 优化
 
 ## 插入数据
 
@@ -2534,7 +2534,7 @@ update course set name = 'javaEE' where id = 1;
 update course set name = 'SpringBoot' where name = 'PHP' ;
 ```
 
-# ---------- 视图/存储过程/触发器
+# 视图/存储过程/触发器
 
 ## 视图
 
@@ -2681,7 +2681,7 @@ select * from tb_stu_course_view;
 
 #todo
 
-# ---------- 锁
+# 锁
 
 ## 介绍
 
@@ -2853,7 +2853,7 @@ InnoDB 中引入了意向锁，使得==表锁不用检查每行数据是否加�
 > 最后一条没看懂，不唯一索引不也是这么加的吗？
 
 | LOCK_MODE     | LOCK_DATA | 锁范围                 |
-| :------------ | :-------- | :------------------ |
+| :--| :-------- | :--------|
 | X,REC_NOT_GAP | 15        | 15 那条数据的行锁          |
 | X,GAP         | 15        | 15 那条数据之前的间隙，不包含 15 |
 | X             | 15        | 15 那条数据之前的间隙，包含 15  |
@@ -2923,7 +2923,7 @@ heima_learn	stu	PRIMARY	RECORD	S	11
 
 
 
-# ---------- InnoDB 引擎
+# InnoDB 引擎
 
 ## 逻辑存储结构
 
@@ -3089,7 +3089,7 @@ ReadView(读视图)：快照读 SOL 执行时 MVCC 提取数据的依据，记�
 
 
 
-# ---------- MySQL 管理
+# MySQL 管理
 
 
-# -------------------- 运维篇
+# ----------运维篇

@@ -14,7 +14,7 @@
 
 ## JVM & JRE & JDK
 
-![600](assets/Pasted%20image%2020240405140148.png)
+![600](Java/assets/Pasted%20image%2020240405140148.png)
 
 Java 虚拟机（JVM）是运行 Java 字节码的虚拟机。JVM 有针对不同系统的特定实现（Windows，Linux，macOS），目的是使用相同的字节码，它们都会给出相同的结果。字节码和不同系统的 JVM 实现是 Java 语言“一次编译，随处可以运行”的关键所在。
 
@@ -23,6 +23,25 @@ JDK（Java Development Kit），它是功能齐全的 Java SDK，是提供给开
 JRE（Java Runtime Environment） 是 Java 运行时环境。它是运行已编译 Java 程序所需的所有内容的集合，主要包括 **Java 虚拟机**（JVM）、**Java 基础类库**（Class Library）。
 
 也就是说，JRE 是 Java 运行时环境，仅包含 Java 应用程序的运行时环境和必要的类库。而 JDK 则包含了 JRE，同时还包括了 javac、javadoc、jdb、jconsole、javap 等工具，可以用于 Java 应用程序的开发和调试。如果需要进行 Java 编程工作，比如编写和编译 Java 程序、使用 Java API 文档等，就需要安装 JDK。而对于某些需要使用 Java 特性的应用程序，如 JSP 转换为 Java Servlet、使用反射等，也需要 JDK 来编译和运行 Java 代码。因此，即使不打算进行 Java 应用程序的开发工作，也有可能需要安装 JDK。
+
+## 对 C++、Go 语言和 Java 语言的理解，他们的区别？ #24秋招 
+
+C++、Go（Golang）、和 Java 是三种广泛使用的编程语言
+
+|           | c++              | Go                   | Java               |
+| --------- | ---------------- | -------------------- | ------------------ |
+| **编译/解释** | 编译语言，直接生成机器码     | 编译语言，生成高效的二进制文件      | 编译到字节码，通过 JVM 解释执行 |
+| **性能**    | 最高               | 略逊于 C++              | 略逊于 Go             |
+| **类型系统**  | 强类型              | 强类型                  | 强类型                |
+| **复杂度**   | 功能强大但复杂          | 简洁直观，偏重实用性           | 语法相对简单，依赖标准库       |
+| **运行时依赖** | 无运行时依赖，独立二进制     | 无运行时依赖，独立二进制         | 依赖 JVM 运行          |
+| **跨平台性**  | 手动编译到目标平台        | 编译后即为平台相关            | 字节码可跨平台运行          |
+| **内存管理**  | 手动管理             | 垃圾回收器（GC）自动管理        | 垃圾回收器（GC）自动管理      |
+| **并发模型**  | 基于线程（标准库或第三方库实现） | 原生协程（轻量级 Goroutines） | 基于线程（JVM 提供线程池机制）  |
+| **第三方库**  | 庞大但分散            | 逐渐丰富，偏向云原生和网络编程      | 非常庞大，企业级开发主流       |
+| **生态领域**  | 系统编程、游戏开发、高性能领域  | 云原生开发、微服务、高并发场景      | 企业应用开发、大型分布式系统     |
+
+> 强类型定义语言：强制数据类型定义的语言。也就是说，一旦一个变量被指定了某个数据类型，如果不经过强制转换，那么它就永远是这个数据类型了
 
 # 基本语法
 
@@ -148,14 +167,14 @@ public class StringExample {
 
 重写就是子类对父类方法的重新改造，外部样子不能改变，内部逻辑可以改变
 
-| 区别点     | 重载方法 | 重写方法                                                     |
-| :--------- | :------- | :----------------------------------------------------------- |
-| 发生范围   | 同一个类 | 子类                                                         |
-| 参数列表   | 必须修改 | 一定不能修改                                                 |
-| 返回类型   | 可修改   | 子类方法返回值类型应比父类方法返回值类型更小或相等           |
-| 异常       | 可修改   | 子类方法声明抛出的异常类应比父类方法声明抛出的异常类更小或相等； |
-| 访问修饰符 | 可修改   | 一定不能做更严格的限制（可以降低限制）                       |
-| 发生阶段   | 编译期   | 运行期                                                       |
+| 区别点   | 重载方法 | 重写方法                             |
+| :---- | :--- | :------------------------------- |
+| 发生范围  | 同一个类 | 子类                               |
+| 参数列表  | 必须修改 | 一定不能修改                           |
+| 返回类型  | 可修改  | 子类方法返回值类型应比父类方法返回值类型更小或相等        |
+| 异常    | 可修改  | 子类方法声明抛出的异常类应比父类方法声明抛出的异常类更小或相等； |
+| 访问修饰符 | 可修改  | 一定不能做更严格的限制（可以降低限制）              |
+| 发生阶段  | 编译期  | 运行期                              |
 
 **方法的重写要遵循“两同两小一大”**
 
@@ -198,16 +217,7 @@ public class VariableLengthArgument {
 }
 ```
 
-## 访问控制符权限
 
-*private*：私有。当类中属性或方法被 private 修饰时，表示此成员或方法只能被本类中的方法使用，而不能被外部类或对象直接使用
-
-*default*：默认。具有包访问权限。如果类中属性或方法不使用 public、protected、privete 修饰符修饰时，则说明其具有包访问权限，具有包访问权限的属性或方法既可以被本类中的方法使用也可以被同一包下的其他类使用，但不能被其他包中的类使用
-
-*protected*：保护，具有**子类**访问权限
-- 可以被同一包下的类使用，也可以被**不同包下的子类**使用
-
-*public*：公共。具有公共访问权限。如果类中的属性或方法被 public 修饰，则此类中的属性或方法可以被任何类调用
 
 # 基本数据类型
 
@@ -353,7 +363,7 @@ System.out.println(i1==i2); // false
 
 所有整型包装类对象之间值的比较，全部使用 equals 方法比较！
 
-![img](assets/20210422164544846.png)
+![img](Java/assets/20210422164544846.png)
 
 ## 为什么浮点数运算的时候会有精度丢失的风险？
 
@@ -415,9 +425,9 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 相对于常规整数类型的运算来说，`BigInteger` 运算的效率会相对较低
 
-# 面向对象基础
+# 面向对象
 
-## 解释下什么是面向对象？面向对象和面向过程的区别？
+## 什么是面向对象？和面向过程的区别？
 
 面向对象是一种基于面向过程的编程思想，是向现实世界模型的自然延伸，这是一种“万物皆对象”的编程思想。由执行者变为指挥者，在现实生活中的任何物体都可以归为一类事物，而每一个个体都是一类事物的实例。面向对象的编程是以对象为中心，以消息为驱动。
 
@@ -446,30 +456,35 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 构造方法不能被 override，但是可以 overload
 
-## 面向对象三大特征
+## 面向对象三大特征 #面过
 
-继承
+**封装**
+- 就是把现实世界中的客观事物抽象成一个 Java 类，然后在类中存放属性和方法
+- 成员通过修饰符决定如何暴露给外部。
 
-关于继承如下 3 点请记住：
+**继承**：
+- 继承主要表示从属关系
+- 子类可以继承父类，这样就可以把父类的属性和方法继承过来
+- 继承的主要目的就是为了复用
 
-1. 子类拥有父类对象所有的属性和方法（包括私有属性和私有方法），但是父类中的私有属性和方法子类是==无法访问，只是拥有==
-2. 子类可以拥有自己属性和方法，即子类可以对父类进行扩展
-3. 子类可以用自己的方式实现父类的方法）
+**多态**
+- 父类中定义的**方法**被子类继承之后，可以通过重写，使得父类和子类具有不同的实现
+- 具体表现为父类的引用指向子类的实例
 
-多态
+## 四大访问控制符权限
 
-具体表现为：父类的引用指向子类的实例
+**private**：私有。当类中属性或方法被 private 修饰时，表示此成员或方法只能被本类中的方法使用，而不能被外部类或对象直接使用
 
-多态的特点：
+**default**：默认。具有**包访问权限**，==可以被同一包下的其他类使用==，但不能被其他包中的类使用
 
-- 对象类型和引用类型之间具有继承（类）/实现（接口）的关系
-- 引用类型变量发出的方法调用的到底是哪个类中的方法，必须在程序运行期间才能确定
-- 多态不能调用“只在子类存在但在父类不存在”的方法
-- 如果子类重写了父类的方法，真正执行的是子类覆盖的方法，如果子类没有覆盖父类的方法，执行的是父类的方法
+**protected**：保护，具有**子类访问权限**
+- 可以被==同一包下的类==使用，也可以被==不同包下的子类==使用
 
-## 接口和抽象类有什么共同点和区别？
+**public**：公共。具有公共访问权限。如果类中的属性或方法被 public 修饰，则此类中的属性或方法可以被任何类调用
 
-**共同点** ：
+## 接口和抽象类有什么共同点和区别？ #面过
+
+共同点 ：
 
 - 都不能被实例化
 - 都可以包含抽象方法
@@ -477,27 +492,156 @@ System.out.println(l + 1 == Long.MIN_VALUE); // true
 
 > 继承抽象类的子类必须重写父类所有的抽象方法。否则，该子类也必须声明为抽象类，使用 abstract 关键字修饰
 
-**区别** ：
+区别 ：
 
-- 功能：
-	- 接口主要用于对类的**行为进行约束**，你实现了某个接口就具有了对应的行为。
-	- 抽象类主要用于**代码复用**，强调的是**所属关系**
-- 一个类只能继承一个类，但是可以实现多个接口
-- 成员变量：
-	- 接口中的成员变量只能是 `public static final` 类型的，不能被修改且必须有初始值；
-	- 抽象类的成员变量默认 `default`，可在子类中被重新定义，也可被重新赋值
 
-## 深拷贝和浅拷贝区别了解吗？什么是引用拷贝？
+|         | 抽象类               | 接口                                    |
+| ------- | ----------------- | ------------------------------------- |
+| 职责      | 主要用于代码复用，强调的是所属关系 | 主要用于对类的行为进行约束，你实现了某个接口就具有了对应的行为       |
+|         | 单继承               | 多实现                                   |
+| 成员变量修饰符 | 所有修饰符都可以          | 只能是 public static final（不能被修改且必须有初始值） |
+| 构造器     | 可以有构造器            | 不能有                                   |
 
-> #todo完善 深浅拷贝实现
 
-*浅拷贝*：浅拷贝会在堆上创建一个新的对象（区别于引用拷贝的一点），不过，如果原对象内部的属性是引用类型的话，浅拷贝会直接复制内部对象的引用地址，也就是说拷贝对象和原对象共用同一个内部对象
+```java
+public abstract class ABS {
+    int i;
+}
 
-*深拷贝*：深拷贝会完全复制整个对象，包括这个对象所包含的内部对象
+interface If {
+//    int i;
+    int i = 0;
+}
+```
 
-*引用拷贝*：两个不同的引用指向同一个对象
+## 深拷贝和浅拷贝？深拷贝怎么实现的？ #面过 
 
-![600](assets/shallowdeep-copy.png)
+> [✅什么是深拷贝和浅拷贝？](https://www.yuque.com/hollis666/krcpbs/br3qgdim5xz2pngx#Ap5QO)
+
+> 引用拷贝：两个不同的引用指向同一个对象
+
+两种拷贝都会在堆上创建一个新的对象
+
+**浅拷贝**：
+- 如果原对象内部的属性是引用类型的话，浅拷贝会直接复制内部对象的引用地址
+- 适用场景：性能好
+- `BeanUtils.copyProperties()`
+
+**深拷贝**：
+- 深拷贝会完全复制整个对象，包括这个对象所包含的内部对象
+- 适用场景：需要完全独立的对象副本，原始对象和新对象互不影响
+
+![600](Java/assets/shallowdeep-copy.png)
+
+### 实现深拷贝
+
+1）Object 的 `clones()` 方法不重写是浅拷贝，如果想要实现深拷贝，就需要重写 clone 方法
+
+- 重写 clone 方法，就必须实现 Cloneable，否则会报 CloneNotSupportedException 异常
+
+```java
+public class DeepCopy {
+    public static void main(String[] args) throws CloneNotSupportedException {
+        Address address = new Address("Shanghai");
+        User user = new User();
+        user.setAddress(address);
+
+        // 深拷贝
+        User newUser = (User) user.clone();
+        System.out.println(user == newUser);
+        System.out.println(user.getAddress() == newUser.getAddress());
+        System.out.println(user.getAddress().getCity().equals(newUser.getAddress().getCity()));
+    }
+}
+
+class Address implements Cloneable {
+    private String city;
+
+    public Address(String city) {
+        this.city = city;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+}
+
+class User implements Cloneable {
+    private Address address;
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
+    public Address getAddress() {
+        return address;
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        User user = (User) super.clone();
+        user.setAddress((Address) address.clone());
+        return user;
+    }
+}
+```
+
+2）可以借助序列化来实现深拷贝。先把对象序列化成流，再从流中反序列化成对象，这样就一定是新的对象
+
+使用 fastjson 实现
+```java
+// fastjson
+User newUser = JSON.parseObject(JSON.toJSONString(user), User.class);
+```
+
+Apache Commons Lang 中提供的 SerializationUtils 工具
+```java
+//类要实现Serializable接口
+class User implements Serializable
+class Address implements Serializable
+
+User newUser = (User) SerializationUtils.clone(user);
+```
+
+## 为什么创建对象先执行普通代码块再执行构造函数
+
+普通代码块用于对象的预初始化
+- 可以对实例变量进行==统一==的初始化或操作
+- 这样，构造函数可以专注于处理与该对象直接相关的逻辑，而==不用重复代码==。
+
+# 序列化
+
+## 什么是序列化，反序列化？
+
+序列化就是把 Java 对象序列化成字节数组的过程，反序列化就是把字节数组再转换成 Java 对象的过程
+- 应用场景：持久化，网络传输
+
+## 如何序列化？
+
+Java 原生的序列化实现：
+- 在 Java 中，只要一个类实现了 java.io.Serializable 接口，那么它就可以被序列化
+- 通过 ObjectOutputStream 和 ObjectInputStream 对对象进行序列化及反序列化
+
+注意：
+- 要想将父类对象也序列化，就需要让父类也实现 Serializable 接口
+- 虚拟机是否允许反序列化，不仅取决于类路径和功能代码是否一致，还有==两个类的序列化 ID (private static final long serialVersionUID) 是否一致==
+- 序列化并不保存静态变量
+- transient 关键字修饰的变量不会被序列化
+	- 在被反序列化后，transient 变量的值被设为初始值，如 int 型的是 0，对象型的是 null
+- 服务器端给客户端发送序列化对象数据，对象中有一些数据是敏感的，比如密码字符串等，希望对该密码字段在序列化时，进行加密，而客户端如果拥有解密的密钥，只有在客户端进行反序列化时，才可以对密码进行读取，这样可以一定程度保证序列化对象的数据安全
+
+## 未实现 Serializable，可以序列化吗？
+
+如果使用 Java 原生的序列化机制（即通过 ObjectOutputStream 和 ObjectInputStream 类），则对象必须实现 Serializable 接口。如果对象没有实现这个接口，尝试原生序列化会抛出 NotSerializableException。
+
+对于像 Jackson、Gson 这样的 JSON 序列化库或用于 XML 的库（如 JAXB），对象不需要实现 Serializable 接口。
+- 这些库使用反射机制来访问对象的字段，并将它们转换成 JSON 或 XML 格式。在这种情况下，对象的序列化与 Serializable 接口无关
+
 
 # Object
 
@@ -563,8 +707,8 @@ protected void finalize() throws Throwable { }
 
 `equals()` 不能用于判断基本数据类型的变量，只能用来判断两个对象是否相等，存在两种使用情况：
 
-- *类没有重写 `equals()`* ：等价于通过 `==` 比较这两个对象
-- *类重写了 `equals()`* ：一般我们都重写 `equals()` 方法来比较两个对象中的**属性是否相等**
+- 类没有重写 `equals()` ：等价于通过 `==` 比较这两个对象
+- 类重写了 `equals()` ：一般我们都重写 `equals()` 方法来比较两个对象中的**属性是否相等**
 
 > `Object` 类 `equals()` 方法：
 > 
@@ -649,7 +793,7 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
 
 
 
-#### String 为什么是不可变的？（*）
+## String 为什么是不可变的？（1）
 
 String 类中使用 final 关键字修饰字符数组来保存字符串
 
@@ -685,7 +829,7 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
 >
 > JDK 官方就说了绝大部分字符串对象只包含 Latin-1 可表示的字符。
 >
-> ![img](assets/jdk9-string-latin1.png)
+> ![img](Java/assets/jdk9-string-latin1.png)
 >
 > 如果字符串中包含的汉字超过 Latin-1 可表示范围内的字符，`byte` 和 `char` 所占用的空间是一样的。
 >
@@ -693,11 +837,11 @@ abstract class AbstractStringBuilder implements Appendable, CharSequence {
 
 
 
-#### 可以通过别的方法改变 String 的实际字符串内容吗？（*）
+## 可以通过别的方法改变 String 的实际字符串内容吗？（）
 
 
 
-####  字符串拼接用“+” 还是 StringBuilder？
+## 字符串拼接用“+” 还是 StringBuilder？
 
 Java 语言本身并不支持运算符重载，“+”和“+=”是专门为 String 类重载过的运算符，也是 Java 中仅有的两个重载过的元素符。
 
@@ -708,9 +852,9 @@ String str3 = "world";
 String str4 = str1 + str2 + str3;
 ```
 
-**对象引用和“+”**的字符串拼接方式，实际上是通过==StringBuilder 调用 append()方法==实现的，拼接完成之后==调用 toString()==得到一个 String 对象 。
+**对象引用和 “+”** 的字符串拼接方式，实际上是通过 StringBuilder 调用 append 方法实现的，拼接完成之后调用 toString 方法得到一个 String 对象 。
 
-![img](assets/image-20220131173604062.png)
+![img](Java/assets/image-20220131173604062.png)
 
 不过，**在循环内使用“+”进行字符串的拼接**的话，存在比较明显的缺陷：编译器不会创建单个 StringBuilder 以复用，会导致创建过多的 StringBuilder 对象。
 
@@ -725,11 +869,10 @@ for (int i = 0; i < arr.length; i++) {
 System.out.println(s);
 ```
 
-如果直接使用 `StringBuilder` 对象进行字符串拼接的话，就不会存在这个问题了
+如果直接使用 StringBuilder 对象进行字符串拼接的话，就不会存在这个问题了
 
 
-
-#### String的equals() 和 Object的equals() 有何区别？
+## String的equals() 和 Object的equals() 有何区别？
 
 - String 中的 equals 方法是被重写过的，比较的是 String 字符串的值是否相等
 - Object 的 equals 方法是比较的对象的内存地址
@@ -760,7 +903,7 @@ public boolean equals(Object anObject) {
 
 
 
-#### 字符串常量池的作用了解吗？
+## 字符串常量池的作用了解吗？
 
 **字符串常量池** 是 JVM 为了提升性能和减少内存消耗针对字符串（String 类）专门开辟的一块区域，主要目的是为了避免字符串的重复创建。
 
@@ -771,10 +914,9 @@ System.out.println(aa==bb); //true
 ```
 
 
+## String s1 = new String("abc"); 创建了几个字符串对象？ #笔试
 
-#### String s1 = new String("abc");这句话创建了几个字符串对象？
-
-会创建 1 或 2 个字符串。
+**会创建 1 或 2 个字符串。**
 
 1、如果字符串常量池中不存在字符串对象“abc”的引用，那么会在堆中创建 2 个字符串对象“abc”。
 
@@ -785,7 +927,7 @@ String s1 = new String("abc");
 
 对应的字节码：
 
-![img](assets/image-20220413175809959.png)
+![img](Java/assets/image-20220413175809959.png)
 
 `ldc` 命令用于判断字符串常量池中是否保存了对应的字符串对象的引用，如果保存了的话直接返回，如果没有保存的话，会在堆中创建对应的字符串对象并将该字符串对象的引用保存到字符串常量池中。
 
@@ -800,15 +942,14 @@ String s2 = new String("abc");
 
 对应的字节码：
 
-![img](assets/image-20220413180021072.png)
+![img](Java/assets/image-20220413180021072.png)
 
 7 这个位置的 `ldc` 命令不会在堆中创建新的字符串对象“abc”，这是因为 0 这个位置已经执行了一次 `ldc` 命令，已经在堆中创建过一次字符串对象“abc”了。7 这个位置执行 `ldc` 命令会直接返回字符串常量池中字符串对象“abc”对应的引用
 
-> 故现在通过new String() 创建字符串对象，会提示：'new String' is redundant，多余的
+==故现在通过 new String() 创建字符串对象，会提示：'new String' is redundant，多余的==
 
 
-
-#### intern方法有什么作用？
+## intern 方法有什么作用？
 
 String.intern() 是一个 native（本地）方法，其作用是==将指定的字符串对象的引用保存在字符串常量池中==，可以简单分为两种情况：
 
@@ -830,8 +971,7 @@ System.out.println(s1 == s4); //true
 ```
 
 
-
-#### String 类型的变量和常量做“+”运算时发生了什么？（了解）
+## String 类型的变量和常量做“+”运算时发生了什么？（了解）
 
 先来看字符串不加 `final` 关键字拼接的情况（JDK1.8）
 
@@ -850,7 +990,7 @@ System.out.println(str4 == str5);//false
 
 在编译过程中，Javac 编译器（下文中统称为编译器）会进行一个叫做 **常量折叠(Constant Folding)** 的代码优化。《深入理解 Java 虚拟机》中是也有介绍到：
 
-![img](assets/image-20210817142715396.png)
+![img](Java/assets/image-20210817142715396.png)
 
 常量折叠会把常量表达式的值求出来作为常量嵌在最终生成的代码中，这是 Javac 编译器会对源代码做的极少量优化措施之一(代码优化几乎都在即时编译器中进行)。
 
@@ -905,12 +1045,12 @@ public static String getStr() {
 
 ### Exception 和 Error 有什么区别？
 
-在 Java 中，所有的异常都有一个共同的祖先 `java.lang` 包中的 `Throwable` 类。`Throwable` 类有两个重要的子类:
+在 Java 中，所有的异常都有一个共同的祖先 java.lang 包中的 Throwable 类。
+
+Throwable 类有两个重要的子类:
 
 - **`Exception`** ：==程序本身可以处理的异常==，可以通过 `catch` 来进行捕获。
 - **`Error`** ：`Error` 属于==程序无法处理的错误==，不建议通过 `catch` 捕获。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止
-
-
 
 ### Checked Exception 和 Unchecked Exception 有什么区别？
 
@@ -1395,7 +1535,7 @@ xiaoLi:小李
 
 `swap` 方法的参数 `person1` 和 `person2` 只是拷贝的实参 `xiaoZhang` 和 `xiaoLi` 的地址。因此， `person1` 和 `person2` 的互换只是拷贝的两个地址的互换罢了，并不会影响到实参 `xiaoZhang` 和 `xiaoLi` 。
 
-![引用数据类型参数2](assets/Java基础题/java-value-passing-03.7d64c8e9.png)
+![引用数据类型参数2](Java/assets/java基础题/java-value-passing-03.7d64c8e9.png)
 
 
 
@@ -1469,3 +1609,397 @@ Set<Long> addBatchIdSet = newBatchIdSet.stream()
 		})
 		.collect(Collectors.toSet());
 ```
+
+
+Collection 接口
+
+- *List* 接口
+	- *ArrayList*
+		- 线程不安全
+		- 允许存放 null
+	- *Vector*
+		- 线程安全
+	- *LinkedList*
+		- 线程不安全
+- *Set* 接口
+	- *HashSet*
+		- LinkedHashSet
+	- *TreeSet*
+- *Queue* 接口
+	- LinkedList
+	- ArrayDeque
+
+Map 接口
+
+- HashMap
+	- LinkedHashMap
+- HashTable
+- TreeMap
+
+
+# 集合
+
+## List, Set, Queue, Map 四者的区别？
+
+- `List` : 存储的元素是**有序**的、**可重复**的。
+- `Set` : 存储的元素**不可重复**的。
+- `Queue` : 按特定的排队规则来确定先后顺序，存储的元素是**有序**的、**可重复**的
+- `Map` : 使用键值对（key-value）存储，
+	- key 是**无序**的、**不可重复**的，
+	- value 是**无序**的、**可重复**的，
+
+### 底层数据结构
+
+List
+
+- `ArrayList`：`Object[]` 数组
+- `Vector`：`Object[]` 数组
+- `LinkedList`：双向链表
+
+Set
+
+- `HashSet`（无序）：基于 `HashMap` 实现的
+	- `LinkedHashSet`：内部是通过 `LinkedHashMap` 来实现的。
+- `TreeSet`（有序）: TreeMap 实现
+
+Queue
+
+- `PriorityQueue`：`Object[]` 数组来实现**小顶堆**
+- `DelayQueue`：`PriorityQueue`
+- `ArrayDeque`：可扩容动态双向数组
+
+Map
+
+- `HashMap`：数组+**链表/红黑树**。当链表长度大于阈值（默认为 8）（将链表转换成红黑树前会判断，如果当前数组的长度小于 64，那么会选择先进行数组扩容，而不是转换为红黑树）时，将链表转化为红黑树，以减少搜索时间。
+	- `LinkedHashMap`：`LinkedHashMap` 继承自 `HashMap`，所以它的底层仍然是基于拉链式散列结构即由数组和**链表或红黑树**组成。另外，`LinkedHashMap` 在上面结构的基础上，增加了一条**双向链表**，使得上面的结构可以**保持键值对的插入顺序**。同时通过对链表进行相应的操作，实现了访问顺序相关逻辑。
+- `Hashtable`：数组+链表
+- `TreeMap`（有序）：红黑树（自平衡的排序二叉树）
+
+## List
+
+### ArrayList 和 Array（数组）的区别？
+
+- `ArrayList` 会根据实际存储的元素**动态地扩容或缩容**，而 `Array` 被创建之后就不能改变它的长度了
+	- `ArrayList` 创建时不需要指定大小，而 `Array` 需要
+- `ArrayList` 允许你使用**泛型**来确保类型安全
+- 存储内容：
+	- `ArrayList` 中只能存储**对象**。对于基本类型数据，需要使用其对应的包装类（如 Integer、Double 等）
+	- `Array` 可以直接存储**基本类型数据**，也可以存储**对象**
+- `ArrayList` 支持插入、删除、遍历等常见操作，并且提供了丰富的 API 操作方法，比如 `add()`、`remove()` 等。`Array` 只是一个固定长度的数组，只能按照下标访问其中的元素，不具备动态添加、删除元素的能力。
+
+### Vector 和 Stack 的区别?（了解即可）
+
+- `Vector` 和 `Stack` 两者都是**线程安全**的，都是使用 `synchronized` 关键字进行同步处理。
+- `Stack` 继承自 `Vector`，是一个后进先出的栈，而 `Vector` 是一个列表。
+
+随着 Java 并发编程的发展，`Vector` 和 `Stack` 已经被淘汰，推荐使用**并发集合类**（例如 `ConcurrentHashMap`、`CopyOnWriteArrayList` 等）或者手动实现线程安全的方法来提供安全的多线程操作支持。
+
+### ArrayList 插入和删除元素的时间复杂度？
+
+对于插入：
+
+- *头部插入*：由于需要将所有元素都依次向后移动一个位置，因此时间复杂度是 `O(n)`
+- *尾部插入*：
+	- 当 `ArrayList` 的容量未达到极限时，`O(1)`
+	- 当需要扩容时，则需要执行一次 `O(n)` 的操作将原数组复制到新的更大的数组中，然后再执行 `O(1)` 的操作添加元素
+- *指定位置插入*：需要将目标位置之后的所有元素都向后移动一个位置，然后再把新元素放入指定位置。这个过程需要移动平均 n/2 个元素，因此时间复杂度为 `O(n)`
+
+对于删除：
+
+- *头部删除*：需要将所有元素依次向前移动一个位置，`O(n)`
+- *尾部删除*：当删除的元素位于列表末尾时，`O(1)`
+- *指定位置删除*：需要将目标元素之后的所有元素向前移动一个位置以填补被删除的空白位置，因此需要移动平均 n/2 个元素，时间复杂度为 `O(n)`
+
+### LinkedList 插入和删除元素的时间复杂度？
+
+- *头部插入/删除*：只需要修改头结点的指针即可完成插入/删除操作，`O(1)`
+- *尾部插入/删除*：只需要修改尾结点的指针即可完成插入/删除操作，`O(1)`
+- *指定位置插入/删除*：需要先移动到指定位置，再修改指定节点的指针完成插入/删除，因此需要移动平均 n/2 个元素，时间复杂度为 `O(n)`
+
+### LinkedList 为什么不能实现 RandomAccess 接口？
+
+#todo
+
+`RandomAccess` 是一个标记接口，用来表明实现该接口的类支持随机访问（即可以通过索引快速访问元素）。由于 `LinkedList` 底层数据结构是链表，内存地址不连续，只能通过指针来定位，不支持随机快速访问，所以不能实现 `RandomAccess` 接口
+
+### ArrayList 与 LinkedList 区别?
+
+- 是否保证线程安全
+- 底层数据结构
+- 插入和删除是否受元素位置的影响
+	- ArrayList 只有尾部插入才是 `O(1)`，其他位置 `O(n)`
+	- LinkedList 只有指定位置插入 `O(n)`，其他位置 `O(1)`
+- 是否支持快速随机访问
+- 内存空间占用
+	- ArrayList 的空间浪费主要体现在在 list 列表的**结尾**会预留一定的容量空间，
+	- LinkedList 的空间花费则体现在它的**每一个元素**都需要消耗比 ArrayList 更多的空间（因为要存放直接后继和直接前驱以及数据）
+
+> 我们在项目中一般是不会使用到 `LinkedList` 的，需要用到 `LinkedList` 的场景几乎都可以使用 `ArrayList` 来代替，并且，性能通常会更好！就连 `LinkedList` 的作者约书亚 · 布洛克（Josh Bloch）自己都说从来不会使用 `LinkedList`
+
+### ArrayList 扩容机制
+
+ArrayList 维护了一个 `transient Object[] elementData` 数组（transient 表示该属性不会被序列化）
+
+- 新增元素后会检查是否会超过数组的容量，如果超过，则进行扩容
+
+- 创建 ArrayList 对象时，
+	- 如果使用无参构造，给 elementData 分配一个空数组，初始容量为 0，第一次添加则扩容 elementData 为 10，如需再次扩容，则 elementData 容量为原先的 1.5 倍
+	- 如果使用的是指定大小的构造器，则初始容量为指定大小，之后扩容为原先的 1.5 倍
+- 将老数组的元素复制到新数组中，扩容完成
+
+
+## Set
+
+### 无序性和不可重复性的含义是什么
+
+- 无序性不等于随机性 ，无序性是指存储的数据在底层数组中并非按照数组索引的顺序添加 ，而是根据数据的**哈希值**决定的。
+- 不可重复性是指添加的元素按照 `equals()` 判断时 ，返回 false，需要同时重写 `equals()` 方法和 `hashCode()` 方法
+
+### HashSet、LinkedHashSet 和 TreeSet 三者的异同
+
+- 都不是线程安全的
+- 底层数据结构不同
+	- `HashSet` 的底层数据结构是**哈希表**（基于 `HashMap` 实现）
+	- `LinkedHashSet` 的底层数据结构是**链表和哈希表**，元素的插入和取出顺序满足 **FIFO**
+	- `TreeSet` 底层数据结构是**红黑树**，元素是**有序**的，排序的方式有自然排序和**定制排序**
+- 应用场景不同
+	- `HashSet` 用于不需要保证元素插入和取出顺序的场景，
+	- `LinkedHashSet` 用于保证元素的插入和取出顺序满足 FIFO 的场景，
+	- `TreeSet` 用于支持对元素自定义排序规则的场景。
+
+### HashSet 如何检查重复?
+
+在 JDK1.8 中，`HashSet` 的 `add()` 方法只是简单的调用了 `HashMap` 的 `put()` 方法，并且判断了一下返回值以确保是否有重复元素
+
+```java
+// Returns: true if this set did not already contain the specified element
+// 返回值：当 set 中没有包含 add 的元素时返回真
+public boolean add(E e) {
+        return map.put(e, PRESENT)==null;
+}
+```
+
+而在 `HashMap` 的 `putVal()` 方法中也能看到如下说明：
+
+```java
+// Returns : previous value, or null if none
+// 返回值：如果插入位置没有元素返回null，否则返回上一个元素
+final V putVal(int hash, K key, V value, boolean onlyIfAbsent,
+                   boolean evict) {
+...
+}
+```
+
+也就是说，在 JDK1.8 中，实际上无论 `HashSet` 中是否已经存在了某元素，`HashSet` 都会**直接插入（覆盖）**，只是会在 `add()` 方法的==返回值处告诉我们插入前是否存在相同元素==
+
+## Queue
+
+#todo 
+
+## Map
+
+### HashMap，Hashtable，ConcurrentHashMap，TreeMap 对比 #笔试 
+
+
+|          | Hashtable | HashMap                 | ConcurrentHashMap | TreeMap        |
+| -------- | --------- | ----------------------- | ----------------- | -------------- |
+| 线程安全     | 是         | 不是                      | 是                 | 不是             |
+| null 值处理 | 不允许 null  | 可以存储 null 的 key 和 value | 不允许 null          | value 可以为 null |
+| 底层数据结构   | 数组+链表     | 数组+链表/红黑树               | 数组+链表/红黑树         | 红黑树            |
+
+### 为什么 TreeMap 的 value 不能为 null？
+
+当 `key` 为 `null` 时，无法通过自然排序 (`Comparable`) 或自定义比较器 (`Comparator`) 确定 `null` 的顺序，这会导致运行时异常
+
+如果尝试将 `null` 作为 `TreeMap` 的 `key`，会抛出 `NullPointerException`
+
+### HashMap 和 TreeMap 区别
+
+- 相同点：`TreeMap` 和 `HashMap` 都继承自 `AbstractMap`
+
+- 不同点：
+	- `TreeMap` 它还实现了 **NavigableMap 接口** 和 **SortedMap 接口**
+	- 底层数据结构
+
+实现 `NavigableMap` 接口让 `TreeMap` 有了对集合内元素的搜索的能力。`NavigableMap` 接口提供了丰富的方法来探索和操作键值对:
+
+1. *定向搜索*：`ceilingEntry()`, `floorEntry()`, `higherEntry()` 和 `lowerEntry()` 等方法可以用于定位大于、小于、大于等于、小于等于给定键的最接近的键值对。
+2. *子集操作*：`subMap()`, `headMap()` 和 `tailMap()` 方法可以高效地创建原集合的子集视图，而无需复制整个集合。
+3. *逆序视图*：`descendingMap()` 方法返回一个逆序的 `NavigableMap` 视图，使得可以反向迭代整个 `TreeMap`。
+4. *边界操作*：`firstEntry()`, `lastEntry()`, `pollFirstEntry()` 和 `pollLastEntry()` 等方法可以方便地访问和移除元素。
+
+这些方法都是基于**红黑树**的属性实现的，红黑树保持平衡状态，从而保证了搜索操作的时间复杂度为 O(log n)，这让 `TreeMap` 成为了处理**有序集合搜索**问题的强大工具
+
+实现 `SortedMap` 接口让 `TreeMap` 有了对集合中的元素根据键**排序**的能力。默认是按 key 的升序排序，不过我们也可以指定**排序**的比较器（构造器传入 comparator）
+
+### HashMap 元素添加和去重
+
+- 添加一个元素时会先得到 hash 值（hashcode 方法）
+- 通过 hash 值 和 数组当前容量 n 计算出元素在数组中存放的索引位置：`(n - 1) & hash`
+- 看这个位置是否已经存放有元素
+    - 如果没有，直接加入；
+    - 如果有，调用 `equals()` 和链表上的节点逐个比较，相同直接**覆盖**，不同添加到最后
+
+### HashMap 初始容量及扩容机制 #面过
+
+HashMap 默认的初始化大小为 16，加载因子 `loadFactor = 0.75`，即容量超过 75% 就会扩容，临界值 `threshold=16 * 0.75=12`
+
+之后每次扩充，==容量变为原来的 2 倍==，临界值也为原来的 2 倍。
+
+创建时如果给定了容量初始值，HashMap 会将其扩充为 **2 的幂次方**大小
+
+> JDK1.8 之后在解决**哈希冲突**时有了较大的变化，当链表长度大于**阈值（默认为 8）**
+> 
+> - 如果当前数组的长度**小于 64**，那么会选择先进行**数组扩容**，
+> - 否则将链表转化为**红黑树**，以减少搜索时间。
+
+### HashMap 的长度为什么是 2 的幂次方？
+
+#todo 
+
+## ConcurrentHashMap
+
+```java
+//ConcurrentHashMap使用volatile修饰节点数组，保证其可见性，禁止指令重排。
+transient volatile Node<K,V>[] table;
+```
+
+```java
+//put()方法直接调用putVal()方法
+public V put(K key, V value) {
+	return putVal(key, value, false);
+}
+
+public V putVal(K key, V value) {
+    if (value == null)
+        throw new NullPointerException();
+
+    // 对 key 的 hashCode 进行扰动
+    int hash = spread(key.hashCode());
+    int binCount = 0;
+
+    // 循环操作（高情商：乐观锁）
+    for (Node<K,V>[] tab = table;;) {
+        Node<K,V> f; int n, i, fh;
+
+        // 如果 table 为 null 或长度为 0，则进行初始化
+        if (tab == null || (n = tab.length) == 0)
+            tab = initTable();
+
+        // 如果哈希槽为空，则通过 CAS 操作尝试插入新节点
+        else if ((f = tabAt(tab, i = (n - 1) & hash)) == null) {
+            if (casTabAt(tab, i, null,
+                         new Node<K,V>(hash, key, value, null)))
+                break;
+        }
+
+        // 如果哈希槽处已经有节点，且 hash 值为 MOVED，则说明正在进行扩容，需要帮助迁移数据
+        else if ((fh = f.hash) == MOVED)
+            tab = helpTransfer(tab, f);
+
+        // 如果哈希槽处已经有节点，且 hash 值不为 MOVED，则进行链表/红黑树的节点遍历或插入操作
+        else {
+            V oldVal = null;
+
+            // 加锁，确保只有一个线程操作该节点的链表/红黑树
+            synchronized (f) {
+	            // 判断当前节点是不是第二轮判断过的节点，如果不是，表示节点被其他线程改过了
+                if (tabAt(tab, i) == f) {
+                    if (fh >= 0) {
+                        // 遍历链表，找到相同 key 的节点，更新值或插入新节点
+                        binCount = 1;
+                        for (Node<K,V> e = f;; ++binCount) {
+                            K ek;
+                            if (e.hash == hash &&
+                                ((ek = e.key) == key ||
+                                 (ek != null && key.equals(ek)))) {
+                                oldVal = e.val;
+                                if (!onlyIfAbsent)
+                                    e.val = value;
+                                break;
+                            }
+                            Node<K,V> pred = e;
+                            if ((e = e.next) == null) {
+                                // 将新节点插入到链表末尾
+                                if (casNext(pred, new Node<K,V>(hash, key,
+                                                                value, null))) {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                        // 遍历红黑树，找到相同 key 的节点，更新值或插入新节点
+                    else if (f instanceof TreeBin) {
+                        Node<K,V> p;
+                        binCount = 2;
+                        if ((p = ((TreeBin<K,V>)f).putTreeVal(hash, key,
+                                                              value)) != null) {
+                            oldVal = p.val;
+                            if (!onlyIfAbsent)
+                                p.val = value;
+                        }
+                    }
+                }
+            }
+            // 如果插入或更新成功，则进行可能的红黑树化操作
+            if (binCount != 0) {
+                if (binCount >= TREEIFY_THRESHOLD)
+                    treeifyBin(tab, i);
+                // 如果替换旧值成功，则返回旧值
+                if (oldVal != null)
+                    return oldVal;
+                break;
+            }
+        }
+    }
+
+    addCount(1L, binCount);
+    return null;
+}
+```
+
+
+
+
+
+# 注解
+
+## 什么是注解？
+
+[✅Java注解的作用是啥](https://www.yuque.com/hollis666/krcpbs/zelhse)
+
+Java 注解用于为 Java 代码提供元数据。作为元数据，注解不直接影响你的代码执行
+
+> Java 注解是从 Java5 开始添加到 Java 的。
+
+目的：注解可以说是一种标识，标识一个类或者一个字段，常常是和反射，AOP 结合起来使用。中间件一般会定义注解，如果某些类或字段符合条件，就执行某些能力。
+
+## 元注解？ #笔试
+
+说简单点，就是 定义其他注解的注解
+
+比如 Override 这个注解，就不是一个元注解。而是通过元注解定义出来的。
+
+```java
+@Target(ElementType.METHOD)
+@Retention(RetentionPolicy.SOURCE)
+public @interface Override {
+}
+```
+
+元注解有四个:
+- @Target（表示该注解可以用于什么地方）
+	- 指定被修饰的注解可以应用于的元素类型，如类、方法、字段等
+- @Retention（表示在什么级别保存该注解信息）
+	- 指定被修饰的注解的生命周期，即注解在源代码、编译时还是运行时保留。
+	- 它有三个可选的枚举值：SOURCE、CLASS 和 RUNTIME。默认为 CLASS。
+- @Documented（将此注解包含在 javadoc 中）
+	- 用于指示注解是否会出现在生成的 Java 文档中。如果一个注解被 @Documented 元注解修饰，则该注解的信息会出现在 API 文档中，方便开发者查阅
+- @Inherited（允许子类继承父类中的注解）
+	- 指示被该注解修饰的注解是否可以被继承。默认情况下，注解不会被继承，即子类不会继承父类的注解
+
+## 如何自定义注解？
+
+- 使用 `@interface` 来申明一个自定义注解时，他会自动继承 `Java.lang.annotation.Annotation` 接口
+- 搭配元注解使用
+- 定义注解参数内容

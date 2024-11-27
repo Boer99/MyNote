@@ -16,7 +16,7 @@ Redis 内部做了非常多的性能优化，比较重要的有下面 3 点：
 	- 主要是 单线程事件循环 和 IO 多路复用 #todo扩展 
 - 内置了多种优化过后的**数据类型/结构**实现
 
-![|600](assets/Pasted%20image%2020240314002538.png)
+![|600](数据库/assets/Pasted%20image%2020240314002538.png)
 
 
 ## 为什么 Redis 设计成单线程？
@@ -268,7 +268,7 @@ typedef struct zset
 		- 读取到就直接返回
 		- 读取不到，cache 从 db 加载，写入到 cache 后返回响应
 
-![|500](assets/Pasted%20image%2020240315110241.png)
+![|500](数据库/assets/Pasted%20image%2020240315110241.png)
 
 缺点：首次请求数据一定不在 cache 的问题
 

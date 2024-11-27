@@ -91,9 +91,13 @@ rabbitMQ 一共有 6 种工作模式（消息分发方式）分别是
 
 [✅如何保障消息一定能发送到RabbitMQ](https://www.yuque.com/hollis666/krcpbs/inmrfqk0qyvsdgg3)
 
-**Publisher Confirm**
+**Publisher Confirm**：一种机制，用于确保消息已经被 Exchange 成功接收和处理。
+- 一旦消息成功到达 Exchange 并被处理，RabbitMQ 会向消息生产者发送确认信号（ACK）。
+- 如果由于某种原因（例如，Exchange 不存在或路由键不匹配）消息无法被处理，RabbitMQ 会向消息生产者发送否认信号（NACK）
 
-**Publisher Returns**
+**Publisher Returns**：于处理在消息无法路由到任何队列时的情况。
+- 当 RabbitMQ 在无法路由消息时将消息返回给消息生产者，
+- 但是如果能正确路由，则不会返回消息
 
 
 # RabbitMQ 如何保证消息不丢？ #面过

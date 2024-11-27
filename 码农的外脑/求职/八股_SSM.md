@@ -18,11 +18,11 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 > 讲一下你知道的模块 #得物_24_实习_Java 
 
-![600](assets/Pasted%20image%2020240320011936.png)
+![600](Java/assets/Pasted%20image%2020240320011936.png)
 
 各模块间的依赖关系
 
-![600](assets/Pasted%20image%2020240320011739.png)
+![600](Java/assets/Pasted%20image%2020240320011739.png)
 
 *Core Container*：Spring 框架的核心模块、基础模块，主要提供 IoC 依赖注入功能的支持。Spring 其他所有的功能基本都需要依赖于该模块
 
@@ -33,7 +33,7 @@ Spring 最核心的思想就是不重新造轮子，开箱即用，提高开发�
 
 > maven 里导入 spring-context
 > 
-> ![600](assets/Pasted%20image%2020240320014712.png)
+> ![600](Java/assets/Pasted%20image%2020240320014712.png)
 
 *AOP*
 
@@ -175,29 +175,27 @@ Bean 是否线程安全，取决于其**作用域和状态**
 
 ## bean 生命周期 #rep
 
-> #饿了么
-
 bean 生命周期控制：在 bean 创建后到销毁前做一些事情
 
-![](assets/Pasted%20image%2020240320162438.png)
+![](Java/assets/Pasted%20image%2020240320162438.png)
 
 实例化：
 
 - Bean 容器找到配置文件中 Spring Bean 的定义
-- Bean 容器利用 Java **Reflection** API 调用bb创建 Bean 的实例
+- Bean 容器利用 Java Reflection API 创建 Bean 的实例
 
 初始化：
 
 - 设置属性值：自动装配、属性注入、依赖检查
 
-- 调用 Bean 实现的 **`*.Aware` 接口**的方法，列举三个：
+- 调用 Bean 实现的 `*.Aware` 接口的方法，列举三个：
 	- *BeanNameAware* 接口：调用 `setBeanName()` 方法，传入 Bean 的名字
 	- *BeanClassLoaderAware* 接口：调用 `setBeanClassLoader()` 方法，传入 ClassLoader 对象的实例
 	- *BeanFactoryAware* 接口：调用 `setBeanFactory()` 方法，传入 BeanFactory 对象的实例
 
-- 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象（Bean），执行 `postProcessBeforeInitialization()` 方法
+- 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor 对象**（Bean），执行 `postProcessBeforeInitialization()` 方法
 
-- 如果 Bean 实现了 `InitializingBean` 接口，执行 `afterPropertiesSet()` 方法
+- 如果 Bean 实现了 InitializingBean 接口，执行 `afterPropertiesSet()` 方法
 - 如果 Bean 在【配置文件】中的定义包含 init-method 属性，执行 method 指定的自定义初始化方法
 
 - 如果有和加载这个 Bean 的 Spring 容器相关的 **BeanPostProcessor** 对象（Bean），执行 `postProcessAfterInitialization()` 方法
@@ -206,7 +204,7 @@ Bean 准备就绪，开始使用
 
 销毁：
 
-- 当要销毁 Bean 的时候，如果 Bean 实现了 `DisposableBean` 接口，执行 `destroy()` 方法
+- 当要销毁 Bean 的时候，如果 Bean 实现了 DisposableBean 接口，执行 `destroy()` 方法
 - 当要销毁 Bean 的时候，如果 Bean 在【配置文件】中的定义包含 destroy-method 属性，执行 destroy-method 指定的自定义销毁方法
 
 #todo 查看源码
@@ -308,7 +306,7 @@ public class Main {
 }
 ```
 
-### beanPostProcessor #rep
+## beanPostProcessor #rep
 
 > Spring 中的后置处理器的作用是什么？ #顺丰_23_秋招_Java 
 > 
@@ -331,27 +329,26 @@ BPP 的典型使用：Abstract**AutoProxyCreator**
 
 # AOP
 
-## 介绍 Spring aop  #rep
+## 介绍 Spring aop，应用场景 #面过2
 
-#得物_24_实习_Java 
+_AOP (Aspect Oriented Programming)_ 面向切面编程，把公共的逻辑抽出来，让开发者可以更专注于业务逻辑开发
 
-_AOP (Aspect Oriented Programming)_ 面向切面编程，一种**编程范式**，指导开发者如何组织程序结构
+> 一种**编程范式**，指导开发者如何组织程序结构
 
-- 作用：在不惊动原始设计的基础上为其进行功能增强（代理模式课可以实现）
-
-- 应用场景：能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性
+- **作用**：在不惊动原始设计的基础上为其进行功能增强
+- **应用场景**：能够将那些与业务无关，却为业务模块所共同调用的逻辑或责任（例如事务处理、日志管理、权限控制等）封装起来，便于减少系统的重复代码，降低模块间的耦合度，并有利于未来的可拓展性和可维护性
 
 AOP 切面编程涉及到的一些专业术语：
 
-| 术语             | 含义                                                                           |
-| -------------- | ---------------------------------------------------------------------------- |
-| 目标(Target)     | 被通知的对象                                                                       |
-| 代理(Proxy)      | 向目标对象应用通知之后创建的代理对象                                                           |
-| 连接点(JoinPoint) | 目标对象的所属类中，定义的所有**方法**均为连接点                                                   |
-| 切入点(Pointcut)  | 对连接点进行拦截的条件定义（在哪些连接点切入）                                                      |
-| 通知(Advice)     | 增强的逻辑 / 代码，也即拦截到目标对象的连接点之后要做的事情                                              |
-| 切面(Aspect)     | 切入点(Pointcut)+通知(Advice)                                                     |
-| Weaving(织入)    | 将通知应用到目标对象，进而生成代理对象的过程动作。织入可以在编译时，类加载时和运行时完成。在编译时进行织入就是静态代理，而在运行时进行织入则是动态代理。 |
+| 术语              | 含义                                                                           |
+| --------------- | ---------------------------------------------------------------------------- |
+| **目标**(Target)  | 被通知的对象                                                                       |
+| **代理**(Proxy)   | 向目标对象应用通知之后创建的代理对象                                                           |
+| 连接点(JoinPoint)  | 目标对象的所属类中，定义的所有**方法**均为连接点                                                   |
+| 切入点(Pointcut)   | 对连接点进行拦截的条件定义（在哪些连接点切入）                                                      |
+| **通知**(Advice)  | 增强的逻辑 / 代码，也即拦截到目标对象的连接点之后要做的事情                                              |
+| **切面**(Aspect)  | 切入点(Pointcut)+通知(Advice)                                                     |
+| **Weaving**(织入) | 将通知应用到目标对象，进而生成代理对象的过程动作。织入可以在编译时，类加载时和运行时完成。在编译时进行织入就是静态代理，而在运行时进行织入则是动态代理。 |
 
 
 ## AspectJ 定义的通知类型有哪些？ #rep
@@ -380,36 +377,29 @@ Spring AOP 已经集成了 AspectJ ，AspectJ 应该算的上是 Java 生态系�
 	- Spring AOP 仅支持方法切入点，AspectJ 支持所有切入点
 - 如果切面比较少，那么两者性能差异不大。如果**切面太多的话，最好选择 AspectJ** ，它比 Spring AOP 快很多
 
-## Spring AOP 底层原理/怎么实现？(3) #rep
+## Spring AOP 底层原理？ #面过
 
-#PDD_23_秋招_基础电商_后端 #字节_23_实习_Java 
+从 Bean 的生命周期中的初始化流程来讲，Spring 的 AOP 会在 bean 实例的实例化已完成，进行**初始化后置处理**时创建代理对象，
 
-从 Bean 的生命周期中的初始化流程来讲，Spring 的 AOP 会在 bean 实例的实例化已完成，进行初始化**后置处理**时创建代理对象，
+- 通过 BBP 的实现类 AbstractAutoProxyCreator 的后置处理方法完成 AOP 代理对象的创建
 
-- 通过 BBP 的实现类 **AbstractAutoProxyCreator** 的后置处理方法完成 AOP 代理对象的创建
+Spring AOP 就是基于**动态代理**的，如果要代理的对象
 
-Spring AOP 就是基于**动态代理**的
+- ==实现了某个接口==，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，
+- ==没有实现接口==，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的**子类来作为代理**
 
-- 如果要代理的对象，**实现了某个接口**，那么 Spring AOP 会使用 **JDK Proxy**，去创建代理对象，
-- 而对于**没有实现接口**的对象，就无法使用 JDK Proxy 去进行代理了，这时候 Spring AOP 会使用 **Cglib** 生成一个被代理对象的**子类来作为代理**
-
-![](assets/Pasted%20image%2020240320233941.png)
+![](Java/assets/Pasted%20image%2020240320233941.png)
 
 ## Cglib 和 JDK 动态代理 #rep
-
-> #todo 原理？ #小红书_电商_实习_后端
-> 
-> 除了 JDK 动态代理，还有什么动态代理方法？ #小红书_电商_实习_后端
 
 在Java中，实现动态代理有两种方式：
 
 1. *JDK 动态代理*：`Java.lang.reflect` 包中的 Proxy 类和 InvocationHandler 接口提供了生成动态代理类的能力
 2. *Cglib 动态代理*：Cglib (Code Generation Library )是一个**第三方代码生成类库**，运行时在内存中动态生成一个**子类对象**从而实现对目标对象功能的扩展
 
-> 有什么区别？ #PDD_23_秋招_后端 
+有什么区别？ 
 
 - 使用 JDK 动态代理的对象必须实现一个或多个接口；
-
 - 而使用 cglib 代理的对象则无需实现接口，达到代理类无侵入（底层是通过使用一个小而快的字节码处理框架 ASM，来转换字节码并生成新的类）
 	- 通过继承的方式做的动态代理，如果某个类被标记为 final，那么它是无法使用 CGLIB 做动态代理的
 
@@ -488,47 +478,36 @@ Spring 的 AOP 是通过动态代理实现的，如果失效了说明==没有调
 - **编程式事务**：在代码中硬编码(在分布式系统中推荐使用) : 通过 `TransactionTemplate` 或者 `TransactionManager` 手动管理事务，事务范围过大会出现事务未提交导致超时，因此事务要比锁的粒度更小。
 - **声明式事务**：在 XML 配置文件中配置或者直接基于注解（单体应用或者简单业务系统推荐使用） : 实际是通过 AOP 实现（基于 `@Transactional` 的全注解方式使用最多）
 
-## spring 事务有哪些传播行为？ #rep
+## spring 事务传播行为？ #面过2
 
-#PDD_23_秋招_后端 
+事务传播行为是为了==解决业务层方法之间互相调用的事务问题==，当事务方法被另一个事务方法调用时，必须指定事务应该如何传播
 
-事务传播行为是为了**解决业务层方法之间互相调用的事务问题**
+@Transactional 的 <span style="background:rgba(3, 135, 102, 0.2)">Propagation</span> 属性如下:
 
-当事务方法被另一个事务方法调用时，必须**指定事务应该如何传播**（例如：方法可能继续在现有事务中运行，也可能开启一个新事务，并在自己的事务中运行）
+- **REQUIRED**（默认）：如果当前存在事务，则==加入==该事务；否则创建一个新的事务
+- **REQUIRES_NEW**（独立新事务）：创建一个新的事务，如果当前存在事务，则把当前事务==挂起==。
+- **NESTED**（嵌套）：如果当前存在事务，则创建一个事务作为当前事务的**嵌套事务**来运行，否则创建一个新的事务
+- **MANDATORY**（强制）：如果当前存在事务，则加入该事务，否则抛出异常（很少用）
 
-正确的事务传播行为可能的值，即 `@Transactional` 的 Propagation 属性如下:
-
-- *REQUIRED*（默认）：如果当前存在事务，则**加入**该事务；否则创建一个新的事务
-
-- *REQUIRES_NEW*（独立新事务）：创建一个新的事务，如果当前存在事务，则把当前事务挂起。
-	- 不管外部方法是否开启事务，内部方法会新开启自己的事务，且**相互独立，互不干扰**
-
-- *NESTED*（嵌套）：如果当前存在事务，则创建一个事务作为当前事务的**嵌套事务**来运行，否则创建一个新的事务
-	- 嵌套事务出错回滚不会影响到主事务（部分回滚），主事务回滚会将嵌套事务一起回滚了
-
-- *MANDATORY*（强制）：如果当前存在事务，则**加入**该事务，否则抛出异常（很少用）
+> 嵌套事务出错回滚不会影响到主事务（部分回滚），主事务回滚会将嵌套事务一起回滚了
 
 若是错误的配置以下 3 种事务传播行为，事务将不会发生回滚：
 
-- *SUPPORTS*（有就支持一下）：如果当前存在事务，则加入该事务，否则以**非事务**的方式继续运行
-- *NOT_SUPPORTED*：以**非事务**方式运行，如果当前存在事务，则把当前事务**挂起**
-- *NEVER*：以**非事务**方式运行，如果当前存在事务，则**抛出异常**
+- **SUPPORTS**（有就支持一下）：以非事务的方式继续运行，如果当前存在事务，则==加入==该事务
+- **NOT_SUPPORTED**：以非事务方式运行，如果当前存在事务，则把当前事务==挂起==
+- **NEVER**：以非事务方式运行，如果当前存在事务，则==抛出异常==
 
 ## Spring 事务的隔离级别 #rep 
 
-- *DEFAULT*：使用后端数据库默认的隔离级别，
+- **DEFAULT**：使用后端数据库默认的隔离级别，
 	- MySQL 默认 `REPEATABLE_READ`，Oracle 默认 `READ_COMMITTED`
-
-- *READ_UNCOMMITTED*：最低的隔离级别，允许读取尚未提交的数据变更
+- **READ_UNCOMMITTED**：最低的隔离级别，允许读取尚未提交的数据变更
 	- 可能发生：脏读、幻读、不可重复读（通常不会用）
-
-- *READ_COMMITTED*：允许读取并发事务已经提交的数据，不会发生脏读
+- **READ_COMMITTED**：允许读取并发事务已经提交的数据，不会发生脏读
 	- 可能发生：幻读、不可重复读
-
-- *REPEATABLE_READ*：对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，不会发生脏读、不可重复读
+- **REPEATABLE_READ**：对同一字段的多次读取结果都是一致的，除非数据是被本身事务自己所修改，不会发生脏读、不可重复读
 	- 可能发生：幻读
-
-- *SERIALIZABLE*（可串行化）：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，事务之间不可能产生干扰，但严重影响程序的性能（通常不会用）
+- **SERIALIZABLE**（可串行化）：最高的隔离级别，完全服从 ACID 的隔离级别。所有的事务依次逐个执行，事务之间不可能产生干扰，但严重影响程序的性能（通常不会用）
 
 ## 事务注解的 rollbackFor 属性 #rep
 
@@ -663,7 +642,7 @@ MVC 是模型(Model)、视图(View)、控制器(Controller)的简写，其核心
 
 这种模式可以可以促进代码的复用和分工，从而提高代码的可读性和可维护性
 
-![500](assets/Pasted%20image%2020240321121454.png)
+![500](Java/assets/Pasted%20image%2020240321121454.png)
 
 ## Spring MVC
 
@@ -690,14 +669,14 @@ Spring MVC 是一款很优秀的 MVC 框架，可以帮助我们进行更**简�
 
 > 在计算机程序处理中，但凡涉及到路由，那包含到的数据结构一定是和 map 相关的。所以对于 url 和 controller 之间的映射，如果交给我们来设计的话，可能会用一个大的 **map 将 url 和 controller 中对应的方法作为键值对**存储起来，以此来达到路由的目的。
 
-![600](assets/Pasted%20image%2020240321185323.png)
+![600](Java/assets/Pasted%20image%2020240321185323.png)
 
 Spring MVC 在启动的时候，会把带有 `@RequestMapping` 注解的方法和类封装成 RequestMappingInfo 和 HandlerMethod，然后注册到 **MappingRegistry**
 
 - MappingRegistry 存放了一个 **HashMap**，key 是 RequestMappingInfo，value 是 HandlerMethod
 - HandlerMethod 封装了对应的 Method（controller 的方法的**反射方法对象**） 和持有它的 **Bean**（controller） 的名字
 
-![](assets/Pasted%20image%2020240321192147.png)
+![](Java/assets/Pasted%20image%2020240321192147.png)
 
 http 请求进入 tomcat，解析 request 中的数据，拿到对应的 **HandlerMethod**，这一步就是
 HandlerMapping 的 `getHandler()` 方法
@@ -710,7 +689,7 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 
 类之间的关系总图
 
-![](assets/Pasted%20image%2020240321192118.png)
+![](Java/assets/Pasted%20image%2020240321192118.png)
 
 
 ## Spring MVC 的执行流程(1) #rep
@@ -751,7 +730,7 @@ HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception;
 
 - ==用户标记的 `@ExceptionHandler` 方法==已经被 ExceptionHandlerMethodResolver 找到，并且注册（==key 为对应异常，value 为对应方法==），只需要调用该方法就可以对异常进行处理，此时的方法调用和之前的 handler 几乎没有区别 #todo完善
 
-![](assets/Pasted%20image%2020240321131100.png)
+![](Java/assets/Pasted%20image%2020240321131100.png)
 
 ## 全局异常处理器怎么做的（项目）？ #rep 
 
@@ -844,7 +823,7 @@ starter 定义了使用某种技术时对于**依赖的固定搭配格式**，�
 
 SpringBoot 通过 Spring 的条件配置决定哪些 bean 可以被配置，将这些条件定义成具体的 `xxxAutoConfiguration`，然后将这些 Configuration 配置到 `spring.factories` 文件中
 
-![500](assets/Pasted%20image%2020240322154048.png)
+![500](Java/assets/Pasted%20image%2020240322154048.png)
 
 ---
 主配置类上 `@SpringBootApplication` 注解包含了以下三个注解：
@@ -893,7 +872,27 @@ public @interface EnableAutoConfiguration
 
 # ---------- MyBatis
 
-Mybatis 和 MybtisPlus，在使用 mybaits 中设计到的端口问题 #得物_24_后端 
+## `#{}` 和 `${}` 的区别是什么？ #面过 
+
+取值引用
+- `#{}` 解析为 SQL 时，会将形参变量的值取出，并自动给其添加 `""`
+- `${}` 解析为 SQL 时，将形参变量的值直接取出，直接拼接显示在 SQL 中
+
+安全性：`#{}` 能防止 sql 注入，更安全
+
+使用场景：
+- `${}` 和 `#{}` 在都可以使用的场景下，推荐使用 `#{}`
+- 有些需要表示字段名、表名的场景下只能使用 `${}`（如 group by，order by）
+
+## 为什么 `#{}` 能防止 sql 注入 #面过 
+
+https://www.zhihu.com/question/52869762/answer/136411127
+
+一个sql是经过解析器编译并执行
+
+sql 预编译的时候会把 `#{}` 替换为 `?`，实际执行的时候，找到原来的 sql 模板，传参，执行。 `#{}` 中的内容只会被数据库当做参数来处理
+
+## Mybatis 和 MybatisPlus，在使用 mybatis 中设计到的端口问题 #得物_24_后端 
 
 
 # ---------- 未知
