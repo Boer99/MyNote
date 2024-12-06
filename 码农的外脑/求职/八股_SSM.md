@@ -856,7 +856,77 @@ public @interface EnableAutoConfiguration
 
 自动配置类会导入配置属性类，配置属性类上通过 `@ConfigurationProperties` 注解和 Application 文件绑定，替换默认的配置值
 
+# 使用
 
+## Spring 和 SpringBoot 有哪些常用注解？
+
+Spring 常用注解
+
+1. **@Component**：
+    
+    - 用于标记一个类为组件，使之可以被 Spring 容器自动发现并注册为 Bean。
+2. **@Service**：
+    
+    - 通常用于业务逻辑层（Service Layer），标识该类是服务组件。
+3. **@Repository**：
+    
+    - 标识持久化层（DAO 层）中的组件，主要用于数据库操作。
+4. **@Controller**：
+    
+    - 用于 Web 层控制器，接收 HTTP 请求，并返回模型视图或响应体内容。
+5. **@RestController**：
+    
+    - 组合了 `@Controller` 和 `@ResponseBody`，用于构建 RESTful Web 服务。
+6. **@Autowired**：
+    
+    - 用于自动装配依赖项，可以作用于字段、构造函数或 setter 方法上。
+7. **@Qualifier**：
+    
+    - 当有多个相同类型的 Bean 时，用于指定注入哪一个具体的 Bean。
+8. **@Value**：
+    
+    - 从属性文件或其他来源读取值并注入到 Bean 中。
+9. **@Configuration**：
+    
+    - 标记一个类为配置类，允许使用 Java 配置方式定义 Bean。
+10. **@Bean**：
+    
+    - 在配置类中定义一个 Bean。
+11. **@Scope**：
+    
+    - 指定 Bean 的作用域，如 singleton（单例）、prototype（原型）等。
+12. **@PostConstruct** 和 **@PreDestroy**：
+    
+    - 分别用于在 Bean 初始化后和销毁前执行特定代码。
+
+Spring Boot 常用注解
+
+1. **@SpringBootApplication**：
+    
+    - 这是一个组合注解，包含了 `@Configuration`、`@EnableAutoConfiguration` 和 `@ComponentScan`，用来启动一个 Spring Boot 应用。
+2. **@EnableAutoConfiguration**：
+    
+    - 启用 Spring Boot 的自动配置机制，根据类路径中的依赖自动配置 Spring 应用。
+3. **@ConditionalOnProperty**：
+    
+    - 只有当某个属性存在并且满足条件时才创建 Bean 或者应用配置。
+4. **@ConditionalOnClass** 和 **@ConditionalOnMissingClass**：
+    
+    - 分别在类路径中存在或不存在某些类时启用配置。
+5. **@Profile**：
+    
+    - 标记 Bean 或者配置类只在特定的环境配置激活时生效。
+6. **@EnableDiscoveryClient**：
+    
+    - 启用服务发现客户端，常用于微服务架构中与 Eureka、Consul 等服务注册中心集成。
+7. **@RefreshScope**：
+    
+    - 允许在运行时刷新配置属性，特别适用于动态调整配置的应用场景。
+8. **@RestControllerAdvice**：
+    
+    - 用于全局异常处理，可以捕获所有 Controller 抛出的异常，并提供统一的错误响应格式。
+
+这些注解极大地简化了 Spring 和 Spring Boot 应用的开发过程，减少了 XML 配置的需求，使代码更加简洁和易于维护。通过合理使用这些注解，开发者能够快速搭建起功能强大且灵活的应用程序
 
 
 # 未知

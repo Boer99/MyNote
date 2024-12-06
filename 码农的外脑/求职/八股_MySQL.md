@@ -427,15 +427,22 @@ B+树与 B 树相比，具备更少的 IO 次数、更稳定的查询效率和�
 
 需要查询的字段正好是索引的字段，那么直接根据该索引，就可以查到数据了，而==无需回表查询==
 
-## 索引下推 #rep
+
+## 索引下推是什么？ #rep
+
+[MySQL索引详解 | JavaGuide](https://javaguide.cn/database/mysql/mysql-index.html#%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8)
 
 #todo完善
 
-Index Condition Pushdown，简称 ICP，是 MySQL 5.6 版本中提供的一项索引优化功能，它允许存储引擎在索引遍历过程中，==执行部分 WHERE 字句的判断条件==，直接过滤掉不满足条件的记录，从而减少回表次数，提高查询效率
+Index Condition Pushdown，简称 ICP，是 MySQL5.6 版本中提供的一项索引优化功能，它允许==存储引擎在索引遍历过程中，执行部分 WHERE 字句的判断条件==，直接过滤掉不满足条件的记录，
 
-索引下推的**下推**其实就是指将部分上层（Server 层）负责的事情，交给了下层（存储引擎层）去处理。
+作用：减少回表次数，提高查询效率
 
-[MySQL索引详解 | JavaGuide](https://javaguide.cn/database/mysql/mysql-index.html#%E7%B4%A2%E5%BC%95%E4%B8%8B%E6%8E%A8)
+**下推**:将部分上层（Server 层）负责的事情，交给了下层（存储引擎层）去处理。
+
+![](../assets/Pasted%20image%2020241206015414.png)
+
+
 
 ## 如何确定字段是否走索引？(1)
 
@@ -485,6 +492,16 @@ or 连接的条件，左右两侧字段**都有**索引时，索引才会生效
 ### 数据分布影响 
 
 如果 MySQL 评估走全表扫描比索引更快，则不使用索引
+
+
+## 最左前缀匹配原则的原理？ #面过 
+
+[联合索引在B+Tree上的存储结构及数据查找方式_联合索引的存储结构-CSDN博客](https://blog.csdn.net/feichitianxia/article/details/107997795)
+
+> 考察的是对联合索引数据结构的了解
+
+
+
 
 ## 正确使用索引 #rep
 

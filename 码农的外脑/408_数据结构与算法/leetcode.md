@@ -6790,16 +6790,26 @@ class Solution {
 - 时间复杂度：`O(n)`
 - 空间复杂度：`O(log n)`，算上递推系统栈的空间
 
-## 买卖股票的最佳时机
+## 买卖股票的最佳时机 #手撕
 
 [121. 买卖股票的最佳时机 - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock/)
 
+```
+给定一个数组 prices ，它的第 i 个元素 prices[i] 表示一支给定股票第 i 天的价格。
+
+你只能选择 某一天 买入这只股票，并选择在 未来的某一个不同的日子 卖出该股票。设计一个算法来计算你所能获取的最大利润。
+
+返回你可以从这笔交易中获取的最大利润。如果你不能获取任何利润，返回 0 
+
+**输入：**[7,1,5,3,6,4]
+**输出：**5
+```
+
 1）贪心法 ✔
 
-分析：
-- 每天根据 前一天的最小买入价格 和 前一天能够获取的最大利润，决定今天是否卖出，并更新这两个值
+分析：第 i 天根据 前 i-1 天的最小买入价格 min 获取第 i 天的最大利润 `dp[i]`，并更新这两个值
 
-> 先更新哪个都可以，如果先更新 min 会出现当日买进当日卖出的情况，res=0，对结果没影响，但意思不明确
+> 先更新哪个都可以，如果先更新 min 会出现当日买进当日卖出的情况，res=0，对结果没影响
 
 ```java
 class Solution {
@@ -6807,7 +6817,7 @@ class Solution {
         int len = prices.length;
         int[] dp = new int[len];
         dp[0] = 0; // 当前卖出的最大利润
-        int min = prices[0]; //
+        int min = prices[0];
         for (int i = 1; i < len; i++) {
             dp[i] = Math.max(dp[i - 1], prices[i] - min);
             min = Math.min(prices[i], min);
@@ -6821,11 +6831,12 @@ class Solution {
 
 dp五部曲：
 - dp数组定义
-	- `dp[i][0]` 表示第 i 天持有股票所得最多现金
-	- `dp[i][1]` 表示第 i 天不持有股票所得最多现金
+	- `dp[i][0]` 表示第 i 天结束，持有股票所得最多现金
+	- `dp[i][1]` 表示第 i 天结束，不持有股票所得最多现金
+	- i 表示天数 `[0, i]` 区间里
 - 递推公式：
 	- 前 i-1 天买入 和 当天买入 选一个现金最多的 `dp[i][0] = max(dp[i - 1][0], -prices[i]);`
-	- 前 i-1 天卖出 和 当天卖出 选一个现金最多的`dp[i][1] = max(dp[i - 1][1], prices[i] + dp[i - 1][0])`
+	- 前 i-1 天卖出 和 当天卖出 选一个现金最多的 `dp[i][1] = max(dp[i - 1][1], prices[i] + dp[i - 1][0])`
 - 初始化：`dp[0][0] -= prices[0]`，`dp[0][1] = 0`
 - 遍历顺序：`dp[i]` 都是由 `dp[i - 1]` 推导出来的，那么一定是从前向后遍历
 - 模拟：返回结果 `dp[prices.length-1][1]`
@@ -6834,17 +6845,16 @@ dp五部曲：
 class Solution {
     public int maxProfit(int[] prices) {
         if (prices == null || prices.length == 0) return 0;
+        
         int length = prices.length;
-        // dp[i][0]代表第i天持有股票的最大收益
-        // dp[i][1]代表第i天不持有股票的最大收益
         int[][] dp = new int[length][2];
-        int result = 0;
         dp[0][0] = -prices[0];
         dp[0][1] = 0;
         for (int i = 1; i < length; i++) {
             dp[i][0] = Math.max(dp[i - 1][0], -prices[i]);
             dp[i][1] = Math.max(dp[i - 1][0] + prices[i], dp[i - 1][1]);
         }
+        
         return dp[length - 1][1];
     }
 }
@@ -6853,26 +6863,32 @@ class Solution {
 `dp[i]` 只是依赖于 `dp[i - 1]` 的状态，滚动数组优化空间
 
 ```java
-class Solution {
-    public int maxProfit(int[] prices) {
-        int len = prices.length;
-        int dp[][] = new int[2][2];
-        
-        dp[0][0] = - prices[0];
-        dp[0][1] = 0;
-
-        for (int i = 1; i < len; i++){
-            dp[i % 2][0] = Math.max(dp[(i - 1) % 2][0], - prices[i]);
-            dp[i % 2][1] = Math.max(dp[(i - 1) % 2][1], prices[i] + dp[(i - 1) % 2][0]);
-        }
-        return dp[(len - 1) % 2][1];
-    }
+public int maxProfit(int[] prices) {
+	int dp[] = new int[2];
+	dp[0] = -prices[0]; // 持有股票
+	dp[1] = 0; // 不持有股票
+	for (int i = 1; i < prices.length; i++) {
+		dp[0] = Math.max(dp[0], -prices[i]);
+		dp[1] = Math.max(dp[1], prices[i] + dp[0]);
+	}
+	return dp[1];
 }
 ```
 
-## 买卖股票的最佳时机 II #rep
+## 买卖股票的最佳时机 II #rep2
 
 [122. 买卖股票的最佳时机 II - 力扣（LeetCode）](https://leetcode.cn/problems/best-time-to-buy-and-sell-stock-ii/description/)
+
+```
+给你一个整数数组 prices ，其中 prices[i] 表示某支股票第 i 天的价格。
+
+在每一天，你可以决定是否购买和/或出售股票。你在任何时候 最多 只能持有 一股 股票。你也可以先购买，然后在 同一天 出售。
+
+返回 你能获得的 最大 利润 。
+
+**输入：**prices = [7,1,5,3,6,4]
+**输出：**7
+```
 
 1）贪心 ✔️
 
@@ -6885,27 +6901,25 @@ class Solution {
 ![600](assets/Pasted%20image%2020240229234241.png)
 
 ```java
-class Solution {
-    public int maxProfit(int[] prices) {
-        int res = 0;
-        for (int i = 0; i < prices.length - 1; i++) {
-            int pro = prices[i + 1] - prices[i];
-            if (pro > 0) {
-                res += pro;
-            }
-        }
-        return res;
-    }
+public int maxProfit(int[] prices) {
+	int res = 0;
+	for (int i = 0; i < prices.length - 1; i++) {
+		int pro = prices[i + 1] - prices[i];
+		if (pro > 0) {
+			res += pro;
+		}
+	}
+	return res;
 }
 ```
 
 2）动态规划
 
 dp：
-- `dp[i][0]` 表示第 i 天持有股票所得现金。`dp[i][1]` 表示第 i 天不持有股票所得最多现金
+- `dp[i][0]` 表示第 i 天结束，持有股票最多现金。`dp[i][1]` 表示第 i 天结束，不持有股票最多现金
 - 递推公式：
 	- `dp[i][0]` 可以由两个状态推出来
-		- 第 i-1天就持有股票，保持现状，所得现金即：`dp[i - 1][0]`
+		- 第 i-1 天就持有股票，保持现状，所得现金即：`dp[i - 1][0]`
 		- 第 i 天买入股票，所得现金即：`dp[i - 1][1] - prices[i]`
 	- `dp[i][1]` 可以由两个状态推出来
 		- 第 i-1天就不持有股票，保持现状，所得现金即：`dp[i - 1][1]`
