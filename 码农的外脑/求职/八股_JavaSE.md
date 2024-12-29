@@ -221,32 +221,30 @@ public class VariableLengthArgument {
 
 # 基本数据类型
 
-## Java 中的几种基本数据类型
+## Java 中的几种基本数据类型？所占字节？ #面过2
 
-Java 中有 8 种基本数据类型
+Java 中有 8 种基本数据类型（4整型+2浮点+1字符+1布尔）
 
-- 6 种数字类型：
-  - 4 种整数型：byte、short、int、long
-  - 2 种浮点型：float、double
-- 1 种字符类型：char
-- 1 种布尔型：boolean
+| 基本类型    | 位数  | 字节  | 默认值     | 取值范围                                       |
+| :------ | :-- | :-- | :------ | ------------------------------------------ |
+| byte    | 8   | 1   | 0       | -128 ~ 127                                 |
+| short   | 16  | 2   | 0       | -32768 ~ 32767                             |
+| int     | 32  | 4   | 0       | -2147483648 ~ 2147483647                   |
+| long    | 64  | 8   | 0L      | -9223372036854775808 ~ 9223372036854775807 |
+| char    | 16  | 2   | 'u0000' | 0 ~ 65535                                  |
+| float   | 32  | 4   | 0f      | 1.4E-45 ~ 3.4028235E38                     |
+| double  | 64  | 8   | 0d      | 4.9E-324 ~ 1.7976931348623157E308          |
+| boolean | \   | \   | false   | true、false                                 |
 
-这 8 种基本数据类型的默认值以及所占空间的大小如下：
+> Java 里使用 long 类型的数据一定要在数值后面加上 L，否则将作为整型解析
 
-| 基本类型  | 位数 | 字节 | 默认值  | 取值范围                                   |
-| :-------- | :--- | :--- | :------ | ------------------------------------------ |
-| `byte`    | 8    | 1    | 0       | -128 ~ 127                                 |
-| `short`   | 16   | 2    | 0       | -32768 ~ 32767                             |
-| `int`     | 32   | 4    | 0       | -2147483648 ~ 2147483647                   |
-| `long`    | 64   | 8    | 0L      | -9223372036854775808 ~ 9223372036854775807 |
-| `char`    | 16   | 2    | 'u0000' | 0 ~ 65535                                  |
-| `float`   | 32   | 4    | 0f      | 1.4E-45 ~ 3.4028235E38                     |
-| `double`  | 64   | 8    | 0d      | 4.9E-324 ~ 1.7976931348623157E308          |
-| `boolean` | 1    |      | false   | true、false                                |
+这八种基本类型都有对应的包装类分别为：Byte、Short、Integer、Long、Float、Double、Character、Boolean
 
-Java 里使用 `long` 类型的数据一定要在数值后面加上 **L**，否则将作为整型解析
+### boolean 类型怎么存？ #面过 
 
-这八种基本类型都有对应的包装类分别为：`Byte`、`Short`、`Integer`、`Long`、`Float`、`Double`、`Character`、`Boolean`
+> [Java千问：你知道Java语言布尔型数据到底占多大空间吗？_java 布尔数组长度-CSDN博客](https://blog.csdn.net/shalimu/article/details/103855123)
+
+JVM 规范中：Java 语言表达式所操作的 boolean 值，在编译之后都使用 Java 虚拟机中的 int 数据类型来代替，而 boolean 数组只将会被编码成 Java 虛拟机的 byte 数组，每个 boolean 元素占 8 位”
 
 ## 基本类型和包装类型的区别？
 
@@ -1043,63 +1041,52 @@ public static String getStr() {
 
 # 异常
 
-### Exception 和 Error 有什么区别？
+## ✅Exception 和 Error 有什么区别？
 
 在 Java 中，所有的异常都有一个共同的祖先 java.lang 包中的 Throwable 类。
 
 Throwable 类有两个重要的子类:
 
-- **`Exception`** ：==程序本身可以处理的异常==，可以通过 `catch` 来进行捕获。
-- **`Error`** ：`Error` 属于==程序无法处理的错误==，不建议通过 `catch` 捕获。例如 Java 虚拟机运行错误（`Virtual MachineError`）、虚拟机内存不够错误(`OutOfMemoryError`)、类定义错误（`NoClassDefFoundError`）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止
+- **Exception**：程序本身可以处理的异常，可以通过 catch 来进行捕获。
+- **Error** ：Error 属于程序无法处理的错误，不建议通过 catch 捕获。
+	- 例如 Java 虚拟机运行错误（Virtual MachineError）、虚拟机内存不够错误 (OutOfMemoryError)、类定义错误（NoClassDefFoundError）等 。这些异常发生时，Java 虚拟机（JVM）一般会选择线程终止
 
-### Checked Exception 和 Unchecked Exception 有什么区别？
+## ✅Checked Exception 和 Unchecked Exception 有什么区别？ #面过
 
-*Checked Exception*：受检查异常，Java代码在编译过程中，如果受检查异常没有被catch/throw 处理的话，就没办法通过编译，故==必须处理==。
+**Checked Exception**：受检查异常，Java 代码在编译过程中，如果受检查异常没有被 catch/throw 处理的话，就没办法通过编译，故==必须处理==。
 
-*Unchecked Exception*：不受检查异常，Java代码在编译过程中即使不处理也能正常通过编译。
+**Unchecked Exception**：不受检查异常，Java 代码在编译过程中即使不处理也能正常通过编译。
+- RuntimeException 及其子类都统称为非受检查异常；除了 RuntimeException 及其子类以外，其他的 Exception 类及其子类都属于受检查异常。
 
-`RuntimeException`及其子类都统称为非受检查异常；除了`RuntimeException`及其子类以外，其他的`Exception`类及其子类都属于受检查异常。
+## ✅常见的异常有哪些？
 
-<img src="assets/java基础题/image-20220114154702237.png" alt="image-20220114154702237"  />
+Error：
+- Java 虚拟机运行错误 Virtual MachineError
+- 虚拟机内存不够错误 OutOfMemoryError
+- 类定义错误 NoClassDefFoundError
 
+编译时异常：
+- SQLException：操作数据库时，查询表可能发生异常
+- IOException：操作文件时发生的异常
+- FileNotFoundException：操作一个不存在的文件
+- ClassNotFoundException：加载类，而该类不存在
 
+运行时异常：
+- NullPointerException：空指针异常
+- ArrayIndexOutOfBoundsException：数组脚标越界异常
+- ClassCastException：类型转换异常，试图将对象强制转换为不是实例的子例时
+- InputMismatchException：输入类型不匹配
+- ArithmeticException：算术异常，出现异常的运算条件
+- IllegalArgumentException：参数异常
+- NumberFormatException：字符串转换为数字格式错误
 
-### 常见的异常有哪些？
-
-**Error：**
-
-- Java虚拟机运行错误 `Virtual MachineError`
-- 虚拟机内存不够错误 `OutOfMemoryError`
-- 类定义错误 `NoClassDefFoundError`
-
-**编译时异常：**
-
-- `SQLException`：操作数据库时，查询表可能发生异常
-- `IOException`：操作文件时发生的异常
-  - `FileNotFoundException`：操作一个不存在的文件
-- `ClassNotFoundException`：加载类，而该类不存在
-
-**运行时异常：**
-
-- `NullPointerException`：空指针异常
-- `ArrayIndexOutOfBoundsException`：数组脚标越界异常
-- `ClassCastException`：类型转换异常，试图将对象强制转换为不是实例的子例时
-- `InputMismatchException`：输入类型不匹配
-- `ArithmeticException`：算术异常，出现异常的运算条件
-- `IllegalArgumentException`：参数异常
-  - `NumberFormatException`：字符串转换为数字格式错误
-
-
-
-### Throw和Throws有什么区别？（我出的）
+## ✅Throw和Throws有什么区别？
 
 我的理解：throw是创造异常，throws和try-catch是处理异常
 
 [(9条消息) Java中throw和throws有什么区别？_我不是你不是我的博客-CSDN博客_java中throw和throws的区别](https://blog.csdn.net/weixin_46511008/article/details/118770337)
 
-
-
-### Throwable 类常用方法有哪些？
+## ✅Throwable 类常用方法有哪些？
 
 ```java
 public string getMessage() //返回异常发生时的简要描述
@@ -1115,9 +1102,7 @@ public String getLocalizedMessage() { //返回异常对象的本地化信息
 public void printStackTrace() //在控制台上打印 Throwable 对象封装的异常信息
 ```
 
-
-
-### try-catch-finally 如何使用？
+## ✅try-catch-finally 如何使用？
 
 - try 块：用于捕获异常。其后可接零个或多个 catch 块，如果没有 catch 块，则必须跟一个 finally 块。
 - catch 块：用于处理 try 捕获到的异常。
@@ -1158,9 +1143,7 @@ public static int f(int value) {
 //输出：0
 ```
 
-
-
-### try-catch-finally执行流程？（我出的）
+## ✅try-catch-finally执行流程？
 
 ```java
 try{
@@ -1182,13 +1165,11 @@ try{
 //catch没捕获到，不再执行
 ```
 
+## ✅finally 中的代码一定会执行吗？
 
+==不一定！在某些情况下，finally 中的代码不会被执行。==
 
-### finally 中的代码一定会执行吗？（没学jvm）
-
-不一定！在某些情况下，finally 中的代码不会被执行。
-
-就比如说 finally 之前虚拟机被终止运行的话，finally 中的代码就不会被执行。
+1）finally 之前虚拟机被终止运行
 
 ```java
 try {
@@ -1210,21 +1191,39 @@ try {
 1. 程序所在的线程死亡
 2. 关闭 CPU
 
+## 如何使用 try-with-resources 代替 try-catch-finally？ #todo
 
 
-### 如何使用 try-with-resources 代替try-catch-finally？
-
-没学过try-with-resources
-
-
-
-###  异常使用有哪些需要注意的地方？（没看懂）
+##  异常使用有哪些需要注意的地方？ #todo
 
 - 不要把异常定义为静态变量，因为这样会导致异常栈信息错乱。每次手动抛出异常，我们都需要手动 new 一个异常对象抛出
 - 抛出的异常信息一定要有意义
-- 建议抛出更加具体的异常比如字符串转换为数字格式错误的时候应该抛出`NumberFormatException`而不是其父类`IllegalArgumentException`
+- 建议抛出更加具体的异常比如字符串转换为数字格式错误的时候应该抛出 NumberFormatException 而不是其父类 IllegalArgumentException
 - 使用日志打印异常之后就不要再抛出异常了（两者不要同时存在一段代码逻辑中）
 
+## ✅try-catch 会影响性能吗？ #面过 
+
+https://v.douyin.com/iUgTK5fo/
+
+
+
+这个问题要分两种情况
+
+**1）使用了 try-catch，但是代码没有出现异常，并不会影响性能**
+
+其实就要考虑它会增加我们的代码执行链路吗？
+
+将 try-catch 块代码编译成字节码指令，可以发现字节码指令确实变多了，但并不是每一句都会执行
+
+假如 try-catch 块中没有出现异常，会通过 goto 指令跳转，执行链路并没有变长
+
+![](../assets/Pasted%20image%2020241223234300.png)
+
+2）不能因为有了统一异常处理，就肆意地在代码当中去抛出异常
+
+一旦出现了异常，它的底层其实会干很多的事情，包括异常对象的创建，异常链路栈的记录，代码块的搜索，这些都是需要消耗 cpu 和内存的性能的
+
+像种能够预知到的异常的，可以通过 return 的方式去中断代码，返回统一的对象响应，而不是为了省事直接抛出异常，这样肯定会增加代码的执行链路，在高并发的情况下，毫无疑问也会影响性能
 
 
 # 泛型
