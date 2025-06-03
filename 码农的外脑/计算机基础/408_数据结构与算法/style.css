@@ -1,0 +1,24 @@
+.emphasis{
+    background-color: #ffe0b2; 
+    padding: 15px; 
+    border-radius: 5px; 
+    margin: 10px 0; 
+    color: #e7590a;
+    font-weight: bold;
+}
+.conclusion{
+    background-color: #c8e6c9; 
+    padding: 15px; 
+    border-radius: 5px; 
+    margin: 10px 0; 
+    color: #1b5e20;
+    font-weight: bold;
+}
+.todo{
+    color: orange;
+    font-weight: bold;
+}
+.title{
+    font-weight: bold;
+    font-size: 16px;
+}
